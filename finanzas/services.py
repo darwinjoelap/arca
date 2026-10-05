@@ -17,7 +17,7 @@ from django.utils import timezone
 from cambio.services import SinTasaError, convertir, obtener_tasa
 from organizaciones.models import Ejercicio
 
-from .models import Caja, Cuenta, Movimiento, Traslado
+from .models import Caja, Cuenta, CuotaMiembro, Movimiento, Traslado
 
 CERO = Decimal("0")
 
@@ -204,3 +204,46 @@ def totales_periodo(organizacion, desde, hasta):
     for fila in filas:
         totales[fila["tipo"]] = {"ves": fila["ves"] or CERO, "usd": fila["usd"] or CERO}
     return {"ingreso": totales[Movimiento.Tipo.INGRESO], "egreso": totales[Movimiento.Tipo.EGRESO]}
+
+
+# --- Cuotas de miembros -----------------------------------------------------
+
+
+def _meses_entre(desde, hasta):
+    """Cuántos meses calendario hay de `desde` a `hasta`, ambos incluidos."""
+    if hasta < desde:
+        return 0
+    return (hasta.year - desde.year) * 12 + hasta.month - desde.month + 1
+
+
+def estado_cuotas(organizacion, ejercicio, hasta=None, membresia=None):
+    """Lo esperado contra lo pagado de cada cuota dentro del ejercicio, hasta
+    el mes de `hasta` (por defecto hoy). Cada cuota en SU moneda.
+
+    Devuelve una lista de dicts: cuota, meses, esperado, pagado, pendiente
+    (positivo = debe; negativo = pagó de más) y ultimo_pago.
+    """
+    hasta = min(hasta or timezone.localdate(), ejercicio.fecha_fin)
+    cuotas = CuotaMiembro.objects.filter(organizacion=organizacion).select_related(
+        "membresia", "membresia__user", "membresia__tipo", "concepto")
+    if membresia is not None:
+        cuotas = cuotas.filter(membresia=membresia)
+    resultado = []
+    for cuota in cuotas:
+        inicio = max(cuota.vigente_desde, ejercicio.fecha_inicio)
+        fin = min(cuota.vigente_hasta or hasta, hasta)
+        meses = _meses_entre(inicio, fin) if fin >= inicio.replace(day=1) else 0
+        campo = "monto_usd" if cuota.moneda == "USD" else "monto_ves"
+        pagos = Movimiento.objects.filter(
+            organizacion=organizacion, estado=Movimiento.Estado.CONFIRMADO, tipo=Movimiento.Tipo.INGRESO,
+            miembro=cuota.membresia_id, concepto=cuota.concepto_id,
+            fecha__gte=inicio.replace(day=1), fecha__lte=ejercicio.fecha_fin,
+        ).aggregate(total=Sum(campo), ultimo=Max("fecha"))
+        esperado, pagado = cuota.monto * meses, pagos["total"] or CERO
+        if not meses and not pagado:
+            continue  # la cuota todavía no aplica en este ejercicio
+        resultado.append({
+            "cuota": cuota, "meses": meses, "esperado": esperado, "pagado": pagado,
+            "pendiente": esperado - pagado, "ultimo_pago": pagos["ultimo"],
+        })
+    return resultado

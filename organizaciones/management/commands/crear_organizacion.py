@@ -31,7 +31,7 @@ class Command(BaseCommand):
             accion=RegistroAuditoria.Accion.CREAR_ORGANIZACION,
             modelo="Organizacion",
             objeto_id=str(organizacion.pk),
-            descripcion=f"{organizacion.nombre} — director: {membresia.user.username} (por comando)",
+            descripcion=f"{organizacion.nombre} — director: {membresia.usuario_texto} (por comando)",
         )
         self.stdout.write(self.style.SUCCESS(f"Organización «{organizacion.nombre}» creada (slug: {organizacion.slug})."))
         if creado:

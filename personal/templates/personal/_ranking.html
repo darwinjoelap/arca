@@ -1,0 +1,10 @@
+{% load arca %}
+{% if items %}
+<div class="ranking">
+  {% for r in items %}
+    <span class="ranking-nombre" title="{{ r.nombre }}">{{ r.nombre }}</span>
+    <span class="ranking-pista"><span class="ranking-barra d-block" style="width: {{ r.ancho }}%;"></span></span>
+    <span class="ranking-valor">{{ simbolo }} {{ r.monto|monto }}{% if r.pct is not None %} <small>{{ r.pct|monto:1 }} %</small>{% endif %}</span>
+  {% endfor %}
+</div>
+{% else %}<p class="text-muted mb-0">{{ vacio }}</p>{% endif %}

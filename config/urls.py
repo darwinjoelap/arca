@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.templatetags.static import static
+from django.utils.functional import lazy
 from django.urls import include, path
 from django.views.generic import RedirectView
 
@@ -11,7 +12,7 @@ urlpatterns = [
     # del service worker cubra todo el sitio.
     path("sw.js", core_views.service_worker, name="sw_js"),
     # Los navegadores piden /favicon.ico por su cuenta (p. ej. en /admin/).
-    path("favicon.ico", RedirectView.as_view(url=static("img/favicon-32.png"))),
+    path("favicon.ico", RedirectView.as_view(url=lazy(static, str)("img/favicon-32.png"))),
     path("admin/", admin.site.urls),
     # Antes del include de auth: esta vista apaga `debe_cambiar_clave`.
     path("cuentas/password_change/", core_views.CambiarClaveView.as_view(), name="password_change"),
@@ -19,6 +20,7 @@ urlpatterns = [
     path("organizacion/", include("organizaciones.urls")),
     path("cambio/", include("cambio.urls")),
     path("libro/", include("finanzas.urls")),
+    path("personal/", include("personal.urls")),
     path("presupuestos/", include("presupuestos.urls")),
     path("reportes/", include("reportes.urls")),
     path("sync/", include("sync.urls")),

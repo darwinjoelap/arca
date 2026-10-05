@@ -62,29 +62,37 @@ Pendiente de verificar en tu máquina: las 102 pruebas contra PostgreSQL, y el f
 - [x] Cada archivo emitido queda en la bitácora
 - [x] 126 pruebas en total
 
-Pendiente de verificar en tu máquina: las 126 pruebas contra PostgreSQL.
+## Hecho — Fase 5 (miembros y cuenta personal)
+
+- [x] Miembros sin usuario: gente de la comunidad que aporta o recibe y no entra a Arca; «Dar acceso» después
+- [x] Permiso «Ver reportes» por tipo de miembro, separado de «Ver movimientos»
+- [x] Sección «Personal» para todos, director incluido: «Mi resumen» (lo que aporté y recibí de la organización)
+- [x] Cuotas de miembros: aporte mensual esperado, pagado, pendiente y último pago
+- [x] Asignaciones: egreso de la organización que entra a la cuenta personal del miembro
+- [x] «Mi cuenta»: ingresos y gastos propios, conceptos propios, saldo, gráfico mensual y en qué se gasta
+- [x] El director ve las cuentas personales solo si el soporte activa el interruptor; cada consulta queda en la bitácora
+- [x] 155 pruebas en total
+
+Pendiente de verificar en tu máquina: `migrate` y las 155 pruebas contra PostgreSQL.
 
 ## Lo que NO está todavía
 
-- Abrir la app desde cero sin señal: no se puede. Hay que tenerla abierta en «Registrar ingreso» o
-  «Registrar egreso» antes de perder la conexión (decisión A-20). Navegar a otra pantalla sin señal muestra
-  el aviso de «Sin conexión» y lo ya guardado en el teléfono no se pierde.
-- Traslados sin conexión: solo en línea.
-- Editar un movimiento: no existe a propósito (A-18).
-- Presupuesto anual con montos distintos por mes: hoy es un monto mensual fijo (el anual es por doce).
-- El flujo de solicitud de las partidas «se solicita con antelación»: por ahora es solo una marca.
-- Reportes de traslados y de la diferencia por cambio de divisas como línea propia.
-- Balance de saldos por cuenta a una fecha pasada, como reporte (el libro de cada cuenta sí lo da).
-- Gráficos dentro de los PDF: los PDF llevan solo tablas.
-- Cuenta personal e inventario.
-- Actualización automática de la tasa BCV (Fase 2).
-- Fuentes Inter y Manrope servidas desde `static/` (hoy vienen de Google Fonts; sin conexión cae a la fuente del sistema).
+- Abrir la app desde cero sin señal: no se puede (A-20).
+- Sin conexión solo funcionan ingreso y egreso de la organización: ni traslados ni la cuenta personal.
+- Asignar dinero a un miembro sin acceso: no se puede, porque no tiene cuenta personal. Se registra como egreso normal a su nombre.
+- Cuotas: no tienen reporte exportable (Excel/PDF) ni aviso de morosidad; es solo la pantalla.
+- Anticipos (dinero entregado que se rinde después) y arqueo de caja.
+- Editar un movimiento de la organización: no existe a propósito (A-18).
+- Presupuesto anual con montos distintos por mes; flujo de «se solicita con antelación».
+- Reportes de traslados, diferencia en cambio y saldos a una fecha pasada. Gráficos dentro de los PDF.
+- Inventario (Fase 7).
+- Tasa BCV automática, fuentes locales, pantalla de instalación en iPhone (Fase 2).
 - Agregar a una organización un usuario que ya existe en otra: solo desde `/admin/`.
-- Respaldo automático de la base (el workflow de Neon de Edumia no se copió; hay que hacerlo para Railway).
+- Respaldo automático de la base y despliegue en Railway.
 
 ## Siguiente — por decidir
 
-Fase 5 (cuotas, asignaciones y cuenta personal) o Fase 2 (tasa BCV automática, fuentes locales, instalación en iPhone).
+Fase 2 (tasa BCV automática, fuentes locales, iPhone), Fase 7 (inventario) o despliegue en Railway.
 
 ## Pendiente — Fase 2 (moneda e identidad)
 
@@ -95,4 +103,4 @@ Fase 5 (cuotas, asignaciones y cuenta personal) o Fase 2 (tasa BCV automática, 
 
 ## Luego
 
-Fase 5 miembros y cuenta personal · Fase 7 inventario · Fase 8 cierre (arqueo, importador de Excel, alta de organizaciones).
+Fase 7 inventario · Fase 8 cierre (arqueo, importador de Excel, alta de organizaciones).

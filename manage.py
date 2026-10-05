@@ -6,7 +6,9 @@ import sys
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.local')
+    # `python manage.py test` usa solo los ajustes de pruebas (sin manifiesto de estáticos).
+    ajustes = 'config.settings.test' if sys.argv[1:2] == ['test'] else 'config.settings.local'
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', ajustes)
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

@@ -107,6 +107,27 @@ rojo-verde. Las columnas usan verde y ámbar, validados, con leyenda y con los v
 **A-28 — Los reportes los ve quien ve el libro completo.** `puede_ver_movimientos` (director y administradores
 incluidos). El presupuesto y su comparativo los ve además quien tiene `puede_ver_presupuesto`.
 
+**A-28 (revisada) — Los reportes tienen permiso propio.** `puede_ver_reportes`, que el director marca por tipo
+de miembro. La migración lo enciende a quien ya tenía `puede_ver_movimientos`.
+
+**A-29 — Miembro no es lo mismo que usuario.** Una membresía puede no tener usuario: figura en ingresos,
+egresos y cuotas, pero no entra. Sin usuario no puede ser director ni administrador. «Dar acceso» le crea el
+usuario después sin perder su historial.
+
+**A-30 — El director también es miembro.** No hay dos cuentas ni cambio de modo: el menú tiene una sección
+«Personal» (Mi resumen, Mi cuenta) igual para todos, y debajo lo que cada quien puede hacer por su permiso.
+
+**A-31 — La cuota es una expectativa, no un cobro.** Se define miembro + concepto + monto mensual + vigencia.
+Lo pagado no se guarda: es la suma de los ingresos confirmados a nombre del miembro con ese concepto.
+
+**A-32 — Una asignación son dos asientos atados.** Egreso en el libro de la organización y entrada en la
+cuenta personal, unidos por `origen`. La entrada no se edita ni se borra desde la cuenta personal; anular el
+egreso la retira.
+
+**A-33 — La cuenta personal es del miembro.** No toca saldos de la organización. Su saldo es la suma de los
+equivalentes congelados de cada movimiento. El director ve solo lo asignado; el detalle, únicamente si el
+soporte activa `director_ve_cuentas_personales`, y cada consulta queda en la bitácora.
+
 ## Heredadas de Edumia que siguen vigentes
 
 - **D-02 (revisado)** — El valor de una tasa se puede corregir; recalcula lo no congelado.

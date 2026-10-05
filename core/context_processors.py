@@ -15,5 +15,7 @@ def organizacion(request):
         "puede_egresos": puede_egresos,
         "entra_al_libro": puede_ingresos or puede_egresos or puede("puede_ver_movimientos"),
         "ve_el_libro": puede("puede_ver_movimientos"),
+        "ve_reportes": puede("puede_ver_reportes"),
+        "tiene_cuenta_personal": puede("tiene_cuenta_personal"),
         "puede_ver_presupuesto": puede("puede_ver_presupuesto"),
     }

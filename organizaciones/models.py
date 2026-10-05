@@ -19,6 +19,7 @@ PERMISOS = [
     ("puede_ver_presupuesto", "Ver presupuesto", "Ver partidas, topes y lo ejecutado."),
     ("puede_ver_movimientos", "Ver movimientos", "Ver el libro completo, no solo lo propio."),
     ("puede_gestionar_inventario", "Gestionar inventario", "Altas, bajas y traslados de bienes."),
+    ("puede_ver_reportes", "Ver reportes", "Reportes y análisis de la organización, con Excel y PDF."),
     ("tiene_cuenta_personal", "Cuenta personal", "Recibir asignaciones y llevar su propio control."),
 ]
 NOMBRES_PERMISOS = [nombre for nombre, _, _ in PERMISOS]
@@ -91,6 +92,7 @@ class TipoMiembro(ModeloDeOrganizacion):
     puede_ver_presupuesto = models.BooleanField("ver presupuesto", default=False)
     puede_ver_movimientos = models.BooleanField("ver movimientos", default=False)
     puede_gestionar_inventario = models.BooleanField("gestionar inventario", default=False)
+    puede_ver_reportes = models.BooleanField("ver reportes", default=False)
     tiene_cuenta_personal = models.BooleanField("cuenta personal", default=True)
     activo = models.BooleanField(default=True)
 
@@ -117,8 +119,11 @@ class Membresia(ModeloDeOrganizacion):
     mismos permisos salvo tocar al dueño o nombrar a otros. Todo lo demás lo
     decide el `tipo`."""
 
+    # Vacío = miembro de la comunidad que no entra al sistema (aporta, recibe,
+    # tiene cuotas), pero figura en el libro y en los reportes. Se le puede
+    # dar acceso después sin perder su historia.
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="membresias",
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="membresias",
         verbose_name="usuario",
     )
     tipo = models.ForeignKey(
@@ -147,6 +152,11 @@ class Membresia(ModeloDeOrganizacion):
                 condition=Q(es_dueno=True) | Q(es_administrador=True) | Q(tipo__isnull=False),
                 name="miembro_comun_con_tipo",
             ),
+            # Sin usuario no hay de dónde sacar el nombre, ni puede administrar.
+            models.CheckConstraint(
+                condition=Q(user__isnull=False) | (~Q(nombre_visible="") & Q(es_dueno=False) & Q(es_administrador=False)),
+                name="miembro_sin_usuario_con_nombre_y_sin_mando",
+            ),
         ]
 
     def __str__(self):
@@ -154,7 +164,18 @@ class Membresia(ModeloDeOrganizacion):
 
     @property
     def nombre(self):
-        return self.nombre_visible or self.user.nombre_para_mostrar()
+        if self.nombre_visible or not self.user_id:
+            return self.nombre_visible
+        return self.user.nombre_para_mostrar()
+
+    @property
+    def tiene_acceso(self):
+        """True si la persona puede entrar al sistema con esta membresía."""
+        return self.user_id is not None
+
+    @property
+    def usuario_texto(self):
+        return self.user.username if self.user_id else "sin acceso"
 
     @property
     def puede_administrar(self):
@@ -183,6 +204,11 @@ class Membresia(ModeloDeOrganizacion):
             raise ValidationError({"tipo": "Ese tipo de miembro es de otra organización."})
         if not (self.es_dueno or self.es_administrador or self.tipo_id):
             raise ValidationError({"tipo": "Elige un tipo de miembro."})
+        if not self.user_id:
+            if not (self.nombre_visible or "").strip():
+                raise ValidationError({"nombre_visible": "Un miembro sin acceso necesita un nombre."})
+            if self.es_dueno or self.es_administrador:
+                raise ValidationError("El director y los administradores necesitan un usuario para entrar.")
 
     def save(self, *args, **kwargs):
         # Segunda barrera además de clean(): el tipo nunca cruza de organización,

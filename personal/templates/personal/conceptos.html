@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block titulo %}Mis conceptos — Arca{% endblock %}
+{% block titulo_topbar %}Mis conceptos{% endblock %}
+{% block contenido %}
+<div class="d-flex justify-content-between align-items-center mb-4"><h1 class="h3 mb-0">Mis conceptos</h1>
+  <a href="{% url 'personal:cuenta' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Mi cuenta</a></div>
+<div class="row g-3">
+  <div class="col-lg-5"><div class="card card-arca"><div class="card-body p-4">
+    <h2 class="h6 mb-3">Nuevo concepto</h2>
+    <form method="post" novalidate>{% csrf_token %}{% include "organizaciones/_form_campos.html" %}<button type="submit" class="btn btn-arca-primary">Agregar</button></form>
+  </div></div></div>
+  <div class="col-lg-7"><div class="card card-arca">
+    {% if conceptos %}<ul class="list-group list-group-flush">{% for c in conceptos %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span>{{ c.nombre }} <span class="text-muted small">{{ c.get_tipo_display|lower }}</span>{% if not c.activo %} <span class="badge text-bg-secondary">Inactivo</span>{% endif %}{% if not c.membresia_id %} <span class="badge text-bg-light border">De la organización</span>{% endif %}</span>
+        {% if c.membresia_id and c.activo %}<form method="post" action="{% url 'personal:concepto_eliminar' c.pk %}" onsubmit="return confirm('¿Eliminar este concepto?');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button></form>{% endif %}
+      </li>{% endfor %}</ul>
+    {% else %}<div class="empty-state"><i class="bi bi-tags d-block mb-2"></i>Todavía no tienes conceptos. Puedes registrar sin ellos, escribiendo una descripción.</div>{% endif %}
+  </div></div>
+</div>
+{% endblock %}

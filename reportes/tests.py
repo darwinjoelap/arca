@@ -174,8 +174,14 @@ class VistasReportesTests(DatosMixin, TestCase):
                         reverse("reportes:presupuesto", args=[self.p.pk])):
                 with self.subTest(usuario=usuario, url=url):
                     self.assertEqual(self.client.get(url).status_code, 403)
-        self.entrar("tesorero")   # ve el libro completo
+        # Ver el libro ya no basta: los reportes tienen su propia casilla en el tipo de miembro.
+        self.entrar("tesorero")
+        self.assertEqual(self.client.get(reverse("reportes:reporte", args=["estado"])).status_code, 403)
+        self.assertEqual(self.client.get(reverse("finanzas:movimiento_lista")).status_code, 200)
+        self.tesorero.tipo.puede_ver_reportes = True
+        self.tesorero.tipo.save()
         self.assertEqual(self.client.get(reverse("reportes:reporte", args=["estado"])).status_code, 200)
+        self.assertEqual(self.client.get(reverse("reportes:analisis")).status_code, 200)
 
     def test_aislamiento(self):
         self.entrar("dir_b")

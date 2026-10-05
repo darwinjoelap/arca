@@ -13,6 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, ListView, UpdateView
 
@@ -22,10 +23,10 @@ from core.models import RegistroAuditoria
 from core.utils import eliminar_protegido
 
 from .forms import (
-    AnularForm, CajaForm, ConceptoForm, CuentaForm, FiltroMovimientosForm, MovimientoForm, TrasladoForm,
+    AnularForm, CajaForm, ConceptoForm, CuentaForm, CuotaForm, FiltroMovimientosForm, MovimientoForm, TrasladoForm,
 )
-from .models import Caja, Concepto, Cuenta, Movimiento, Traslado
-from .services import _sumas_por_cuenta, registrar_movimiento, registrar_traslado, tasa_vigente
+from .models import Caja, Concepto, Cuenta, CuotaMiembro, Movimiento, Traslado
+from .services import _sumas_por_cuenta, estado_cuotas, registrar_movimiento, registrar_traslado, tasa_vigente
 
 Accion = RegistroAuditoria.Accion
 
@@ -416,4 +417,56 @@ class ConceptoUpdateView(_ConceptoMixin, UpdateView):
 def concepto_eliminar(request, pk):
     return eliminar_protegido(
         request, get_object_or_404(Concepto, pk=pk, organizacion=request.organizacion), "finanzas:concepto_lista"
+    )
+
+
+# --- Cuotas de miembros -----------------------------------------------------
+
+
+def _ejercicio_actual(organizacion):
+    from organizaciones.models import Ejercicio
+
+    hoy = timezone.localdate()
+    qs = Ejercicio.objects.filter(organizacion=organizacion)
+    return qs.filter(activo=True).first() or qs.filter(fecha_inicio__lte=hoy, fecha_fin__gte=hoy).first() or qs.first()
+
+
+@requiere_permiso()
+def cuotas(request):
+    """Lo que se espera de cada miembro y cuánto lleva pagado en el ejercicio."""
+    ejercicio = _ejercicio_actual(request.organizacion)
+    filas = estado_cuotas(request.organizacion, ejercicio) if ejercicio else []
+    totales = {}
+    for fila in filas:
+        t = totales.setdefault(fila["cuota"].moneda, {"esperado": 0, "pagado": 0, "pendiente": 0})
+        for clave in t:
+            t[clave] += fila[clave]
+    sin_aplicar = CuotaMiembro.objects.filter(organizacion=request.organizacion).exclude(
+        pk__in=[f["cuota"].pk for f in filas]).select_related("membresia", "membresia__user", "concepto")
+    return render(request, "finanzas/cuota_lista.html", {
+        "filas": filas, "totales": totales, "ejercicio": ejercicio, "sin_aplicar": sin_aplicar,
+    })
+
+
+class _CuotaMixin(_CatalogoMixin):
+    model = CuotaMiembro
+    form_class = CuotaForm
+    success_url = reverse_lazy("finanzas:cuota_lista")
+    accion_crear, accion_editar = Accion.CREAR_CUOTA, Accion.EDITAR_CUOTA
+    titulo_nuevo, titulo_editar = "Nueva cuota", "Editar la cuota «{}»"
+
+
+class CuotaCreateView(_CuotaMixin, CreateView):
+    pass
+
+
+class CuotaUpdateView(_CuotaMixin, UpdateView):
+    pass
+
+
+@requiere_permiso()
+@require_POST
+def cuota_eliminar(request, pk):
+    return eliminar_protegido(
+        request, get_object_or_404(CuotaMiembro, pk=pk, organizacion=request.organizacion), "finanzas:cuota_lista"
     )

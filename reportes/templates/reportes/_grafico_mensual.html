@@ -1,13 +1,13 @@
 {% load arca %}
 {# Columnas agrupadas: ingresos y egresos por mes. Una sola escala, leyenda siempre visible y detalle al pasar el cursor o enfocar. La geometría viene calculada de la vista. #}
 <div class="grafico-leyenda mb-2">
-  <span><span class="muestra" style="background: var(--arca-grafico-ingreso);"></span>Ingresos</span>
-  <span><span class="muestra" style="background: var(--arca-grafico-egreso);"></span>Egresos</span>
+  <span><span class="muestra" style="background: var(--arca-grafico-ingreso);"></span>{{ etiquetas.0|default:"Ingresos" }}</span>
+  <span><span class="muestra" style="background: var(--arca-grafico-egreso);"></span>{{ etiquetas.1|default:"Egresos" }}</span>
 </div>
 <div class="grafico-contenedor">
   <div class="grafico-globo" hidden></div>
   <svg class="grafico" viewBox="0 0 {{ grafico.ancho }} {{ grafico.alto }}" role="img"
-       aria-label="Ingresos y egresos por mes, en {{ simbolo }}. Los mismos datos están en la tabla del flujo mensual.">
+       aria-label="{{ etiquetas.0|default:"Ingresos" }} y {{ etiquetas.1|default:"egresos" }} por mes, en {{ simbolo }}.">
     {% for marca in grafico.marcas %}
       <line class="rejilla" x1="{{ grafico.izq }}" x2="{{ grafico.derecha }}" y1="{{ marca.y }}" y2="{{ marca.y }}"/>
       <text class="eje" x="{{ grafico.izq_texto }}" y="{{ marca.y }}" text-anchor="end" dominant-baseline="middle">{{ marca.valor|monto:0 }}</text>
@@ -18,7 +18,7 @@
       <text class="eje" x="{{ c.x }}" y="{{ grafico.base_texto }}" text-anchor="middle">{{ c.mes }}</text>
       <rect class="banda" tabindex="0" x="{{ c.banda_x }}" y="{{ grafico.arriba }}" width="{{ c.banda_ancho }}" height="{{ grafico.util_alto }}"
             data-titulo="{{ c.nombre }}"
-            data-lineas="Ingresos: {{ simbolo }} {{ c.ingreso|monto }}|Egresos: {{ simbolo }} {{ c.egreso|monto }}|Resultado: {{ simbolo }} {{ c.resultado|monto }}"/>
+            data-lineas="{{ etiquetas.0|default:"Ingresos" }}: {{ simbolo }} {{ c.ingreso|monto }}|{{ etiquetas.1|default:"Egresos" }}: {{ simbolo }} {{ c.egreso|monto }}|Diferencia: {{ simbolo }} {{ c.resultado|monto }}"/>
     {% endfor %}
     <line x1="{{ grafico.izq }}" x2="{{ grafico.derecha }}" y1="{{ grafico.base }}" y2="{{ grafico.base }}" stroke="#6f6a63" stroke-width="1"/>
   </svg>

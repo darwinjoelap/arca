@@ -1,6 +1,6 @@
-"""Reportes. Los ve quien puede ver el libro completo (`puede_ver_movimientos`,
-que incluye al director y a los administradores). El de presupuesto lo ve
-además quien tiene `puede_ver_presupuesto`.
+"""Reportes. Los ve quien tiene el permiso `puede_ver_reportes` en su tipo de
+miembro (el director y los administradores lo tienen siempre). El de
+presupuesto lo ve además quien tiene `puede_ver_presupuesto`.
 
 Toda pantalla acepta ?formato=xlsx o ?formato=pdf y devuelve el mismo reporte
 como archivo. Cada emisión de archivo queda en la bitácora."""
@@ -26,7 +26,7 @@ from . import services
 from .exportar import a_excel, a_pdf, comprobante_pdf
 from .forms import FiltroReporteForm
 
-VER = "puede_ver_movimientos"
+VER = "puede_ver_reportes"
 
 # clave -> (título, descripción, icono, filtros que usa, grupo)
 CATALOGO = {

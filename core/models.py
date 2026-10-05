@@ -46,6 +46,7 @@ class RegistroAuditoria(models.Model):
         ACTIVAR_MIEMBRO = "activar_miembro", "Activación de miembro"
         DESACTIVAR_MIEMBRO = "desactivar_miembro", "Desactivación de miembro"
         RESTABLECER_CLAVE = "restablecer_clave", "Restablecimiento de contraseña"
+        DAR_ACCESO = "dar_acceso", "Acceso al sistema para un miembro"
         CREAR_EJERCICIO = "crear_ejercicio", "Creación de ejercicio"
         ACTIVAR_EJERCICIO = "activar_ejercicio", "Activación de ejercicio"
         CERRAR_EJERCICIO = "cerrar_ejercicio", "Cierre de ejercicio"
@@ -67,6 +68,10 @@ class RegistroAuditoria(models.Model):
         REABRIR_PRESUPUESTO = "reabrir_presupuesto", "Reapertura de presupuesto"
         ELIMINAR_PRESUPUESTO = "eliminar_presupuesto", "Eliminación de presupuesto"
         EMITIR_REPORTE = "emitir_reporte", "Emisión de reporte"
+        CREAR_CUOTA = "crear_cuota", "Creación de cuota"
+        EDITAR_CUOTA = "editar_cuota", "Edición de cuota"
+        ASIGNAR = "asignar", "Asignación a un miembro"
+        VER_CUENTA_PERSONAL = "ver_cuenta_personal", "Consulta de la cuenta personal de un miembro"
 
     organizacion = models.ForeignKey(
         "organizaciones.Organizacion", null=True, blank=True,

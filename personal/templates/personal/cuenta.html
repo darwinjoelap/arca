@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load arca static %}
+{% block titulo %}{% if solo_lectura %}Cuenta de {{ m.nombre }}{% else %}Mi cuenta{% endif %} — Arca{% endblock %}
+{% block titulo_topbar %}{% if solo_lectura %}Cuenta personal de {{ m.nombre }}{% else %}Mi cuenta{% endif %}{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">{% if solo_lectura %}Cuenta personal de {{ m.nombre }}{% else %}Mi cuenta personal{% endif %}</h1>
+    <p class="text-muted mb-0">Del {{ desde|date:"d/m/Y" }} al {{ hasta|date:"d/m/Y" }}.</p>
+  </div>
+  {% if not solo_lectura %}
+  <div class="d-flex flex-wrap gap-2 no-imprimir">
+    <a href="{% url 'personal:ingreso' %}" class="btn btn-arca-primary"><i class="bi bi-arrow-down-circle"></i> Ingreso</a>
+    <a href="{% url 'personal:egreso' %}" class="btn btn-arca-primary"><i class="bi bi-arrow-up-circle"></i> Gasto</a>
+    <a href="{% url 'personal:conceptos' %}" class="btn btn-outline-secondary"><i class="bi bi-tags"></i> Mis conceptos</a>
+  </div>
+  {% else %}<a href="{% url 'personal:asignaciones' %}" class="btn btn-sm btn-outline-secondary no-imprimir"><i class="bi bi-arrow-left"></i> Asignaciones</a>{% endif %}
+</div>
+
+{% if solo_lectura %}
+<div class="alert alert-warning"><i class="bi bi-eye"></i> Estás viendo la cuenta personal de otra persona, en solo lectura. Esta consulta quedó en la bitácora.</div>
+{% elif director_ve %}
+<div class="alert alert-warning"><i class="bi bi-eye"></i> En esta organización el director puede ver tus saldos y movimientos personales, en solo lectura.</div>
+{% else %}
+<div class="alert alert-info"><i class="bi bi-eye-slash"></i> Esta cuenta es privada: solo tú la ves. El director ve únicamente cuánto te asignó la organización.</div>
+{% endif %}
+
+{% include "personal/_periodo.html" %}
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-4"><div class="balance-card h-100">
+    <div class="balance-label">Saldo disponible</div>
+    <div class="balance-amount monto">{% if moneda == "USD" %}$ {{ saldo_usd|monto }}{% else %}Bs. {{ saldo_ves|monto }}{% endif %}</div>
+    <div class="small opacity-75">Equivale a {% if moneda == "USD" %}Bs. {{ saldo_ves|monto }}{% else %}$ {{ saldo_usd|monto }}{% endif %} · cada movimiento con la tasa de su día</div>
+  </div></div>
+  <div class="col-6 col-lg"><div class="indicador"><div class="indicador-etiqueta">Entró</div><div class="indicador-valor">{{ simbolo }} {{ e.ingresos|monto }}</div><div class="indicador-detalle">{{ simbolo }} {{ e.asignado|monto }} asignado por la organización</div></div></div>
+  <div class="col-6 col-lg"><div class="indicador"><div class="indicador-etiqueta">Gasté</div><div class="indicador-valor">{{ simbolo }} {{ e.egresos|monto }}</div><div class="indicador-detalle">{% if e.gastado_pct is not None %}{{ e.gastado_pct|monto:0 }} % de lo que entró{% else %}en el período{% endif %}</div></div></div>
+  <div class="col-12 col-lg"><div class="indicador"><div class="indicador-etiqueta">Gasto promedio por día</div><div class="indicador-valor">{{ simbolo }} {{ e.egreso_diario|monto }}</div><div class="indicador-detalle">{{ e.n }} movimiento{{ e.n|pluralize }} en el período</div></div></div>
+</div>
+
+<div class="card card-arca mb-3"><div class="card-body p-4">
+  <h2 class="h6 mb-2">Mes a mes{% if ejercicio %} · {{ ejercicio.nombre }}{% endif %}</h2>
+  {% if grafico %}{% include "reportes/_grafico_mensual.html" %}{% else %}<p class="text-muted mb-0">Todavía no hay movimientos este año.</p>{% endif %}
+</div></div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6"><div class="card card-arca h-100"><div class="card-body p-4"><h2 class="h6 mb-3">En qué gasté</h2>
+    {% include "personal/_ranking.html" with items=e.top_egresos vacio="Sin gastos en el período." %}</div></div></div>
+  <div class="col-lg-6"><div class="card card-arca h-100"><div class="card-body p-4"><h2 class="h6 mb-3">De dónde vino</h2>
+    {% include "personal/_ranking.html" with items=e.top_ingresos vacio="Sin ingresos en el período." %}</div></div></div>
+</div>
+
+<div class="card card-arca"><div class="card-header bg-transparent fw-bold">Movimientos</div>
+  {% if movimientos %}
+  <div class="table-responsive"><table class="table table-hover mb-0 align-middle">
+    <thead><tr><th>Fecha</th><th>Concepto</th><th class="text-end">Entró</th><th class="text-end">Salió</th>{% if not solo_lectura %}<th></th>{% endif %}</tr></thead>
+    <tbody>{% for mov in movimientos %}
+      <tr>
+        <td class="text-nowrap">{{ mov.fecha|date:"d/m/Y" }}</td>
+        <td><span class="fw-semibold">{{ mov.titulo }}</span>{% if mov.es_asignacion %} <span class="badge text-bg-light border">Asignación</span>{% endif %}{% if mov.concepto and mov.descripcion %}<div class="small text-muted">{{ mov.descripcion }}</div>{% endif %}</td>
+        <td class="text-end text-nowrap monto monto-ingreso">{% if mov.es_ingreso %}{{ mov.moneda|simbolo }} {{ mov.monto|monto }}{% endif %}</td>
+        <td class="text-end text-nowrap monto monto-egreso">{% if not mov.es_ingreso %}{{ mov.moneda|simbolo }} {{ mov.monto|monto }}{% endif %}</td>
+        {% if not solo_lectura %}<td class="text-end text-nowrap">{% if not mov.es_asignacion %}
+          <a href="{% url 'personal:movimiento_editar' mov.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+          <form method="post" action="{% url 'personal:movimiento_eliminar' mov.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar este movimiento de tu cuenta?');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button></form>
+        {% endif %}</td>{% endif %}
+      </tr>{% endfor %}
+    </tbody></table></div>
+  {% else %}<div class="empty-state"><i class="bi bi-wallet2 d-block mb-2"></i>Todavía no hay movimientos en esta cuenta.</div>{% endif %}
+</div>
+{% endblock %}
+{% block extra_scripts %}<script src="{% static 'js/graficos.js' %}"></script>{% endblock %}

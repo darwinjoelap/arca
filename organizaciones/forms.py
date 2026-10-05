@@ -114,45 +114,80 @@ class _MiembroBase(_EstiloBootstrapMixin, forms.Form):
             self.add_error("tipo", "Elige un tipo de miembro.")
         return datos
 
+    def _tiene_acceso_actual(self):
+        return True
+
     def _es_administrador_actual(self):
         return False
 
 
-class MiembroCrearForm(_MiembroBase):
+class _AccesoMixin(forms.Form):
+    """Usuario y contraseña temporal para entrar al sistema."""
+
     username = forms.CharField(
-        label="Usuario", max_length=150,
+        label="Usuario", max_length=150, required=False,
         help_text="Con este nombre entra al sistema. Sin espacios.",
     )
-    telefono = forms.CharField(label="Teléfono", max_length=20, required=False)
     clave = forms.CharField(
-        label="Contraseña temporal", widget=forms.PasswordInput(render_value=True),
+        label="Contraseña temporal", required=False, widget=forms.PasswordInput(render_value=True),
         help_text="Entrégasela directamente a la persona: no se envía por correo. "
         "El sistema le pedirá cambiarla la primera vez que entre.",
     )
 
-    field_order = ["username", "nombre_visible", "telefono", "tipo", "es_administrador", "clave"]
+    def _validar_acceso(self, datos):
+        username = (datos.get("username") or "").strip()
+        clave = datos.get("clave") or ""
+        if not username:
+            self.add_error("username", "Escribe el nombre de usuario.")
+        else:
+            try:
+                Usuario.username_validator(username)
+            except forms.ValidationError as error:
+                self.add_error("username", error)
+            else:
+                if Usuario.objects.filter(username__iexact=username).exists():
+                    # Mismo mensaje exista donde exista: no se revela si pertenece a otra organización.
+                    self.add_error("username", "Ese nombre de usuario no está disponible. Prueba con otro.")
+        if not clave:
+            self.add_error("clave", "Escribe una contraseña temporal.")
+        else:
+            try:
+                password_validation.validate_password(clave)
+            except forms.ValidationError as error:
+                self.add_error("clave", error)
+        datos["username"] = username
 
-    def clean_username(self):
-        username = self.cleaned_data["username"].strip()
-        Usuario.username_validator(username)
-        if Usuario.objects.filter(username__iexact=username).exists():
-            # Mismo mensaje exista donde exista: no se revela si pertenece a otra organización.
-            raise forms.ValidationError("Ese nombre de usuario no está disponible. Prueba con otro.")
-        return username
+    @staticmethod
+    def _crear_usuario(datos, nombre, telefono=""):
+        usuario = Usuario(username=datos["username"], first_name=nombre[:150], telefono=telefono, debe_cambiar_clave=True)
+        usuario.set_password(datos["clave"])
+        usuario.save()
+        return usuario
 
-    def clean_clave(self):
-        clave = self.cleaned_data["clave"]
-        password_validation.validate_password(clave)
-        return clave
+
+class MiembroCrearForm(_AccesoMixin, _MiembroBase):
+    con_acceso = forms.BooleanField(
+        label="Puede entrar al sistema", required=False, initial=True,
+        help_text="Apágalo para alguien de la comunidad que aporta o recibe, pero no va a usar Arca. "
+        "Se le puede dar acceso después.",
+    )
+    telefono = forms.CharField(label="Teléfono", max_length=20, required=False)
+
+    field_order = ["nombre_visible", "tipo", "es_administrador", "telefono", "con_acceso", "username", "clave"]
+
+    def clean(self):
+        datos = super().clean()
+        if datos.get("con_acceso"):
+            self._validar_acceso(datos)
+        elif datos.get("es_administrador"):
+            self.add_error("con_acceso", "Un administrador necesita poder entrar al sistema.")
+        return datos
 
     def save(self):
         datos = self.cleaned_data
-        usuario = Usuario(
-            username=datos["username"], first_name=datos["nombre_visible"][:150],
-            telefono=datos.get("telefono", ""), debe_cambiar_clave=True,
-        )
-        usuario.set_password(datos["clave"])
-        usuario.save()
+        usuario = None
+        if datos.get("con_acceso"):
+            usuario = self._crear_usuario(datos, datos["nombre_visible"], datos.get("telefono", ""))
         membresia = Membresia(
             organizacion=self.organizacion, user=usuario, tipo=datos.get("tipo"),
             es_administrador=datos.get("es_administrador", False),
@@ -160,6 +195,25 @@ class MiembroCrearForm(_MiembroBase):
         )
         membresia.full_clean()
         membresia.save()
+        return membresia
+
+
+class DarAccesoForm(_EstiloBootstrapMixin, _AccesoMixin):
+    """Crea el usuario de un miembro que hasta ahora no entraba al sistema."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._aplicar_estilo()
+
+    def clean(self):
+        datos = super().clean()
+        self._validar_acceso(datos)
+        return datos
+
+    def save(self, membresia):
+        membresia.user = self._crear_usuario(self.cleaned_data, membresia.nombre)
+        membresia.full_clean()
+        membresia.save(update_fields=["user"])
         return membresia
 
 
@@ -180,6 +234,12 @@ class MiembroEditarForm(_MiembroBase):
 
     def _es_administrador_actual(self):
         return self.membresia.es_administrador
+
+    def clean(self):
+        datos = super().clean()
+        if datos.get("es_administrador") and not self.membresia.tiene_acceso:
+            self.add_error("es_administrador", "Primero dale acceso al sistema.")
+        return datos
 
     def save(self):
         datos = self.cleaned_data

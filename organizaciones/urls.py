@@ -16,6 +16,7 @@ urlpatterns = [
     path("configuracion/miembros/nuevo/", views.miembro_crear, name="miembro_crear"),
     path("configuracion/miembros/<int:pk>/editar/", views.miembro_editar, name="miembro_editar"),
     path("configuracion/miembros/<int:pk>/restablecer-clave/", views.miembro_restablecer_clave, name="miembro_restablecer_clave"),
+    path("configuracion/miembros/<int:pk>/dar-acceso/", views.miembro_dar_acceso, name="miembro_dar_acceso"),
     path("configuracion/miembros/<int:pk>/activar-desactivar/", views.miembro_toggle_activa, name="miembro_toggle_activa"),
     path("configuracion/ejercicios/", views.EjercicioListView.as_view(), name="ejercicio_lista"),
     path("configuracion/ejercicios/nuevo/", views.EjercicioCreateView.as_view(), name="ejercicio_crear"),

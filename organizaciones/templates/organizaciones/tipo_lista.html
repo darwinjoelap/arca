@@ -34,6 +34,7 @@
           <td class="text-center">{% if tipo.puede_ver_presupuesto %}<i class="bi bi-check-circle-fill permiso-si" aria-label="Sí"></i>{% else %}<i class="bi bi-dash permiso-no" aria-label="No"></i>{% endif %}</td>
           <td class="text-center">{% if tipo.puede_ver_movimientos %}<i class="bi bi-check-circle-fill permiso-si" aria-label="Sí"></i>{% else %}<i class="bi bi-dash permiso-no" aria-label="No"></i>{% endif %}</td>
           <td class="text-center">{% if tipo.puede_gestionar_inventario %}<i class="bi bi-check-circle-fill permiso-si" aria-label="Sí"></i>{% else %}<i class="bi bi-dash permiso-no" aria-label="No"></i>{% endif %}</td>
+          <td class="text-center">{% if tipo.puede_ver_reportes %}<i class="bi bi-check-circle-fill permiso-si" aria-label="Sí"></i>{% else %}<i class="bi bi-dash permiso-no" aria-label="No"></i>{% endif %}</td>
           <td class="text-center">{% if tipo.tiene_cuenta_personal %}<i class="bi bi-check-circle-fill permiso-si" aria-label="Sí"></i>{% else %}<i class="bi bi-dash permiso-no" aria-label="No"></i>{% endif %}</td>
           <td class="text-center">{{ tipo.total_miembros }}</td>
           <td class="text-end text-nowrap">

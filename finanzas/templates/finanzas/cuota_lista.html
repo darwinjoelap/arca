@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load arca %}
+{% block titulo %}Cuotas — Arca{% endblock %}
+{% block titulo_topbar %}Cuotas de miembros{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+  <div>
+    <h1 class="h3 mb-1">Cuotas de miembros</h1>
+    <p class="text-muted mb-0">El aporte mensual que se espera de cada miembro{% if ejercicio %}, y lo que lleva pagado en el ejercicio {{ ejercicio.nombre }}{% endif %}. Cuenta como pago todo ingreso registrado a nombre del miembro con el concepto de su cuota.</p>
+  </div>
+  <a href="{% url 'finanzas:cuota_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nueva cuota</a>
+</div>
+<div class="card card-arca">
+  {% if filas %}
+  <div class="table-responsive"><table class="table table-sm tabla-reporte mb-0 align-middle">
+    <thead><tr><th>Miembro</th><th>Concepto</th><th class="num">Cuota mensual</th><th class="num">Meses</th><th class="num">Esperado</th><th class="num">Pagado</th><th class="num">Pendiente</th><th>Último pago</th><th></th></tr></thead>
+    <tbody>
+    {% for f in filas %}
+      <tr>
+        <td class="fw-semibold">{{ f.cuota.membresia.nombre }}{% if not f.cuota.membresia.tiene_acceso %} <span class="badge text-bg-light border fw-normal">Sin acceso</span>{% endif %}</td>
+        <td>{{ f.cuota.concepto.nombre }}</td>
+        <td class="num">{{ f.cuota.moneda|simbolo }} {{ f.cuota.monto|monto }}</td>
+        <td class="num">{{ f.meses }}</td>
+        <td class="num">{{ f.esperado|monto }}</td>
+        <td class="num">{{ f.pagado|monto }}</td>
+        <td class="num {% if f.pendiente > 0 %}tono-mal{% elif f.pendiente < 0 %}tono-bien{% endif %}">{{ f.pendiente|monto }}{% if f.pendiente > 0 %}<span class="visually-hidden"> (debe)</span>{% elif f.pendiente < 0 %}<span class="visually-hidden"> (a favor)</span>{% endif %}</td>
+        <td>{{ f.ultimo_pago|date:"d/m/Y"|default:"—" }}</td>
+        <td class="text-end text-nowrap">
+          <a href="{% url 'finanzas:cuota_editar' f.cuota.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+          <form method="post" action="{% url 'finanzas:cuota_eliminar' f.cuota.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar esta cuota? Los pagos ya registrados no se tocan.');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button></form>
+        </td>
+      </tr>
+    {% endfor %}
+    {% for moneda, t in totales.items %}
+      <tr class="fila-total"><td colspan="4">Total en {{ moneda|simbolo }}</td><td class="num">{{ t.esperado|monto }}</td><td class="num">{{ t.pagado|monto }}</td><td class="num">{{ t.pendiente|monto }}</td><td colspan="2"></td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <div class="empty-state"><i class="bi bi-calendar-check d-block mb-2"></i>{% if ejercicio %}No hay cuotas vigentes en este ejercicio.{% else %}Crea un ejercicio para llevar las cuotas.{% endif %}</div>
+  {% endif %}
+</div>
+<p class="text-muted small mt-3">Pendiente positivo: lo que falta por pagar hasta este mes. Negativo: pagó por adelantado. Cada cuota se muestra en su moneda; un pago hecho en la otra se convierte con la tasa de su día.</p>
+{% if sin_aplicar %}
+<p class="text-muted small">Cuotas que todavía no aplican en este ejercicio:
+  {% for c in sin_aplicar %}<a href="{% url 'finanzas:cuota_editar' c.pk %}">{{ c.membresia.nombre }} · {{ c.concepto.nombre }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
+{% endif %}
+{% endblock %}

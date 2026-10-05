@@ -50,6 +50,7 @@ LOCAL_APPS = [
     "cambio",
     "finanzas",
     "presupuestos",
+    "personal",
     "reportes",
     "sync",
 ]

@@ -403,3 +403,59 @@ class Traslado(ModeloDeOrganizacion):
         self.anulado_por = usuario
         self.fecha_anulacion = timezone.now()
         self.save(update_fields=["estado", "motivo_anulacion", "anulado_por", "fecha_anulacion"])
+
+
+class CuotaMiembro(ModeloDeOrganizacion):
+    """Aporte fijo mensual que se espera de un miembro (las «pensiones» del Excel).
+
+    No genera movimientos: solo dice cuánto se espera. Lo pagado sale de los
+    ingresos confirmados de ese miembro en ese concepto (finanzas/services.py).
+    Sirve igual para miembros con o sin acceso al sistema."""
+
+    class Moneda(models.TextChoices):
+        USD = "USD", "Dólares"
+        VES = "VES", "Bolívares"
+
+    membresia = models.ForeignKey(
+        "organizaciones.Membresia", on_delete=models.PROTECT, related_name="cuotas", verbose_name="miembro",
+    )
+    concepto = models.ForeignKey(
+        Concepto, on_delete=models.PROTECT, related_name="cuotas",
+        help_text="El concepto de ingreso con el que se registran sus pagos.",
+    )
+    monto = models.DecimalField("monto mensual", max_digits=18, decimal_places=4)
+    moneda = models.CharField(max_length=3, choices=Moneda.choices, default=Moneda.USD)
+    vigente_desde = models.DateField(help_text="Se cuenta desde el mes de esta fecha.")
+    vigente_hasta = models.DateField(null=True, blank=True, help_text="Vacío = sigue vigente.")
+    nota = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        verbose_name = "cuota de miembro"
+        verbose_name_plural = "cuotas de miembros"
+        ordering = ["membresia__nombre_visible", "concepto__nombre"]
+        constraints = [
+            models.CheckConstraint(condition=Q(monto__gt=0), name="cuota_monto_positivo"),
+            models.UniqueConstraint(fields=["membresia", "concepto", "vigente_desde"], name="cuota_unica_por_inicio"),
+        ]
+
+    def __str__(self):
+        return f"{self.membresia.nombre}: {self.concepto.nombre} {self.moneda} {self.monto}"
+
+    def clean(self):
+        errores = {}
+        if self.membresia_id and self.membresia.organizacion_id != self.organizacion_id:
+            errores["membresia"] = "Ese miembro es de otra organización."
+        if self.concepto_id:
+            if self.concepto.organizacion_id != self.organizacion_id:
+                errores["concepto"] = "Ese concepto es de otra organización."
+            elif self.concepto.tipo != Concepto.Tipo.INGRESO:
+                errores["concepto"] = "La cuota se cobra con un concepto de ingreso."
+        if self.vigente_desde and self.vigente_hasta and self.vigente_hasta < self.vigente_desde:
+            errores["vigente_hasta"] = "No puede terminar antes de empezar."
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        if self.membresia.organizacion_id != self.organizacion_id or self.concepto.organizacion_id != self.organizacion_id:
+            raise ValidationError("La cuota mezcla datos de dos organizaciones.")
+        super().save(*args, **kwargs)

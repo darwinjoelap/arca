@@ -1,0 +1,10 @@
+<form method="get" class="d-flex flex-wrap align-items-end gap-2 mb-3 no-imprimir">
+  <div><label class="form-label small fw-semibold mb-0" for="desde">Desde</label><input type="date" class="form-control form-control-sm" id="desde" name="desde" value="{{ desde|date:'Y-m-d' }}"></div>
+  <div><label class="form-label small fw-semibold mb-0" for="hasta">Hasta</label><input type="date" class="form-control form-control-sm" id="hasta" name="hasta" value="{{ hasta|date:'Y-m-d' }}"></div>
+  <div><label class="form-label small fw-semibold mb-0" for="moneda">Ver en</label>
+    <select class="form-select form-select-sm" id="moneda" name="moneda">
+      <option value="USD" {% if moneda == "USD" %}selected{% endif %}>Dólares ($)</option>
+      <option value="VES" {% if moneda == "VES" %}selected{% endif %}>Bolívares (Bs.)</option>
+    </select></div>
+  <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-funnel"></i> Aplicar</button>
+</form>

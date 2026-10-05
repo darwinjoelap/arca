@@ -57,6 +57,16 @@
           <i class="bi bi-speedometer2"></i> Panel principal
         </a>
 
+        <div class="arca-nav-heading">Personal</div>
+        <a class="nav-link {% if vista == 'personal:resumen' %}active{% endif %}" href="{% url 'personal:resumen' %}">
+          <i class="bi bi-person-lines-fill"></i> Mi resumen
+        </a>
+        {% if tiene_cuenta_personal %}
+        <a class="nav-link {% if vista == 'personal:cuenta' or vista == 'personal:ingreso' or vista == 'personal:egreso' or vista == 'personal:movimiento_editar' or vista == 'personal:conceptos' %}active{% endif %}" href="{% url 'personal:cuenta' %}">
+          <i class="bi bi-wallet2"></i> Mi cuenta
+        </a>
+        {% endif %}
+
         {% if entra_al_libro %}
         <div class="arca-nav-heading">Libro de caja</div>
         {% if puede_ingresos %}
@@ -79,21 +89,31 @@
         {% endif %}
         {% endif %}
 
-        {% if puede_ver_presupuesto or ve_el_libro %}
+        {% if puede_ver_presupuesto or ve_reportes %}
         <div class="arca-nav-heading">Control</div>
         {% if puede_ver_presupuesto %}
         <a class="nav-link {% if 'presupuestos:' in vista or vista == 'reportes:presupuesto' %}active{% endif %}" href="{% url 'presupuestos:lista' %}">
           <i class="bi bi-bullseye"></i> Presupuestos
         </a>
         {% endif %}
-        {% if ve_el_libro %}
+        {% if ve_reportes %}
         <a class="nav-link {% if 'reportes:' in vista and vista != 'reportes:presupuesto' %}active{% endif %}" href="{% url 'reportes:inicio' %}">
           <i class="bi bi-bar-chart-line-fill"></i> Reportes
         </a>
         {% endif %}
         {% endif %}
 
-        {# Fases siguientes: Mi cuenta e Inventario se agregan aquí. #}
+        {# Fase 7: Inventario se agrega aquí. #}
+
+        {% if puede_administrar %}
+        <div class="arca-nav-heading">Miembros</div>
+        <a class="nav-link {% if 'finanzas:cuota' in vista %}active{% endif %}" href="{% url 'finanzas:cuota_lista' %}">
+          <i class="bi bi-calendar-check"></i> Cuotas
+        </a>
+        <a class="nav-link {% if vista == 'personal:asignaciones' or vista == 'personal:asignacion_nueva' or vista == 'personal:cuenta_de_miembro' %}active{% endif %}" href="{% url 'personal:asignaciones' %}">
+          <i class="bi bi-send"></i> Asignaciones
+        </a>
+        {% endif %}
 
         {% if puede_administrar %}
         <div class="arca-nav-heading">Administración</div>

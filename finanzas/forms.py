@@ -8,7 +8,7 @@ from django.utils import timezone
 from organizaciones.forms import _EstiloBootstrapMixin
 from organizaciones.models import Membresia
 
-from .models import Caja, Concepto, Cuenta, Movimiento, Traslado
+from .models import Caja, Concepto, Cuenta, CuotaMiembro, Movimiento, Traslado
 
 
 class CajaForm(_EstiloBootstrapMixin, forms.ModelForm):
@@ -192,6 +192,28 @@ class TrasladoForm(_EstiloBootstrapMixin, forms.ModelForm):
 
     def cuentas_para_js(self):
         return {str(c.pk): c.moneda for c in self.fields["cuenta_origen"].queryset}
+
+
+class CuotaForm(_EstiloBootstrapMixin, forms.ModelForm):
+    class Meta:
+        model = CuotaMiembro
+        fields = ["membresia", "concepto", "monto", "moneda", "vigente_desde", "vigente_hasta", "nota"]
+        widgets = {
+            "vigente_desde": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "vigente_hasta": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+        }
+
+    def __init__(self, *args, organizacion=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            self.instance.organizacion = organizacion
+            self.fields["vigente_desde"].initial = timezone.localdate().replace(day=1)
+            self.fields["moneda"].initial = organizacion.moneda_base
+        self.fields["membresia"].queryset = Membresia.objects.filter(organizacion=organizacion, activa=True).select_related("user")
+        self.fields["membresia"].label_from_instance = lambda m: m.nombre + ("" if m.tiene_acceso else " (sin acceso)")
+        self.fields["concepto"].queryset = Concepto.objects.filter(organizacion=organizacion, tipo="ingreso", activo=True)
+        self.fields["monto"].widget.attrs.update({"step": "0.01", "min": "0.01", "inputmode": "decimal"})
+        self._aplicar_estilo()
 
 
 class AnularForm(_EstiloBootstrapMixin, forms.Form):

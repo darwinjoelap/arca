@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load arca %}
+{% block titulo %}Asignaciones — Arca{% endblock %}
+{% block titulo_topbar %}Asignaciones{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <div><h1 class="h3 mb-1">Asignaciones</h1><p class="text-muted mb-0">Dinero de la organización entregado a un miembro para que lleve su propio control.</p></div>
+  <a href="{% url 'personal:asignacion_nueva' %}" class="btn btn-arca-primary"><i class="bi bi-send"></i> Nueva asignación</a>
+</div>
+<div class="alert alert-info">
+  {% if ve %}<i class="bi bi-eye"></i> En esta organización puedes ver los saldos y movimientos personales de los miembros, en solo lectura. Cada consulta queda en la bitácora y cada miembro lo sabe.
+  {% else %}<i class="bi bi-eye-slash"></i> Las cuentas personales son privadas: aquí ves cuánto asignaste, no en qué lo gastó cada quien. Esa opción la define el soporte de Arca.{% endif %}
+</div>
+
+<div class="card card-arca mb-3"><div class="card-header bg-transparent fw-bold">Miembros con cuenta personal</div>
+  {% if miembros %}
+  <div class="table-responsive"><table class="table table-sm tabla-reporte mb-0 align-middle">
+    <thead><tr><th>Miembro</th><th>Tipo</th><th class="num">Asignaciones</th><th class="num">Asignado ($)</th><th class="num">Asignado (Bs.)</th>{% if ve %}<th class="num">Saldo ($)</th><th></th>{% endif %}</tr></thead>
+    <tbody>{% for f in miembros %}
+      <tr><td class="fw-semibold">{{ f.m.nombre }}</td><td>{{ f.m.rol_visible }}</td><td class="num">{{ f.n }}</td>
+        <td class="num">{{ f.asignado_usd|monto }}</td><td class="num">{{ f.asignado_ves|monto }}</td>
+        {% if ve %}<td class="num">{% if f.saldo_usd is not None %}{{ f.saldo_usd|monto }}{% else %}—{% endif %}</td>
+        <td class="text-end">{% if f.saldo_usd is not None %}<a href="{% url 'personal:cuenta_de_miembro' f.m.pk %}" class="btn btn-sm btn-outline-secondary">Ver cuenta</a>{% else %}<a href="{% url 'personal:cuenta' %}" class="small">Mi cuenta</a>{% endif %}</td>{% endif %}
+      </tr>{% endfor %}
+    </tbody></table></div>
+  {% else %}<div class="empty-state"><i class="bi bi-people d-block mb-2"></i>Ningún miembro con acceso tiene cuenta personal. Se enciende en su tipo de miembro.</div>{% endif %}
+</div>
+
+<div class="card card-arca"><div class="card-header bg-transparent fw-bold">Últimas asignaciones</div>
+  {% if recientes %}
+  <div class="table-responsive"><table class="table mb-0 align-middle">
+    <thead><tr><th>Fecha</th><th>Miembro</th><th>Nota</th><th>Cuenta</th><th class="text-end">Monto</th><th></th></tr></thead>
+    <tbody>{% for a in recientes %}
+      <tr class="{% if a.origen.estado == 'anulado' %}text-decoration-line-through text-muted{% endif %}">
+        <td class="text-nowrap">{{ a.fecha|date:"d/m/Y" }}</td><td>{{ a.membresia.nombre }}</td><td class="small">{{ a.descripcion }}</td><td class="small">{{ a.origen.cuenta.nombre }}</td>
+        <td class="text-end monto text-nowrap">{{ a.moneda|simbolo }} {{ a.monto|monto }}</td>
+        <td class="text-end"><a href="{% url 'finanzas:movimiento_detalle' a.origen.pk %}" class="small">Egreso #{{ a.origen.numero_vale }}</a>{% if a.origen.estado == 'anulado' %} <span class="badge text-bg-secondary">Anulada</span>{% endif %}</td>
+      </tr>{% endfor %}
+    </tbody></table></div>
+  {% else %}<div class="empty-state"><i class="bi bi-send d-block mb-2"></i>Todavía no hay asignaciones.</div>{% endif %}
+</div>
+{% endblock %}

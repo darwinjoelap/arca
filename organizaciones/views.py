@@ -23,6 +23,7 @@ from core.models import RegistroAuditoria
 from core.utils import eliminar_protegido
 
 from .forms import (
+    DarAccesoForm,
     EjercicioForm,
     MiembroCrearForm,
     MiembroEditarForm,
@@ -198,12 +199,15 @@ def miembro_crear(request):
         with transaction.atomic():
             membresia = form.save()
         registrar(request, Accion.CREAR_MIEMBRO, modelo="Membresia", objeto_id=membresia.pk,
-                  descripcion=f"{membresia.nombre} ({membresia.user.username}) — {membresia.rol_visible}")
-        messages.success(
-            request,
-            f"«{membresia.nombre}» agregado con el usuario «{membresia.user.username}». Entrégale la "
-            "contraseña temporal directamente; se le pedirá cambiarla al entrar.",
-        )
+                  descripcion=f"{membresia.nombre} ({membresia.usuario_texto}) — {membresia.rol_visible}")
+        if membresia.tiene_acceso:
+            messages.success(
+                request,
+                f"«{membresia.nombre}» agregado con el usuario «{membresia.user.username}». Entrégale la "
+                "contraseña temporal directamente; se le pedirá cambiarla al entrar.",
+            )
+        else:
+            messages.success(request, f"«{membresia.nombre}» agregado como miembro sin acceso al sistema.")
         return redirect("organizaciones:miembro_lista")
     return render(request, "organizaciones/miembro_form.html", {"form": form, "miembro": None})
 
@@ -218,7 +222,7 @@ def miembro_editar(request, pk):
         with transaction.atomic():
             form.save()
         registrar(request, Accion.EDITAR_MIEMBRO, modelo="Membresia", objeto_id=membresia.pk,
-                  descripcion=f"{membresia.nombre} ({membresia.user.username}) — {membresia.rol_visible}")
+                  descripcion=f"{membresia.nombre} ({membresia.usuario_texto}) — {membresia.rol_visible}")
         messages.success(request, f"«{membresia.nombre}» actualizado.")
         return redirect("organizaciones:miembro_lista")
     return render(request, "organizaciones/miembro_form.html", {"form": form, "miembro": membresia})
@@ -227,6 +231,9 @@ def miembro_editar(request, pk):
 @requiere_permiso()
 def miembro_restablecer_clave(request, pk):
     membresia = _miembro_editable(request, pk)
+    if not membresia.tiene_acceso:
+        messages.info(request, "Este miembro no tiene acceso al sistema. Dale acceso primero.")
+        return redirect("organizaciones:miembro_dar_acceso", pk=pk)
     if not usuario_es_exclusivo(membresia.user, request.organizacion):
         # No se dice por qué en detalle: no se revela a qué más pertenece la persona.
         raise PermissionDenied(
@@ -248,6 +255,28 @@ def miembro_restablecer_clave(request, pk):
 
 
 @requiere_permiso()
+def miembro_dar_acceso(request, pk):
+    """Le crea usuario y clave temporal a un miembro que no entraba al sistema."""
+    membresia = _miembro_editable(request, pk)
+    if membresia.tiene_acceso:
+        messages.info(request, "Este miembro ya tiene acceso al sistema.")
+        return redirect("organizaciones:miembro_lista")
+    form = DarAccesoForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        with transaction.atomic():
+            form.save(membresia)
+        registrar(request, Accion.DAR_ACCESO, modelo="Membresia", objeto_id=membresia.pk,
+                  descripcion=f"{membresia.nombre}: usuario {membresia.user.username}")
+        messages.success(
+            request,
+            f"«{membresia.nombre}» ya puede entrar con el usuario «{membresia.user.username}». "
+            "Entrégale la contraseña temporal directamente.",
+        )
+        return redirect("organizaciones:miembro_lista")
+    return render(request, "organizaciones/miembro_dar_acceso.html", {"form": form, "miembro": membresia})
+
+
+@requiere_permiso()
 @require_POST
 def miembro_toggle_activa(request, pk):
     """Activa o desactiva la MEMBRESÍA, no al usuario: la persona puede seguir
@@ -259,7 +288,7 @@ def miembro_toggle_activa(request, pk):
     membresia.save(update_fields=["activa"])
     registrar(
         request, Accion.ACTIVAR_MIEMBRO if membresia.activa else Accion.DESACTIVAR_MIEMBRO,
-        modelo="Membresia", objeto_id=membresia.pk, descripcion=f"{membresia.nombre} ({membresia.user.username})",
+        modelo="Membresia", objeto_id=membresia.pk, descripcion=f"{membresia.nombre} ({membresia.usuario_texto})",
     )
     messages.success(request, f"«{membresia.nombre}» {'activado' if membresia.activa else 'desactivado'}.")
     return redirect("organizaciones:miembro_lista")

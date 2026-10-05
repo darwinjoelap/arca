@@ -100,7 +100,7 @@ class AislamientoTests(DosOrganizacionesMixin, TestCase):
     def test_no_se_puede_asignar_un_tipo_de_otra_organizacion(self):
         self.entrar("dir_a")
         r = self.client.post(reverse("organizaciones:miembro_crear"), {
-            "username": "carla", "nombre_visible": "Carla", "tipo": self.tipo_b.pk, "clave": "Otra-clave-987",
+            "username": "carla", "nombre_visible": "Carla", "tipo": self.tipo_b.pk, "clave": "Otra-clave-987", "con_acceso": "on",
         })
         self.assertEqual(r.status_code, 200)  # vuelve al formulario con error
         self.assertFalse(Usuario.objects.filter(username="carla").exists())
@@ -218,7 +218,7 @@ class MiembrosTests(DosOrganizacionesMixin, TestCase):
     def test_crear_miembro_deja_clave_temporal_y_bitacora(self):
         self.entrar("dir_a")
         r = self.client.post(reverse("organizaciones:miembro_crear"), {
-            "username": "carla", "nombre_visible": "Carla Pérez", "tipo": self.tipo_a.pk, "clave": "Otra-clave-987",
+            "username": "carla", "nombre_visible": "Carla Pérez", "tipo": self.tipo_a.pk, "clave": "Otra-clave-987", "con_acceso": "on",
         })
         self.assertRedirects(r, reverse("organizaciones:miembro_lista"))
         carla = Usuario.objects.get(username="carla")
@@ -241,7 +241,7 @@ class MiembrosTests(DosOrganizacionesMixin, TestCase):
     def test_username_repetido_no_revela_de_que_organizacion_es(self):
         self.entrar("dir_a")
         r = self.client.post(reverse("organizaciones:miembro_crear"), {
-            "username": "beto", "nombre_visible": "Otro Beto", "tipo": self.tipo_a.pk, "clave": "Otra-clave-987",
+            "username": "beto", "nombre_visible": "Otro Beto", "tipo": self.tipo_a.pk, "clave": "Otra-clave-987", "con_acceso": "on",
         })
         self.assertContains(r, "no está disponible")
         self.assertEqual(Membresia.objects.filter(user__username="beto").count(), 1)
@@ -402,3 +402,73 @@ class PanelDePlataformaTests(DosOrganizacionesMixin, TestCase):
         self.assertEqual(self.client.get(reverse("cambio:tasa_lista")).status_code, 403)
         self.entrar("root")
         self.assertEqual(self.client.get(reverse("cambio:tasa_lista")).status_code, 200)
+
+
+class MiembrosSinAccesoTests(DosOrganizacionesMixin, TestCase):
+    """Gente de la comunidad que aporta o recibe pero no entra al sistema."""
+
+    def crear(self, **datos):
+        self.entrar("dir_a")
+        return self.client.post(reverse("organizaciones:miembro_crear"), {"tipo": self.tipo_a.pk, **datos})
+
+    def test_se_crea_sin_usuario_ni_clave(self):
+        antes = Usuario.objects.count()
+        r = self.crear(nombre_visible="Doña Rosa")
+        self.assertRedirects(r, reverse("organizaciones:miembro_lista"))
+        rosa = Membresia.objects.get(nombre_visible="Doña Rosa")
+        self.assertIsNone(rosa.user)
+        self.assertFalse(rosa.tiene_acceso)
+        self.assertEqual((rosa.nombre, rosa.usuario_texto), ("Doña Rosa", "sin acceso"))
+        self.assertEqual(Usuario.objects.count(), antes)
+        self.assertContains(self.client.get(reverse("organizaciones:miembro_lista")), "Sin acceso")
+
+    def test_varios_sin_usuario_conviven_en_la_misma_organizacion(self):
+        self.crear(nombre_visible="Uno")
+        self.crear(nombre_visible="Dos")
+        self.assertEqual(Membresia.objects.filter(organizacion=self.org_a, user__isnull=True).count(), 2)
+
+    def test_sin_usuario_exige_nombre_y_no_puede_administrar(self):
+        with self.assertRaises(ValidationError):
+            Membresia(organizacion=self.org_a, tipo=self.tipo_a).full_clean()
+        with self.assertRaises(ValidationError):
+            Membresia(organizacion=self.org_a, nombre_visible="X", es_administrador=True).full_clean()
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Membresia.objects.create(organizacion=self.org_a, tipo=self.tipo_a)  # sin nombre
+        r = self.crear(nombre_visible="Jefe", es_administrador="on")
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(Membresia.objects.filter(nombre_visible="Jefe").exists())
+
+    def test_con_acceso_sigue_exigiendo_usuario_y_clave(self):
+        r = self.crear(nombre_visible="Pedro", con_acceso="on")
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Escribe el nombre de usuario")
+        self.assertFalse(Membresia.objects.filter(nombre_visible="Pedro").exists())
+
+    def test_dar_acceso_despues_conserva_el_mismo_registro(self):
+        self.crear(nombre_visible="Doña Rosa")
+        rosa = Membresia.objects.get(nombre_visible="Doña Rosa")
+        url = reverse("organizaciones:miembro_dar_acceso", args=[rosa.pk])
+        r = self.client.post(url, {"username": "rosa", "clave": "Otra-clave-987"})
+        self.assertRedirects(r, reverse("organizaciones:miembro_lista"))
+        rosa.refresh_from_db()
+        self.assertEqual(rosa.user.username, "rosa")
+        self.assertTrue(rosa.user.debe_cambiar_clave)
+        self.assertTrue(RegistroAuditoria.objects.filter(accion="dar_acceso", organizacion=self.org_a).exists())
+        self.assertTrue(self.client.login(username="rosa", password="Otra-clave-987"))
+        # Ya con acceso, no se le da otra vez.
+        self.entrar("dir_a")
+        self.client.post(url, {"username": "rosa2", "clave": "Otra-clave-987"})
+        self.assertFalse(Usuario.objects.filter(username="rosa2").exists())
+
+    def test_dar_acceso_no_cruza_de_organizacion(self):
+        ajeno = Membresia.objects.create(organizacion=self.org_b, tipo=self.tipo_b, nombre_visible="De B")
+        self.entrar("dir_a")
+        url = reverse("organizaciones:miembro_dar_acceso", args=[ajeno.pk])
+        self.assertEqual(self.client.post(url, {"username": "intruso", "clave": "Otra-clave-987"}).status_code, 404)
+        self.assertFalse(Usuario.objects.filter(username="intruso").exists())
+
+    def test_restablecer_clave_de_quien_no_tiene_acceso_lleva_a_darselo(self):
+        self.crear(nombre_visible="Doña Rosa")
+        rosa = Membresia.objects.get(nombre_visible="Doña Rosa")
+        r = self.client.get(reverse("organizaciones:miembro_restablecer_clave", args=[rosa.pk]))
+        self.assertRedirects(r, reverse("organizaciones:miembro_dar_acceso", args=[rosa.pk]))

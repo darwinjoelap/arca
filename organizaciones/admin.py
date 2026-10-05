@@ -51,7 +51,7 @@ class OrganizacionAdmin(admin.ModelAdmin):
     @admin.display(description="Director")
     def director_nombre(self, obj):
         director = obj.director
-        return f"{director.nombre} ({director.user.username})" if director else "— sin director —"
+        return f"{director.nombre} ({director.usuario_texto})" if director else "— sin director —"
 
     @admin.display(description="Miembros activos")
     def total_miembros(self, obj):

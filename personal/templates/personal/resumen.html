@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load arca static %}
+{% block titulo %}Mi resumen — Arca{% endblock %}
+{% block titulo_topbar %}Mi resumen{% endblock %}
+{% block contenido %}
+<p class="text-muted small text-uppercase fw-semibold mb-1">{{ m.rol_visible }} · {{ organizacion_activa.nombre }}</p>
+<h1 class="h3 mb-1">Mi resumen</h1>
+<p class="text-muted mb-3">Lo que aportaste a la organización y lo que recibiste de ella. Del {{ desde|date:"d/m/Y" }} al {{ hasta|date:"d/m/Y" }}.</p>
+{% include "personal/_periodo.html" %}
+
+<div class="row g-3 mb-3">
+  <div class="col-sm-4"><div class="indicador"><div class="indicador-etiqueta">Aporté</div><div class="indicador-valor">{{ simbolo }} {{ aporto|monto }}</div><div class="indicador-detalle">ingresos de la organización a mi nombre</div></div></div>
+  <div class="col-sm-4"><div class="indicador"><div class="indicador-etiqueta">Recibí</div><div class="indicador-valor">{{ simbolo }} {{ recibio|monto }}</div><div class="indicador-detalle">egresos entregados a mi nombre</div></div></div>
+  <div class="col-sm-4"><div class="indicador"><div class="indicador-etiqueta">Diferencia</div><div class="indicador-valor">{{ simbolo }} {{ neto|monto }}</div><div class="indicador-detalle">aporté menos recibí</div></div></div>
+</div>
+
+{% if cuotas %}
+<div class="card card-arca mb-3"><div class="card-header bg-transparent fw-bold">Mis cuotas · Ejercicio {{ ejercicio.nombre }}</div>
+  <div class="table-responsive"><table class="table table-sm tabla-reporte mb-0 align-middle">
+    <thead><tr><th>Concepto</th><th class="num">Cuota mensual</th><th class="num">Meses</th><th class="num">Esperado</th><th class="num">Pagado</th><th class="num">Pendiente</th><th>Último pago</th></tr></thead>
+    <tbody>{% for f in cuotas %}
+      <tr><td>{{ f.cuota.concepto.nombre }}</td><td class="num">{{ f.cuota.moneda|simbolo }} {{ f.cuota.monto|monto }}</td><td class="num">{{ f.meses }}</td>
+        <td class="num">{{ f.esperado|monto }}</td><td class="num">{{ f.pagado|monto }}</td>
+        <td class="num {% if f.pendiente > 0 %}tono-mal{% elif f.pendiente < 0 %}tono-bien{% endif %}">{{ f.pendiente|monto }}</td>
+        <td>{{ f.ultimo_pago|date:"d/m/Y"|default:"—" }}</td></tr>{% endfor %}
+    </tbody></table></div>
+  <div class="card-body py-2 small text-muted">Pendiente positivo: lo que falta por pagar hasta este mes. Negativo: vas adelantado.</div>
+</div>
+{% endif %}
+
+<div class="card card-arca mb-3"><div class="card-body p-4">
+  <h2 class="h6 mb-2">Mes a mes{% if ejercicio %} · Ejercicio {{ ejercicio.nombre }}{% endif %}</h2>
+  {% if grafico %}{% include "reportes/_grafico_mensual.html" %}{% else %}<p class="text-muted mb-0">Todavía no hay movimientos de la organización a tu nombre en este ejercicio.</p>{% endif %}
+</div></div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6"><div class="card card-arca h-100"><div class="card-body p-4"><h2 class="h6 mb-3">Lo que aporté, por concepto</h2>
+    {% include "personal/_ranking.html" with items=aportes vacio="Sin aportes en el período." %}</div></div></div>
+  <div class="col-lg-6"><div class="card card-arca h-100"><div class="card-body p-4"><h2 class="h6 mb-3">Lo que recibí, por concepto</h2>
+    {% include "personal/_ranking.html" with items=recibidos vacio="No recibiste nada en el período." %}</div></div></div>
+</div>
+
+<div class="card card-arca"><div class="card-header bg-transparent fw-bold">Últimos movimientos a mi nombre</div>
+  {% if movimientos %}
+  <ul class="list-group list-group-flush">{% for mov in movimientos %}
+    <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+      <span><span class="fw-semibold">{{ mov.titulo }}</span><div class="small text-muted">{{ mov.fecha|date:"d/m/Y" }} · {% if mov.es_ingreso %}Aporté{% else %}Recibí{% endif %} · vale {{ mov.numero_vale }}</div></span>
+      <span class="monto text-nowrap">{{ mov.moneda|simbolo }} {{ mov.monto|monto }}</span>
+    </li>{% endfor %}</ul>
+  {% else %}<div class="empty-state"><i class="bi bi-journal-text d-block mb-2"></i>Todavía no hay movimientos de la organización a tu nombre.</div>{% endif %}
+</div>
+<p class="text-muted small mt-3">Esto es dinero de la organización en el que figuras tú. {% if tiene_cuenta_personal %}Tu dinero personal lo llevas en <a href="{% url 'personal:cuenta' %}">Mi cuenta</a>.{% endif %}</p>
+{% endblock %}
+{% block extra_scripts %}<script src="{% static 'js/graficos.js' %}"></script>{% endblock %}
