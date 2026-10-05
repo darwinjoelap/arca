@@ -17,6 +17,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, ListView, UpdateView
 
+from cambio.services import formatear
 from core.auditoria import registrar
 from core.mixins import ADMINISTRAR, DeLaOrganizacionMixin, PermisoRequeridoMixin, requiere_permiso, tiene_permiso
 from core.models import RegistroAuditoria
@@ -99,6 +100,27 @@ class MovimientoListView(ListView):
         return ctx
 
 
+def _avisar_si_excede_partida(request, movimiento):
+    """Aviso (no bloqueo) cuando un egreso deja su partida del mes en rojo."""
+    from presupuestos.services import estado_de_partida
+
+    if movimiento.tipo != Movimiento.Tipo.EGRESO:
+        return
+    estado = estado_de_partida(
+        request.organizacion, movimiento.caja_id, movimiento.concepto_id, movimiento.fecha, excluir=movimiento.pk)
+    if estado is None:
+        return
+    este = movimiento.monto_usd if estado["moneda"] == "USD" else movimiento.monto_ves
+    exceso = este - estado["disponible"]
+    if exceso > 0:
+        simbolo = "$" if estado["moneda"] == "USD" else "Bs."
+        messages.warning(
+            request,
+            f"Con este egreso, la partida «{estado['concepto']}» de {estado['mes']} queda excedida en "
+            f"{simbolo} {formatear(exceso, 2)} (presupuesto: {simbolo} {formatear(estado['presupuesto'], 2)}).",
+        )
+
+
 @login_required
 def movimiento_registrar(request, tipo):
     if not tiene_permiso(request, PERMISO_POR_TIPO[tipo]):
@@ -128,6 +150,7 @@ def movimiento_registrar(request, tipo):
                     messages.info(request, f"Egreso #{movimiento.numero_vale} registrado. Queda por aprobar.")
                 else:
                     messages.success(request, f"{movimiento.get_tipo_display()} #{movimiento.numero_vale} registrado.")
+                _avisar_si_excede_partida(request, movimiento)
             else:
                 messages.info(request, "Ese movimiento ya estaba registrado; no se duplicó.")
             if "otro" in request.POST:

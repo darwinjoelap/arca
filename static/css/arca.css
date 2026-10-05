@@ -689,3 +689,6 @@ h1, h2, h3, .brand-name { font-family: "Manrope", "Inter", system-ui, sans-serif
 .tabla-presupuesto th:nth-child(8) { width: 19%; }
 .tabla-presupuesto td:first-child { padding-left: 1rem; }
 .tabla-presupuesto td.sangria-1 { padding-left: 2rem; }
+
+/* Aviso de partida excedida en el formulario de egreso: texto + icono, no solo color. */
+.aviso-partida-exceso { color: var(--arca-danger); font-weight: 600; }

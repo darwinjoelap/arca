@@ -165,3 +165,49 @@ def comparativo(presupuesto, mes):
             ))
         lista.sort(key=lambda l: (l.concepto is None, (l.grupo or l.nombre).lower(), bool(l.grupo), l.nombre.lower()))
     return resultado
+
+
+MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre",
+         "noviembre", "diciembre"]
+
+
+def estado_de_partida(organizacion, caja_id, concepto_id, fecha, excluir=None):
+    """Cómo va la partida de un concepto de egreso en el mes de `fecha`.
+
+    Solo cuentan los presupuestos APROBADOS (un borrador todavía no rige) y
+    las partidas con monto. Devuelve None si no hay nada con qué comparar.
+    Lo ejecutado son los egresos confirmados del mes, en la moneda del
+    presupuesto; `excluir` deja fuera un movimiento (el que se acaba de guardar).
+    """
+    from finanzas.services import ejercicio_para
+    from .models import PartidaPresupuestaria, Presupuesto
+
+    if not (caja_id and concepto_id and fecha):
+        return None
+    ejercicio = ejercicio_para(organizacion, fecha)
+    if ejercicio is None:
+        return None
+    partida = (
+        PartidaPresupuestaria.objects.filter(
+            organizacion=organizacion, concepto_id=concepto_id, concepto__tipo="egreso", monto_mensual__gt=0,
+            presupuesto__caja_id=caja_id, presupuesto__ejercicio=ejercicio,
+            presupuesto__estado=Presupuesto.Estado.APROBADO,
+        ).select_related("presupuesto", "concepto").first()
+    )
+    if partida is None:
+        return None
+    moneda = partida.presupuesto.moneda
+    campo = "monto_usd" if moneda == "USD" else "monto_ves"
+    inicio = max(fecha.replace(day=1), ejercicio.fecha_inicio)
+    fin = min(fin_de_mes(fecha), ejercicio.fecha_fin)
+    movimientos = Movimiento.objects.filter(
+        organizacion=organizacion, caja_id=caja_id, concepto_id=concepto_id, tipo="egreso",
+        estado=Movimiento.Estado.CONFIRMADO, fecha__gte=inicio, fecha__lte=fin,
+    )
+    if excluir:
+        movimientos = movimientos.exclude(pk=excluir)
+    ejecutado = movimientos.aggregate(t=Sum(campo))["t"] or CERO
+    return {
+        "concepto": partida.concepto.nombre, "moneda": moneda, "mes": f"{MESES[fecha.month - 1]} de {fecha.year}",
+        "presupuesto": partida.monto_mensual, "ejecutado": ejecutado, "disponible": partida.monto_mensual - ejecutado,
+    }

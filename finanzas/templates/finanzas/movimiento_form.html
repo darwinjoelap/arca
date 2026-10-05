@@ -45,6 +45,7 @@
           <label class="form-label fw-semibold" for="{{ form.concepto.id_for_label }}">Concepto</label>
           {{ form.concepto }}
           {% if form.concepto.errors %}<div class="text-danger small mt-1">{{ form.concepto.errors|join:" " }}</div>{% endif %}
+          {% if not es_ingreso %}<div class="small mt-2 d-none" id="aviso-partida" role="status" aria-live="polite"></div>{% endif %}
         </div>
         <div class="col-12">
           <label class="form-label fw-semibold" for="{{ form.descripcion.id_for_label }}">Descripción</label>
@@ -115,6 +116,52 @@
   cuenta.addEventListener("change", actualizar);
   monto.addEventListener("input", actualizar);
   actualizar();
+
+  // Aviso de presupuesto (solo egresos): cuánto queda de la partida del mes.
+  // Informa, no impide. Sin conexión simplemente no aparece.
+  var aviso = document.getElementById("aviso-partida");
+  if (!aviso) return;
+  var concepto = document.getElementById("{{ form.concepto.id_for_label }}");
+  var fecha = document.getElementById("{{ form.fecha.id_for_label }}");
+  var partida = null, pedido = 0;
+
+  function pintar() {
+    if (!partida) { aviso.classList.add("d-none"); return; }
+    var s = partida.moneda === "USD" ? "$ " : "Bs. ";
+    var moneda = monedas[cuenta.value], valor = parseFloat(monto.value) || 0;
+    // El monto está en la moneda de la cuenta; la partida, en la del presupuesto.
+    if (moneda && moneda !== partida.moneda) valor = tasa ? (partida.moneda === "USD" ? valor / tasa : valor * tasa) : 0;
+    var queda = partida.disponible - valor;
+    var texto, exceso = queda < -0.005;
+    if (exceso) {
+      texto = "Se pasa de la partida «" + partida.concepto + "» de " + partida.mes + " por " + s + formato.format(-queda) +
+        ". Presupuesto del mes: " + s + formato.format(partida.presupuesto) + "; ya gastado: " + s + formato.format(partida.ejecutado) +
+        ". Puedes guardarlo igual.";
+    } else {
+      texto = "Partida «" + partida.concepto + "» de " + partida.mes + ": quedan " + s + formato.format(partida.disponible) +
+        " de " + s + formato.format(partida.presupuesto) + (valor > 0 ? "; con este egreso quedarían " + s + formato.format(queda) + "." : ".");
+    }
+    aviso.textContent = "";
+    var icono = document.createElement("i");
+    icono.className = "bi " + (exceso ? "bi-exclamation-triangle-fill" : "bi-bullseye") + " me-1";
+    aviso.appendChild(icono);
+    aviso.appendChild(document.createTextNode(texto));
+    aviso.className = "small mt-2 " + (exceso ? "aviso-partida-exceso" : "text-muted");
+  }
+
+  function consultar() {
+    var n = ++pedido;
+    if (!cuenta.value || !concepto.value || !fecha.value || !navigator.onLine) { partida = null; pintar(); return; }
+    var url = "{% url 'presupuestos:partida_disponible' %}?cuenta=" + encodeURIComponent(cuenta.value) +
+      "&concepto=" + encodeURIComponent(concepto.value) + "&fecha=" + encodeURIComponent(fecha.value);
+    fetch(url, { headers: { "Accept": "application/json" }, credentials: "same-origin" })
+      .then(function (r) { return r.ok ? r.json() : { partida: null }; })
+      .catch(function () { return { partida: null }; })
+      .then(function (d) { if (n === pedido) { partida = d.partida; pintar(); } });
+  }
+  [cuenta, concepto, fecha].forEach(function (el) { el.addEventListener("change", consultar); });
+  monto.addEventListener("input", pintar);
+  consultar();
 })();
 </script>
 {% endblock %}

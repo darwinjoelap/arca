@@ -71,9 +71,10 @@ Pendiente de verificar en tu máquina: las 102 pruebas contra PostgreSQL, y el f
 - [x] Asignaciones: egreso de la organización que entra a la cuenta personal del miembro
 - [x] «Mi cuenta»: ingresos y gastos propios, conceptos propios, saldo, gráfico mensual y en qué se gasta
 - [x] El director ve las cuentas personales solo si el soporte activa el interruptor; cada consulta queda en la bitácora
-- [x] 155 pruebas en total
+- [x] Aviso de presupuesto al registrar un egreso: cuánto queda de la partida del mes y si se pasa (A-34)
+- [x] 159 pruebas en total
 
-Pendiente de verificar en tu máquina: `migrate` y las 155 pruebas contra PostgreSQL.
+Pendiente de verificar en tu máquina: `migrate` y las 159 pruebas contra PostgreSQL.
 
 ## Lo que NO está todavía
 
@@ -83,6 +84,7 @@ Pendiente de verificar en tu máquina: `migrate` y las 155 pruebas contra Postgr
 - Cuotas: no tienen reporte exportable (Excel/PDF) ni aviso de morosidad; es solo la pantalla.
 - Anticipos (dinero entregado que se rinde después) y arqueo de caja.
 - Editar un movimiento de la organización: no existe a propósito (A-18).
+- El aviso de presupuesto no aparece sin conexión, ni cuenta los egresos que esperan aprobación.
 - Presupuesto anual con montos distintos por mes; flujo de «se solicita con antelación».
 - Reportes de traslados, diferencia en cambio y saldos a una fecha pasada. Gráficos dentro de los PDF.
 - Inventario (Fase 7).

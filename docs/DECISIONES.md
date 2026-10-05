@@ -128,6 +128,11 @@ egreso la retira.
 equivalentes congelados de cada movimiento. El director ve solo lo asignado; el detalle, únicamente si el
 soporte activa `director_ve_cuentas_personales`, y cada consulta queda en la bitácora.
 
+**A-34 — El presupuesto avisa, no impide.** Al registrar un egreso con concepto, el formulario muestra cuánto
+queda de la partida del mes y advierte si se pasa; se puede guardar igual y queda un aviso tras guardar. Solo
+rigen los presupuestos aprobados y las partidas con monto. Cuenta lo confirmado del mes, en la moneda del
+presupuesto. Lo ve quien puede registrar egresos. Sin conexión el aviso no aparece.
+
 ## Heredadas de Edumia que siguen vigentes
 
 - **D-02 (revisado)** — El valor de una tasa se puede corregir; recalcula lo no congelado.

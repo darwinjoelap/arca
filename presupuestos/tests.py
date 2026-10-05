@@ -158,3 +158,49 @@ class VistasPresupuestoTests(PresupuestoMixin, TestCase):
             Presupuesto.objects.create(organizacion=self.org, caja=self.caja_b, ejercicio=self.ejercicio)
         with self.assertRaises(ValidationError):
             PartidaPresupuestaria.objects.create(organizacion=self.org, presupuesto=self.p, concepto=self.concepto_b)
+
+
+class AvisoDePartidaTests(PresupuestoMixin, TestCase):
+    """El presupuesto avisa al registrar un egreso, pero no lo impide."""
+
+    def aprobar(self):
+        Presupuesto.objects.filter(pk=self.p.pk).update(estado="aprobado")
+
+    def consulta(self, concepto=None, fecha="2026-03-15"):
+        return self.client.get(reverse("presupuestos:partida_disponible"), {
+            "cuenta": self.usd.pk, "concepto": (concepto or self.c_egreso).pk, "fecha": fecha}).json()["partida"]
+
+    def test_borrador_no_rige_y_sin_partida_no_avisa(self):
+        self.client.force_login(self.director.user)
+        self.assertIsNone(self.consulta())
+        self.aprobar()
+        self.assertIsNone(self.consulta(concepto=self.luz))
+        self.assertIsNotNone(self.consulta())
+
+    def test_disponible_del_mes(self):
+        self.aprobar()
+        self.gasto(date(2026, 3, 5), "30")
+        self.gasto(date(2026, 3, 20), "2000", cuenta=self.ves)   # $20
+        self.gasto(date(2026, 2, 5), "70")                       # otro mes
+        self.client.force_login(self.director.user)
+        p = self.consulta()
+        self.assertEqual((p["presupuesto"], p["ejecutado"], p["disponible"], p["moneda"]), (100.0, 50.0, 50.0, "USD"))
+        self.assertEqual(p["mes"], "marzo de 2026")
+
+    def test_egreso_que_se_pasa_se_guarda_con_aviso(self):
+        self.aprobar()
+        self.gasto(date(2026, 3, 5), "80")
+        self.client.force_login(self.director.user)
+        datos = {"fecha": "2026-03-10", "cuenta": self.usd.pk, "concepto": self.c_egreso.pk, "monto": "50"}
+        r = self.client.post(reverse("finanzas:egreso_registrar"), datos, follow=True)
+        self.assertEqual(Movimiento.objects.filter(fecha=date(2026, 3, 10)).count(), 1)
+        self.assertContains(r, "queda excedida en $ 30,00")
+        datos["fecha"] = "2026-04-10"                              # abril: partida intacta, sin aviso
+        r = self.client.post(reverse("finanzas:egreso_registrar"), datos, follow=True)
+        self.assertNotContains(r, "queda excedida")
+
+    def test_quien_no_registra_egresos_no_consulta(self):
+        self.aprobar()
+        self.client.force_login(self.residente.user)
+        r = self.client.get(reverse("presupuestos:partida_disponible"), {"cuenta": self.usd.pk, "concepto": self.c_egreso.pk, "fecha": "2026-03-15"})
+        self.assertEqual(r.status_code, 403)

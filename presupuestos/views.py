@@ -5,6 +5,9 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.http import JsonResponse
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -16,7 +19,7 @@ from core.models import RegistroAuditoria
 
 from .forms import PresupuestoForm
 from .models import PartidaPresupuestaria, Presupuesto
-from .services import comparativo, conceptos_de_la_caja, meses_del_ejercicio
+from .services import comparativo, estado_de_partida, conceptos_de_la_caja, meses_del_ejercicio
 
 Accion = RegistroAuditoria.Accion
 VER = "puede_ver_presupuesto"
@@ -191,3 +194,23 @@ def eliminar(request, pk):
     registrar(request, Accion.ELIMINAR_PRESUPUESTO, modelo="Presupuesto", objeto_id=pk, descripcion=nombre)
     messages.success(request, f"«{nombre}» eliminado.")
     return redirect("presupuestos:lista")
+
+
+@login_required
+def partida_disponible(request):
+    """JSON para el formulario de egreso: cuánto queda de la partida del mes.
+    Lo consulta quien puede registrar egresos; solo informa, nunca impide."""
+    from finanzas.models import Cuenta
+
+    if not tiene_permiso(request, "puede_registrar_egresos"):
+        raise PermissionDenied
+    try:
+        fecha = date.fromisoformat(request.GET.get("fecha", ""))
+        cuenta_id, concepto_id = int(request.GET.get("cuenta", "")), int(request.GET.get("concepto", ""))
+    except ValueError:
+        return JsonResponse({"partida": None})
+    cuenta = Cuenta.objects.filter(organizacion=request.organizacion, pk=cuenta_id).first()
+    estado = estado_de_partida(request.organizacion, cuenta.caja_id, concepto_id, fecha) if cuenta else None
+    if estado is None:
+        return JsonResponse({"partida": None})
+    return JsonResponse({"partida": {k: (float(v) if isinstance(v, Decimal) else v) for k, v in estado.items()}})
