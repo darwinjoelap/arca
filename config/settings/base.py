@@ -49,6 +49,8 @@ LOCAL_APPS = [
     "organizaciones",
     "cambio",
     "finanzas",
+    "presupuestos",
+    "reportes",
     "sync",
 ]
 

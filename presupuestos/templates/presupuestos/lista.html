@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titulo %}Presupuestos — Arca{% endblock %}
+{% block titulo_topbar %}Presupuestos{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+  <div>
+    <h1 class="h3 mb-1">Presupuestos</h1>
+    <p class="text-muted mb-0">Uno por caja y ejercicio, con un monto mensual por concepto.</p>
+  </div>
+  {% if puede_editar %}<a href="{% url 'presupuestos:crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nuevo presupuesto</a>{% endif %}
+</div>
+<div class="card card-arca">
+  {% if presupuestos %}
+  <div class="table-responsive"><table class="table table-hover mb-0 align-middle">
+    <thead><tr><th>Caja</th><th>Ejercicio</th><th>Moneda</th><th>Estado</th><th class="text-end"></th></tr></thead>
+    <tbody>
+    {% for p in presupuestos %}
+      <tr>
+        <td class="fw-semibold"><a class="text-decoration-none" href="{% url 'presupuestos:detalle' p.pk %}">{{ p.caja.nombre }}</a></td>
+        <td>{{ p.ejercicio.nombre }}</td>
+        <td>{{ p.get_moneda_display }}</td>
+        <td>{% if p.estado == 'aprobado' %}<span class="badge text-bg-success">Aprobado</span>{% else %}<span class="badge text-bg-warning">Borrador</span>{% endif %}</td>
+        <td class="text-end"><a href="{% url 'presupuestos:detalle' p.pk %}" class="btn btn-sm btn-outline-secondary">Ver ejecución</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <div class="empty-state"><i class="bi bi-bullseye d-block mb-2"></i>Todavía no hay presupuestos.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load arca static %}
+{% block titulo %}{% if reporte %}{{ reporte.titulo }}{% else %}Reporte{% endif %} — Arca{% endblock %}
+{% block titulo_topbar %}Reportes{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 no-imprimir">
+  <a href="{% if presupuesto %}{% url 'presupuestos:detalle' presupuesto.pk %}{% else %}{% url 'reportes:inicio' %}{% endif %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> {% if presupuesto %}Presupuesto{% else %}Reportes{% endif %}</a>
+  {% if reporte %}
+  <div class="d-flex gap-2">
+    <a href="?{{ consulta }}{% if consulta %}&{% endif %}formato=xlsx" class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark-spreadsheet"></i> Excel</a>
+    <a href="?{{ consulta }}{% if consulta %}&{% endif %}formato=pdf" target="_blank" rel="noopener" class="btn btn-sm btn-arca-primary"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+  </div>
+  {% endif %}
+</div>
+
+{% if filtro %}{% include "reportes/_filtros.html" %}{% endif %}
+{% if meses %}
+<form method="get" class="card card-arca mb-3 no-imprimir"><div class="card-body py-3 d-flex flex-wrap align-items-end gap-2">
+  <div><label class="form-label small fw-semibold mb-0" for="mes">Mes</label>
+    <select name="mes" id="mes" class="form-select form-select-sm" onchange="this.form.submit()">
+      {% for m, etiqueta in meses %}<option value="{{ m|date:'Y-m' }}" {% if m == mes %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+    </select></div>
+</div></form>
+{% endif %}
+
+{% if aviso %}
+<div class="alert alert-warning">{{ aviso }}</div>
+{% else %}
+<div class="card card-arca">
+  <div class="card-body p-4">
+    <div class="reporte-encabezado">
+      <p class="text-muted small text-uppercase fw-semibold mb-1">{{ organizacion_activa.nombre }}</p>
+      <h1 class="h4 mb-1">{{ reporte.titulo }}</h1>
+      <p class="text-muted small mb-0">{{ reporte.subtitulo }}</p>
+    </div>
+
+    {% if grafico %}<div class="mb-4">{% include "reportes/_grafico_mensual.html" %}</div>{% endif %}
+
+    <div class="table-responsive">
+      <table class="table table-sm tabla-reporte mb-3">
+        <thead><tr>{% for col in reporte.columnas %}<th class="{% if col.numerica %}num{% endif %}">{{ col.titulo }}</th>{% endfor %}</tr></thead>
+        <tbody>
+        {% for fila, celdas in reporte.filas_para_plantilla %}
+          <tr class="fila-{{ fila.clase }}">
+            {% for valor, tono, col in celdas %}
+              <td class="{% if col.numerica %}num{% endif %}{% if forloop.first and fila.sangria %} sangria-{{ fila.sangria }}{% endif %}{% if tono %} tono-{{ tono }}{% endif %}">{% if valor is None %}{% elif col.tipo == "monto" %}{{ valor|monto }}{% elif col.tipo == "pct" %}{{ valor|monto:1 }} %{% elif col.tipo == "fecha" %}{{ valor|date:"d/m/Y" }}{% else %}{{ valor }}{% endif %}{% if tono == "bien" %}<span class="visually-hidden"> (favorable)</span>{% elif tono == "mal" %}<span class="visually-hidden"> (desfavorable)</span>{% endif %}</td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if reporte.vacio %}<p class="text-muted">No hay movimientos confirmados con estos filtros.</p>{% endif %}
+    <div class="reporte-notas">{% for nota in reporte.notas %}<p>{{ nota }}</p>{% endfor %}</div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_scripts %}{% if grafico %}<script src="{% static 'js/graficos.js' %}"></script>{% endif %}{% endblock %}

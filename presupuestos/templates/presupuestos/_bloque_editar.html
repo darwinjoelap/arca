@@ -1,0 +1,26 @@
+<div class="card card-arca mb-3" style="max-width: 900px;">
+  <div class="card-header bg-transparent fw-bold">{{ titulo }}</div>
+  {% if filas %}
+  <div class="table-responsive"><table class="table mb-0 align-middle">
+    <thead><tr><th>Concepto</th><th class="text-end">Monto mensual</th><th class="text-center" title="Partida sin monto fijo: se solicita indicando el monto exacto">Se solicita</th><th>Nota</th></tr></thead>
+    <tbody>
+    {% for f in filas %}
+      <tr>
+        <td class="{% if f.concepto.padre_id %}ps-4{% else %}fw-semibold{% endif %}">
+          <label for="monto_{{ f.concepto.pk }}" class="mb-0">{% if f.concepto.padre_id %}<span class="text-muted">{{ f.concepto.padre.nombre }} ›</span> {% endif %}{{ f.concepto.nombre }}</label>
+        </td>
+        <td class="text-end">
+          <input type="text" inputmode="decimal" name="monto_{{ f.concepto.pk }}" id="monto_{{ f.concepto.pk }}" value="{{ f.monto }}"
+                 class="form-control form-control-sm monto-mensual ms-auto {% if f.error %}is-invalid{% endif %}" data-tipo="{{ clave }}" placeholder="0,00" autocomplete="off">
+          {% if f.error %}<div class="text-danger small">{{ f.error }}</div>{% endif %}
+        </td>
+        <td class="text-center"><input type="checkbox" class="form-check-input" name="solicitud_{{ f.concepto.pk }}" {% if f.solicitud %}checked{% endif %} aria-label="Se solicita con antelación: {{ f.concepto.nombre }}"></td>
+        <td><input type="text" name="nota_{{ f.concepto.pk }}" value="{{ f.nota }}" maxlength="200" class="form-control form-control-sm" aria-label="Nota: {{ f.concepto.nombre }}"></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <div class="card-body text-muted small">No hay conceptos de {{ titulo|lower }} para esta caja. <a href="{% url 'finanzas:concepto_lista' %}">Crear conceptos</a>.</div>
+  {% endif %}
+</div>

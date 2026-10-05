@@ -48,6 +48,22 @@ Pendiente de verificar en tu máquina: correr las 93 pruebas contra PostgreSQL (
 Pendiente de verificar en tu máquina: las 102 pruebas contra PostgreSQL, y el flujo en un teléfono de verdad
 (Android y iPhone). Aquí se probó con Chromium simulando un teléfono, sin service worker.
 
+## Hecho — Fase 4 (presupuestos) y Fase 6 (reportes)
+
+- [x] Presupuesto por caja y ejercicio, con monto mensual por concepto, en una moneda
+- [x] Una sola pantalla para cargar todos los montos, con totales al mes y al año mientras se escribe
+- [x] Aprobar (bloquea), reabrir (queda en bitácora) y eliminar borradores
+- [x] Ejecución: presupuestado contra real del mes y acumulado, variación y barra de ejecución por partida
+- [x] Reportes: estado de ingresos y egresos, variación contra el período anterior, flujo mensual, por miembro,
+      libro de caja o banco con saldo corrido, libro diario y presupuesto contra real
+- [x] Cada reporte en pantalla, Excel (con números de verdad) y PDF (encabezado, pie con página y líneas de firma)
+- [x] Comprobante de ingreso o egreso en PDF, desde el detalle del movimiento
+- [x] Panel de análisis: indicadores, gráfico mensual, en qué se va el dinero, de dónde viene y quién aporta
+- [x] Cada archivo emitido queda en la bitácora
+- [x] 126 pruebas en total
+
+Pendiente de verificar en tu máquina: las 126 pruebas contra PostgreSQL.
+
 ## Lo que NO está todavía
 
 - Abrir la app desde cero sin señal: no se puede. Hay que tenerla abierta en «Registrar ingreso» o
@@ -55,8 +71,12 @@ Pendiente de verificar en tu máquina: las 102 pruebas contra PostgreSQL, y el f
   el aviso de «Sin conexión» y lo ya guardado en el teléfono no se pierde.
 - Traslados sin conexión: solo en línea.
 - Editar un movimiento: no existe a propósito (A-18).
-- Exportar el libro a Excel o PDF y el resumen por concepto (Fase 6).
-- Presupuestos, cuenta personal e inventario.
+- Presupuesto anual con montos distintos por mes: hoy es un monto mensual fijo (el anual es por doce).
+- El flujo de solicitud de las partidas «se solicita con antelación»: por ahora es solo una marca.
+- Reportes de traslados y de la diferencia por cambio de divisas como línea propia.
+- Balance de saldos por cuenta a una fecha pasada, como reporte (el libro de cada cuenta sí lo da).
+- Gráficos dentro de los PDF: los PDF llevan solo tablas.
+- Cuenta personal e inventario.
 - Actualización automática de la tasa BCV (Fase 2).
 - Fuentes Inter y Manrope servidas desde `static/` (hoy vienen de Google Fonts; sin conexión cae a la fuente del sistema).
 - Agregar a una organización un usuario que ya existe en otra: solo desde `/admin/`.
@@ -64,7 +84,7 @@ Pendiente de verificar en tu máquina: las 102 pruebas contra PostgreSQL, y el f
 
 ## Siguiente — por decidir
 
-Fase 4 (presupuestos) o Fase 2 (tasa BCV automática, fuentes locales, instalación en iPhone).
+Fase 5 (cuotas, asignaciones y cuenta personal) o Fase 2 (tasa BCV automática, fuentes locales, instalación en iPhone).
 
 ## Pendiente — Fase 2 (moneda e identidad)
 
@@ -75,5 +95,4 @@ Fase 4 (presupuestos) o Fase 2 (tasa BCV automática, fuentes locales, instalaci
 
 ## Luego
 
-Fase 4 presupuestos · Fase 5 miembros y cuenta personal ·
-Fase 6 reportes · Fase 7 inventario · Fase 8 cierre (arqueo, importador de Excel, alta de organizaciones).
+Fase 5 miembros y cuenta personal · Fase 7 inventario · Fase 8 cierre (arqueo, importador de Excel, alta de organizaciones).

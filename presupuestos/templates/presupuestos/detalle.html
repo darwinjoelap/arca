@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load arca %}
+{% block titulo %}Presupuesto {{ p.caja.nombre }} — Arca{% endblock %}
+{% block titulo_topbar %}Presupuesto{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <p class="text-muted small text-uppercase fw-semibold mb-1">Ejercicio {{ p.ejercicio.nombre }} · en {{ p.get_moneda_display|lower }}</p>
+    <h1 class="h3 mb-1">Presupuesto de {{ p.caja.nombre }}
+      {% if p.estado == 'aprobado' %}<span class="badge text-bg-success fs-6 align-middle">Aprobado</span>{% else %}<span class="badge text-bg-warning fs-6 align-middle">Borrador</span>{% endif %}</h1>
+    {% if p.aprobado_por and p.estado == 'aprobado' %}<p class="text-muted small mb-0">Aprobado por {{ p.aprobado_por.nombre_para_mostrar }} el {{ p.fecha_aprobacion|date:"d/m/Y" }}.</p>{% endif %}
+  </div>
+  <div class="d-flex flex-wrap gap-2 no-imprimir">
+    <a href="{% url 'reportes:presupuesto' p.pk %}?mes={{ mes|date:'Y-m' }}&formato=xlsx" class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark-spreadsheet"></i> Excel</a>
+    <a href="{% url 'reportes:presupuesto' p.pk %}?mes={{ mes|date:'Y-m' }}&formato=pdf" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+    {% if puede_editar %}
+      {% if p.editable %}
+        <a href="{% url 'presupuestos:editar' p.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i> Editar montos</a>
+        <form method="post" action="{% url 'presupuestos:aprobar' p.pk %}" onsubmit="return confirm('¿Aprobar el presupuesto? Queda bloqueado para cambios.');">{% csrf_token %}<button class="btn btn-sm btn-arca-primary">Aprobar</button></form>
+      {% elif p.estado == 'aprobado' and not p.ejercicio.cerrado %}
+        <form method="post" action="{% url 'presupuestos:reabrir' p.pk %}" onsubmit="return confirm('¿Reabrir el presupuesto para cambiarlo? Queda en la bitácora.');">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary">Reabrir</button></form>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<form method="get" class="d-flex flex-wrap align-items-end gap-2 mb-3 no-imprimir">
+  <div><label class="form-label small fw-semibold mb-0" for="mes">Mes</label>
+    <select name="mes" id="mes" class="form-select form-select-sm" onchange="this.form.submit()">
+      {% for m in meses %}<option value="{{ m|date:'Y-m' }}" {% if m == mes %}selected{% endif %}>{{ m|date:"F Y"|capfirst }}</option>{% endfor %}
+    </select></div>
+  <span class="text-muted small pb-1">Acumulado: {{ c.meses }} mes{{ c.meses|pluralize:"es" }} del ejercicio.</span>
+</form>
+
+{% include "presupuestos/_bloque_detalle.html" with titulo="Egresos" lineas=c.egresos tipo="egreso" %}
+{% include "presupuestos/_bloque_detalle.html" with titulo="Ingresos" lineas=c.ingresos tipo="ingreso" %}
+
+<p class="text-muted small">
+  La barra muestra lo ejecutado en el acumulado sobre lo presupuestado. En egresos, pasar del 100 % es gastar más de lo previsto.
+  Lo real usa la tasa del día de cada movimiento. * Partida que se solicita con antelación.
+</p>
+{% if puede_editar and p.editable %}
+<form method="post" action="{% url 'presupuestos:eliminar' p.pk %}" class="no-imprimir" onsubmit="return confirm('¿Eliminar este presupuesto en borrador?');">{% csrf_token %}
+  <button class="btn btn-link btn-sm text-danger p-0">Eliminar este borrador</button></form>
+{% endif %}
+{% endblock %}

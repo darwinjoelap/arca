@@ -6,7 +6,7 @@
 
 importScripts("{% static 'js/offline-sync-core.js' %}");
 
-const CACHE_NAME = "arca-shell-v3";
+const CACHE_NAME = "arca-shell-v4";
 const OFFLINE_URL = "{% url 'core:sin_conexion' %}";
 const ARCHIVOS_SHELL = [
   "{% static 'vendor/bootstrap/bootstrap.min.css' %}",

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titulo %}Reportes — Arca{% endblock %}
+{% block titulo_topbar %}Reportes{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-1">Reportes</h1>
+<p class="text-muted mb-4">Todos se pueden ver en pantalla y emitir en Excel o PDF. Solo cuentan los movimientos confirmados.</p>
+
+<a class="quick-action mb-4" href="{% url 'reportes:analisis' %}" style="max-width: 760px;">
+  <span class="quick-action-icon" style="background: var(--arca-ink-900); color: #fff;"><i class="bi bi-graph-up"></i></span>
+  <span><span class="fw-semibold d-block">Análisis</span>
+  <span class="text-muted small">Indicadores, evolución mensual, en qué se va el dinero y quién aporta, en una sola pantalla</span></span>
+</a>
+
+{% for grupo, reportes in grupos.items %}
+<h2 class="h6 text-uppercase text-muted fw-bold mb-2">{{ grupo }}</h2>
+<div class="row g-3 mb-4">
+  {% for r in reportes %}
+  <div class="col-md-6 col-xl-4">
+    <a class="quick-action h-100" href="{% url 'reportes:reporte' r.clave %}">
+      <span class="quick-action-icon"><i class="bi {{ r.icono }}"></i></span>
+      <span><span class="fw-semibold d-block">{{ r.titulo }}</span><span class="text-muted small">{{ r.descripcion }}</span></span>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+
+<h2 class="h6 text-uppercase text-muted fw-bold mb-2">Presupuesto</h2>
+{% if presupuestos %}
+<div class="row g-3">
+  {% for p in presupuestos %}
+  <div class="col-md-6 col-xl-4">
+    <a class="quick-action h-100" href="{% url 'reportes:presupuesto' p.pk %}">
+      <span class="quick-action-icon"><i class="bi bi-bullseye"></i></span>
+      <span><span class="fw-semibold d-block">Presupuesto contra real · {{ p.caja.nombre }}</span>
+      <span class="text-muted small">Ejercicio {{ p.ejercicio.nombre }} · {{ p.get_estado_display }}</span></span>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-muted">Todavía no hay presupuestos. {% if puede_administrar %}<a href="{% url 'presupuestos:crear' %}">Crear el primero</a>.{% endif %}</p>
+{% endif %}
+{% endblock %}

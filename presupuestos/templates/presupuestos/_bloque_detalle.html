@@ -1,0 +1,37 @@
+{% load arca presupuesto %}
+<div class="card card-arca mb-3">
+  <div class="card-header bg-transparent fw-bold">{{ titulo }}</div>
+  {% if lineas %}
+  <div class="table-responsive"><table class="table table-sm tabla-reporte tabla-presupuesto mb-0 align-middle">
+    <thead><tr>
+      <th>Concepto</th><th class="num">Presup. mes</th><th class="num">Real mes</th><th class="num">Variación</th>
+      <th class="num">Presup. acum.</th><th class="num">Real acum.</th><th class="num">Variación</th><th style="min-width: 190px;">Ejecución acumulada</th>
+    </tr></thead>
+    <tbody>
+    {% for l in lineas %}
+      <tr>
+        <td class="{% if l.grupo %}sangria-1{% endif %}">
+          {% if l.grupo %}<span class="text-muted">{{ l.grupo }} ›</span> {% endif %}{{ l.nombre }}{% if l.requiere_solicitud %} *{% endif %}
+          {% if not l.tiene_partida %}<span class="badge text-bg-light border">Sin partida</span>{% endif %}
+          {% if l.nota %}<div class="small text-muted">{{ l.nota }}</div>{% endif %}
+        </td>
+        <td class="num">{{ l.presupuesto_mes|monto }}</td>
+        <td class="num">{{ l.real_mes|monto }}</td>
+        <td class="num {{ l|tono:l.variacion_mes }}">{{ l.variacion_mes|monto }}</td>
+        <td class="num">{{ l.presupuesto_acumulado|monto }}</td>
+        <td class="num">{{ l.real_acumulado|monto }}</td>
+        <td class="num {{ l|tono:l.variacion_acumulada }}">{{ l.variacion_acumulada|monto }}</td>
+        <td>{% medidor l %}</td>
+      </tr>
+    {% endfor %}
+      <tr class="fila-total">
+        <td>Total {{ titulo|lower }}</td>
+        <td class="num">{% total c tipo "presupuesto_mes" %}</td><td class="num">{% total c tipo "real_mes" %}</td><td class="num">{% total c tipo "variacion_mes" %}</td>
+        <td class="num">{% total c tipo "presupuesto_acumulado" %}</td><td class="num">{% total c tipo "real_acumulado" %}</td><td class="num">{% total c tipo "variacion_acumulada" %}</td><td></td>
+      </tr>
+    </tbody>
+  </table></div>
+  {% else %}
+  <div class="card-body text-muted small">Sin partidas ni movimientos de {{ titulo|lower }}.</div>
+  {% endif %}
+</div>

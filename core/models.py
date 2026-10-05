@@ -61,6 +61,12 @@ class RegistroAuditoria(models.Model):
         ANULAR_MOVIMIENTO = "anular_movimiento", "Anulación de movimiento"
         REGISTRAR_TRASLADO = "registrar_traslado", "Traslado entre cuentas"
         ANULAR_TRASLADO = "anular_traslado", "Anulación de traslado"
+        CREAR_PRESUPUESTO = "crear_presupuesto", "Creación de presupuesto"
+        EDITAR_PRESUPUESTO = "editar_presupuesto", "Edición de presupuesto"
+        APROBAR_PRESUPUESTO = "aprobar_presupuesto", "Aprobación de presupuesto"
+        REABRIR_PRESUPUESTO = "reabrir_presupuesto", "Reapertura de presupuesto"
+        ELIMINAR_PRESUPUESTO = "eliminar_presupuesto", "Eliminación de presupuesto"
+        EMITIR_REPORTE = "emitir_reporte", "Emisión de reporte"
 
     organizacion = models.ForeignKey(
         "organizaciones.Organizacion", null=True, blank=True,

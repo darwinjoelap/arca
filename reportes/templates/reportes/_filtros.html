@@ -1,0 +1,23 @@
+<form method="get" class="card card-arca mb-3 no-imprimir">
+  <div class="card-body py-3">
+    <div class="row g-2 align-items-end">
+      {% if "periodo" in usa %}
+      <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0" for="{{ filtro.desde.id_for_label }}">Desde</label>{{ filtro.desde }}</div>
+      <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0" for="{{ filtro.hasta.id_for_label }}">Hasta</label>{{ filtro.hasta }}</div>
+      {% endif %}
+      {% if "ejercicio" in usa %}
+      <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0" for="{{ filtro.ejercicio.id_for_label }}">Ejercicio</label>{{ filtro.ejercicio }}</div>
+      {% endif %}
+      {% if "cuenta" in usa %}
+      <div class="col-12 col-md-4"><label class="form-label small fw-semibold mb-0" for="{{ filtro.cuenta.id_for_label }}">Cuenta</label>{{ filtro.cuenta }}</div>
+      {% endif %}
+      {% if "caja" in usa %}
+      <div class="col-6 col-md-3"><label class="form-label small fw-semibold mb-0" for="{{ filtro.caja.id_for_label }}">Caja</label>{{ filtro.caja }}</div>
+      {% endif %}
+      {% if "moneda" in usa %}
+      <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0" for="{{ filtro.moneda.id_for_label }}">Expresar en</label>{{ filtro.moneda }}</div>
+      {% endif %}
+      <div class="col-12 col-md-auto"><button type="submit" class="btn btn-outline-secondary btn-sm w-100"><i class="bi bi-funnel"></i> Aplicar</button></div>
+    </div>
+  </div>
+</form>

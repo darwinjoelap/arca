@@ -90,6 +90,23 @@ nunca redirige (responde 401/409 en JSON) y el cliente exige el JSON. Edumia ten
 **A-23 — La cola es del teléfono, pero cada pendiente es de quien lo capturó.** Lleva el usuario y la
 organización; el servidor rechaza con 409 lo que no sea de la sesión actual y el teléfono lo conserva.
 
+**A-24 — Presupuesto mensual por concepto.** Como en los Excel: un monto al mes; el acumulado es ese monto por
+los meses transcurridos del ejercicio. Lo ejecutado no se guarda, se suma de los movimientos confirmados de la
+caja en la moneda del presupuesto, con la tasa de su día.
+
+**A-25 — Un reporte, tres salidas.** Cada reporte se construye una vez como un `Reporte` (columnas y filas con
+su clase: sección, grupo, normal, subtotal, total) y de ahí salen la pantalla, el Excel y el PDF. Agregar un
+reporte es escribir una función en `reportes/services.py` y registrarlo en `CATALOGO`.
+
+**A-26 — Favorable o desfavorable depende del tipo.** En egresos es favorable gastar menos; en ingresos,
+recibir más. El color acompaña siempre a un número con su signo; nunca es el único indicio.
+
+**A-27 — El gráfico no usa el verde y el terracota de los montos.** Ese par no se distingue con daltonismo
+rojo-verde. Las columnas usan verde y ámbar, validados, con leyenda y con los valores en el globo y en la tabla.
+
+**A-28 — Los reportes los ve quien ve el libro completo.** `puede_ver_movimientos` (director y administradores
+incluidos). El presupuesto y su comparativo los ve además quien tiene `puede_ver_presupuesto`.
+
 ## Heredadas de Edumia que siguen vigentes
 
 - **D-02 (revisado)** — El valor de una tasa se puede corregir; recalcula lo no congelado.

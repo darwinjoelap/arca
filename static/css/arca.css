@@ -602,3 +602,90 @@ h1, h2, h3, .brand-name { font-family: "Manrope", "Inter", system-ui, sans-serif
   font-size: 0.9rem;
   font-weight: 500;
 }
+
+/* -------------------------------------------------------------------------
+   Reportes, presupuestos y gráficos
+   ------------------------------------------------------------------------- */
+
+.tabla-reporte { font-size: 0.9rem; }
+.tabla-reporte th { white-space: nowrap; }
+.tabla-reporte td.num, .tabla-reporte th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tabla-reporte tr.fila-seccion td {
+  background: var(--arca-ink-700); color: #fff; font-weight: 700; font-size: 0.74rem;
+  letter-spacing: 0.06em; padding-top: 0.45rem; padding-bottom: 0.45rem;
+}
+.tabla-reporte tr.fila-grupo td { font-weight: 600; color: var(--arca-ink-700); border-bottom-color: transparent; }
+.tabla-reporte tr.fila-subtotal td { font-weight: 600; border-top: 1px solid var(--arca-ink-500); }
+.tabla-reporte tr.fila-total td {
+  font-weight: 700; background: var(--arca-bg);
+  border-top: 1.5px solid var(--arca-ink-900); border-bottom: 1px solid var(--arca-ink-900);
+}
+.tabla-reporte .sangria-1 { padding-left: 1.4rem; }
+.tabla-reporte .sangria-2 { padding-left: 2.6rem; }
+.tabla-reporte td.tono-bien, .tono-bien { color: var(--arca-success); }
+.tabla-reporte td.tono-mal, .tono-mal { color: var(--arca-danger); }
+.tabla-reporte tr.fila-seccion td.tono-bien, .tabla-reporte tr.fila-seccion td.tono-mal { color: #fff; }
+
+.reporte-encabezado { border-bottom: 2px solid var(--arca-brass-500); padding-bottom: 0.75rem; margin-bottom: 1rem; }
+.reporte-notas { font-size: 0.8rem; color: var(--arca-text-muted); font-style: italic; }
+.reporte-notas p { margin-bottom: 0.2rem; }
+
+/* Medidor de ejecución: pista clara y relleno; el número va siempre al lado. */
+.medidor { display: flex; align-items: center; gap: 0.5rem; min-width: 150px; }
+.medidor-pista { flex: 1; height: 8px; border-radius: 4px; background: var(--arca-border); overflow: hidden; }
+.medidor-relleno { height: 100%; border-radius: 4px; background: var(--arca-ink-500); }
+.medidor-relleno.excedido { background: var(--arca-danger); }
+.medidor-relleno.cumplido { background: var(--arca-success); }
+.medidor-valor { font-variant-numeric: tabular-nums; font-size: 0.8rem; min-width: 3.4rem; text-align: right; }
+
+/* Barras horizontales de ranking: una sola serie, un solo tono. */
+.ranking { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr) auto; gap: 0.45rem 0.75rem; align-items: center; }
+.ranking-nombre { font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ranking-pista { height: 14px; }
+.ranking-barra { height: 100%; min-width: 2px; border-radius: 0 4px 4px 0; background: var(--arca-ink-700); }
+.ranking-barra.ingreso { background: var(--arca-grafico-ingreso); }
+.ranking-valor { font-size: 0.85rem; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.ranking-valor small { color: var(--arca-text-muted); }
+
+/* Gráfico de columnas. Par de colores validado para daltonismo (verde / ámbar):
+   el verde y el terracota del resto de la app NO se distinguen entre sí con
+   protanopia, por eso el gráfico no los usa. */
+:root { --arca-grafico-ingreso: #1a8a5c; --arca-grafico-egreso: #c98a2e; }
+.grafico { width: 100%; height: auto; display: block; }
+.grafico .rejilla { stroke: var(--arca-border); stroke-width: 1; }
+.grafico .eje { fill: var(--arca-text-muted); font-size: 11px; font-family: inherit; }
+.grafico .col-ingreso { fill: var(--arca-grafico-ingreso); }
+.grafico .col-egreso { fill: var(--arca-grafico-egreso); }
+.grafico .banda { fill: transparent; }
+.grafico .banda:hover, .grafico .banda:focus { fill: rgba(28, 27, 26, 0.05); outline: none; }
+.grafico-leyenda { display: flex; gap: 1.25rem; font-size: 0.85rem; color: var(--arca-ink-700); }
+.grafico-leyenda .muestra { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 0.35rem; }
+.grafico-contenedor { position: relative; }
+.grafico-globo {
+  position: absolute; pointer-events: none; z-index: 5; background: var(--arca-ink-900); color: #fff;
+  border-radius: 0.5rem; padding: 0.5rem 0.7rem; font-size: 0.8rem; line-height: 1.5; white-space: nowrap;
+  box-shadow: var(--arca-shadow); font-variant-numeric: tabular-nums;
+}
+.grafico-globo strong { display: block; margin-bottom: 0.1rem; }
+
+.indicador { border: 1px solid var(--arca-border); border-radius: var(--arca-radius); background: var(--arca-surface); padding: 1rem 1.15rem; height: 100%; }
+.indicador-etiqueta { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--arca-text-muted); }
+.indicador-valor { font-size: 1.45rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; color: var(--arca-ink-900); }
+.indicador-detalle { font-size: 0.8rem; color: var(--arca-text-muted); }
+
+.presupuesto-grid input.monto-mensual { max-width: 9rem; text-align: right; font-variant-numeric: tabular-nums; }
+
+@media print {
+  .arca-sidebar, .arca-topbar, .no-imprimir, .arca-sin-conexion { display: none !important; }
+  .arca-main, .arca-content { margin: 0 !important; padding: 0 !important; }
+  body { background: #fff; }
+  .card-arca { box-shadow: none; border: none; }
+}
+
+/* Mismos anchos en las tablas de egresos e ingresos, para que las columnas queden alineadas entre sí. */
+.tabla-presupuesto { table-layout: fixed; min-width: 880px; }
+.tabla-presupuesto th:nth-child(1) { width: 24%; }
+.tabla-presupuesto th:nth-child(n+2):nth-child(-n+7) { width: 9.5%; }
+.tabla-presupuesto th:nth-child(8) { width: 19%; }
+.tabla-presupuesto td:first-child { padding-left: 1rem; }
+.tabla-presupuesto td.sangria-1 { padding-left: 2rem; }

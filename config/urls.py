@@ -19,6 +19,8 @@ urlpatterns = [
     path("organizacion/", include("organizaciones.urls")),
     path("cambio/", include("cambio.urls")),
     path("libro/", include("finanzas.urls")),
+    path("presupuestos/", include("presupuestos.urls")),
+    path("reportes/", include("reportes.urls")),
     path("sync/", include("sync.urls")),
     path("", include("core.urls")),
     path("", core_views.inicio, name="inicio"),

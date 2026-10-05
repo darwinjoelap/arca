@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% load arca static %}
+{% block titulo %}Análisis — Arca{% endblock %}
+{% block titulo_topbar %}Análisis{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">Análisis</h1>
+    <p class="text-muted small mb-0">Del {{ v.desde|date:"d/m/Y" }} al {{ v.hasta|date:"d/m/Y" }} · {% if v.caja %}{{ v.caja.nombre }}{% else %}Todas las cajas{% endif %} · en {{ simbolo }}</p>
+  </div>
+  <a href="{% url 'reportes:inicio' %}" class="btn btn-sm btn-outline-secondary no-imprimir"><i class="bi bi-arrow-left"></i> Reportes</a>
+</div>
+{% include "reportes/_filtros.html" with usa="periodo caja moneda" %}
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="indicador">
+    <div class="indicador-etiqueta">Ingresos</div>
+    <div class="indicador-valor">{{ simbolo }} {{ a.ingresos|monto }}</div>
+    <div class="indicador-detalle">{{ a.n_ingresos }} movimiento{{ a.n_ingresos|pluralize }}{% if a.var_ingresos is not None %} · <span class="{% if a.var_ingresos > 0 %}tono-bien{% elif a.var_ingresos < 0 %}tono-mal{% endif %}"><i class="bi bi-arrow-{% if a.var_ingresos >= 0 %}up{% else %}down{% endif %}"></i> {{ a.var_ingresos|monto:1 }} %</span>{% endif %}</div>
+  </div></div>
+  <div class="col-6 col-lg-3"><div class="indicador">
+    <div class="indicador-etiqueta">Egresos</div>
+    <div class="indicador-valor">{{ simbolo }} {{ a.egresos|monto }}</div>
+    <div class="indicador-detalle">{{ a.n_egresos }} movimiento{{ a.n_egresos|pluralize }}{% if a.var_egresos is not None %} · <span class="{% if a.var_egresos < 0 %}tono-bien{% elif a.var_egresos > 0 %}tono-mal{% endif %}"><i class="bi bi-arrow-{% if a.var_egresos >= 0 %}up{% else %}down{% endif %}"></i> {{ a.var_egresos|monto:1 }} %</span>{% endif %}</div>
+  </div></div>
+  <div class="col-6 col-lg-3"><div class="indicador">
+    <div class="indicador-etiqueta">Resultado</div>
+    <div class="indicador-valor">{{ simbolo }} {{ a.resultado|monto }}</div>
+    <div class="indicador-detalle">{% if a.resultado > 0 %}<i class="bi bi-check-circle-fill tono-bien"></i> Superávit{% elif a.resultado < 0 %}<i class="bi bi-exclamation-triangle-fill tono-mal"></i> Déficit{% else %}En equilibrio{% endif %}{% if a.ahorro_pct is not None %} · {{ a.ahorro_pct|monto:1 }} % de los ingresos{% endif %}</div>
+  </div></div>
+  <div class="col-6 col-lg-3"><div class="indicador">
+    <div class="indicador-etiqueta">Egreso promedio por día</div>
+    <div class="indicador-valor">{{ simbolo }} {{ a.egreso_diario|monto }}</div>
+    <div class="indicador-detalle">en {{ a.dias }} día{{ a.dias|pluralize }}</div>
+  </div></div>
+</div>
+<p class="text-muted small">Las flechas comparan contra el período anterior de igual duración ({{ a.previo.0|date:"d/m/Y" }}–{{ a.previo.1|date:"d/m/Y" }}). <a href="{% url 'reportes:reporte' 'variacion' %}?{{ consulta }}">Ver la variación por concepto</a>.</p>
+
+<div class="card card-arca mb-3">
+  <div class="card-body p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
+      <h2 class="h6 mb-0">Ingresos y egresos por mes{% if v.ejercicio %} · Ejercicio {{ v.ejercicio.nombre }}{% endif %}</h2>
+      {% if v.ejercicio %}<a class="small no-imprimir" href="{% url 'reportes:reporte' 'flujo' %}?ejercicio={{ v.ejercicio.pk }}&moneda={{ v.moneda }}{% if v.caja %}&caja={{ v.caja.pk }}{% endif %}">Ver la tabla</a>{% endif %}
+    </div>
+    {% if grafico %}{% include "reportes/_grafico_mensual.html" %}
+    {% else %}<p class="text-muted mb-0">Todavía no hay movimientos confirmados en este ejercicio.</p>{% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6"><div class="card card-arca h-100"><div class="card-body p-4">
+    <h2 class="h6 mb-3">En qué se fue el dinero</h2>
+    {% if a.top_egresos %}
+    <div class="ranking">
+      {% for r in a.top_egresos %}
+        <span class="ranking-nombre" title="{{ r.nombre }}">{{ r.nombre }}</span>
+        <span class="ranking-pista"><span class="ranking-barra d-block" style="width: {{ r.ancho }}%;"></span></span>
+        <span class="ranking-valor">{{ simbolo }} {{ r.monto|monto }} <small>{{ r.pct|monto:1 }} %</small></span>
+      {% endfor %}
+    </div>
+    {% else %}<p class="text-muted mb-0">Sin egresos en el período.</p>{% endif %}
+  </div></div></div>
+  <div class="col-lg-6"><div class="card card-arca h-100"><div class="card-body p-4">
+    <h2 class="h6 mb-3">De dónde vino el dinero</h2>
+    {% if a.top_ingresos %}
+    <div class="ranking">
+      {% for r in a.top_ingresos %}
+        <span class="ranking-nombre" title="{{ r.nombre }}">{{ r.nombre }}</span>
+        <span class="ranking-pista"><span class="ranking-barra d-block" style="width: {{ r.ancho }}%;"></span></span>
+        <span class="ranking-valor">{{ simbolo }} {{ r.monto|monto }} <small>{{ r.pct|monto:1 }} %</small></span>
+      {% endfor %}
+    </div>
+    {% else %}<p class="text-muted mb-0">Sin ingresos en el período.</p>{% endif %}
+  </div></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6"><div class="card card-arca h-100"><div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-baseline mb-3">
+      <h2 class="h6 mb-0">Miembros que más aportaron</h2>
+      <a class="small no-imprimir" href="{% url 'reportes:reporte' 'miembros' %}?{{ consulta }}">Ver todos</a>
+    </div>
+    {% if a.aportantes %}
+    <div class="ranking">
+      {% for r in a.aportantes %}
+        <span class="ranking-nombre" title="{{ r.nombre }}">{{ r.nombre }}</span>
+        <span class="ranking-pista"><span class="ranking-barra d-block" style="width: {{ r.ancho }}%;"></span></span>
+        <span class="ranking-valor">{{ simbolo }} {{ r.monto|monto }} <small>{{ r.pct|monto:1 }} %</small></span>
+      {% endfor %}
+    </div>
+    {% else %}<p class="text-muted mb-0">Ningún ingreso del período tiene un miembro asociado.</p>{% endif %}
+  </div></div></div>
+  <div class="col-lg-6"><div class="card card-arca h-100"><div class="card-body p-4">
+    <h2 class="h6 mb-3">Para mirar de cerca</h2>
+    <ul class="list-unstyled mb-0 small">
+      {% if a.mayor_egreso %}
+      <li class="mb-2"><i class="bi bi-arrow-up-right-circle me-1"></i> El egreso más grande fue
+        <a href="{% url 'finanzas:movimiento_detalle' a.mayor_egreso.pk %}">{{ a.mayor_egreso.titulo }}</a>:
+        <strong class="monto">{{ simbolo }} {{ a.mayor_egreso_monto|monto }}</strong> el {{ a.mayor_egreso.fecha|date:"d/m/Y" }}.</li>
+      {% endif %}
+      {% if a.top_egresos %}
+      <li class="mb-2"><i class="bi bi-pie-chart me-1"></i> «{{ a.top_egresos.0.nombre }}» concentra el <strong>{{ a.top_egresos.0.pct|monto:1 }} %</strong> de los egresos.</li>
+      {% endif %}
+      {% for p in presupuestos %}
+      <li class="mb-2"><i class="bi bi-bullseye me-1"></i> <a href="{% url 'presupuestos:detalle' p.pk %}">Presupuesto de {{ p.caja.nombre }}</a>: revisa qué partidas van por encima de lo previsto.</li>
+      {% empty %}
+      <li class="mb-2 text-muted"><i class="bi bi-bullseye me-1"></i> No hay presupuesto para este ejercicio: sin él no se puede decir si un gasto es alto o normal.</li>
+      {% endfor %}
+      <li class="text-muted"><i class="bi bi-info-circle me-1"></i> Cifras con la tasa del día de cada movimiento; los traslados entre cuentas no cuentan.</li>
+    </ul>
+  </div></div></div>
+</div>
+{% endblock %}
+{% block extra_scripts %}<script src="{% static 'js/graficos.js' %}"></script>{% endblock %}

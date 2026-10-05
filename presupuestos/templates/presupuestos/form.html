@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titulo %}Nuevo presupuesto — Arca{% endblock %}
+{% block titulo_topbar %}Nuevo presupuesto{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-4">Nuevo presupuesto</h1>
+<div class="card card-arca" style="max-width: 560px;"><div class="card-body p-4">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "organizaciones/_form_campos.html" %}
+    <button type="submit" class="btn btn-arca-primary">Crear y asignar montos</button>
+    <a href="{% url 'presupuestos:lista' %}" class="btn btn-outline-secondary">Cancelar</a>
+  </form>
+</div></div>
+{% endblock %}

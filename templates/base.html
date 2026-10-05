@@ -79,7 +79,21 @@
         {% endif %}
         {% endif %}
 
-        {# Fases siguientes: Presupuestos, Mi cuenta, Inventario y Reportes se agregan aquí. #}
+        {% if puede_ver_presupuesto or ve_el_libro %}
+        <div class="arca-nav-heading">Control</div>
+        {% if puede_ver_presupuesto %}
+        <a class="nav-link {% if 'presupuestos:' in vista or vista == 'reportes:presupuesto' %}active{% endif %}" href="{% url 'presupuestos:lista' %}">
+          <i class="bi bi-bullseye"></i> Presupuestos
+        </a>
+        {% endif %}
+        {% if ve_el_libro %}
+        <a class="nav-link {% if 'reportes:' in vista and vista != 'reportes:presupuesto' %}active{% endif %}" href="{% url 'reportes:inicio' %}">
+          <i class="bi bi-bar-chart-line-fill"></i> Reportes
+        </a>
+        {% endif %}
+        {% endif %}
+
+        {# Fases siguientes: Mi cuenta e Inventario se agregan aquí. #}
 
         {% if puede_administrar %}
         <div class="arca-nav-heading">Administración</div>
