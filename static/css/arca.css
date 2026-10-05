@@ -592,3 +592,13 @@ h1, h2, h3, .brand-name { font-family: "Manrope", "Inter", system-ui, sans-serif
 .form-check-input:checked { background-color: var(--arca-ink-900); border-color: var(--arca-ink-900); }
 .permiso-si { color: var(--arca-success); }
 .permiso-no { color: var(--arca-border); }
+
+/* Banda fija de «sin conexión», debajo de la barra superior. */
+.arca-sin-conexion {
+  background: #f5ecd9;
+  color: #7a4f0e;
+  border-bottom: 1px solid #e6d5b0;
+  padding: 0.5rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}

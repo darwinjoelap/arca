@@ -16,7 +16,7 @@
 {% else %}
 <div class="card card-arca" style="max-width: 560px;">
   <div class="card-body p-4">
-    <form method="post" novalidate id="form-movimiento">
+    <form method="post" id="form-movimiento" data-offline data-tipo="{{ tipo }}">
       {% csrf_token %}
       {{ form.uuid_cliente }}
       {% if form.non_field_errors %}<div class="alert alert-danger">{% for error in form.non_field_errors %}{{ error }} {% endfor %}</div>{% endif %}
@@ -89,6 +89,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
+{% load static %}<script src="{% static 'js/offline-forms.js' %}"></script>
 {{ monedas_por_cuenta|json_script:"monedas-por-cuenta" }}
 <script>
 (function () {
@@ -114,12 +115,6 @@
   cuenta.addEventListener("change", actualizar);
   monto.addEventListener("input", actualizar);
   actualizar();
-
-  // Evita el doble envío por doble toque.
-  document.getElementById("form-movimiento").addEventListener("submit", function (e) {
-    if (this.dataset.enviado) { e.preventDefault(); return; }
-    this.dataset.enviado = "1";
-  });
 })();
 </script>
 {% endblock %}

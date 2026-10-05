@@ -35,9 +35,25 @@ Se trabaja por fases, como en Edumia: una fase se cierra aquí antes de abrir la
 
 Pendiente de verificar en tu máquina: correr las 93 pruebas contra PostgreSQL (aquí, SQLite).
 
+## Hecho — Fase 3, parte 2 (captura offline)
+
+- [x] Ingresos y egresos se pueden registrar sin conexión con la app ya abierta (como Edumia)
+- [x] Banda fija de «Sin conexión» y aviso en el formulario cada vez que algo queda guardado en el teléfono
+- [x] Envío automático al volver la señal, al reabrir la app y, en Android, en segundo plano (Background Sync)
+- [x] Contador de pendientes en la barra superior, con panel para revisar, reintentar o descartar
+- [x] Un pendiente que el servidor rechaza queda marcado con su motivo: no se pierde ni se reintenta en bucle
+- [x] Sesión cerrada, otro usuario u otra organización en el mismo teléfono: el pendiente se conserva
+- [x] 102 pruebas en total; el flujo completo se probó además en un navegador real (cortar y devolver la red)
+
+Pendiente de verificar en tu máquina: las 102 pruebas contra PostgreSQL, y el flujo en un teléfono de verdad
+(Android y iPhone). Aquí se probó con Chromium simulando un teléfono, sin service worker.
+
 ## Lo que NO está todavía
 
-- Captura offline de ingresos y egresos (Fase 3, parte 2). Hoy registrar exige conexión.
+- Abrir la app desde cero sin señal: no se puede. Hay que tenerla abierta en «Registrar ingreso» o
+  «Registrar egreso» antes de perder la conexión (decisión A-20). Navegar a otra pantalla sin señal muestra
+  el aviso de «Sin conexión» y lo ya guardado en el teléfono no se pierde.
+- Traslados sin conexión: solo en línea.
 - Editar un movimiento: no existe a propósito (A-18).
 - Exportar el libro a Excel o PDF y el resumen por concepto (Fase 6).
 - Presupuestos, cuenta personal e inventario.
@@ -46,10 +62,9 @@ Pendiente de verificar en tu máquina: correr las 93 pruebas contra PostgreSQL (
 - Agregar a una organización un usuario que ya existe en otra: solo desde `/admin/`.
 - Respaldo automático de la base (el workflow de Neon de Edumia no se copió; hay que hacerlo para Railway).
 
-## Siguiente — Fase 3, parte 2: captura offline
+## Siguiente — por decidir
 
-- [ ] Cola en IndexedDB y endpoints idempotentes en `sync` (patrón de la Fase 7 de Edumia)
-- [ ] Precaché de los formularios y catálogos (cuentas, conceptos, última tasa)
+Fase 4 (presupuestos) o Fase 2 (tasa BCV automática, fuentes locales, instalación en iPhone).
 
 ## Pendiente — Fase 2 (moneda e identidad)
 

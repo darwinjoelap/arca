@@ -1,10 +1,12 @@
 {% load static %}
-// Service worker de Arca. Por ahora solo instalabilidad y un "shell" mínimo
-// en caché: la app carga algo (y una pantalla de aviso) sin conexión.
-// La cola offline (IndexedDB + Background Sync, heredada de la Fase 7 de
-// Edumia) se conecta en la Fase 3, junto con los formularios de captura.
+// Service worker de Arca: instalabilidad, un "shell" mínimo en caché y el
+// envío en segundo plano de la cola offline (Background Sync, donde exista).
+// offline-sync-core.js se carga con importScripts porque este archivo corre
+// en el hilo del service worker, no en el de la página.
 
-const CACHE_NAME = "arca-shell-v2";
+importScripts("{% static 'js/offline-sync-core.js' %}");
+
+const CACHE_NAME = "arca-shell-v3";
 const OFFLINE_URL = "{% url 'core:sin_conexion' %}";
 const ARCHIVOS_SHELL = [
   "{% static 'vendor/bootstrap/bootstrap.min.css' %}",
@@ -12,6 +14,9 @@ const ARCHIVOS_SHELL = [
   "{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}",
   "{% static 'vendor/htmx/htmx.min.js' %}",
   "{% static 'css/arca.css' %}",
+  "{% static 'js/offline-sync-core.js' %}",
+  "{% static 'js/offline-status.js' %}",
+  "{% static 'js/offline-forms.js' %}",
   "{% static 'img/isotipo-claro.png' %}",
   "{% static 'img/logo.png' %}",
   "{% static 'img/favicon-32.png' %}",
@@ -56,3 +61,19 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
+
+// Background Sync: offline-forms.js registra el tag al guardar algo en la
+// cola. El navegador dispara este evento solo (incluso con la app cerrada,
+// en Android/Chrome) cuando detecta que volvió la señal. iPhone no lo tiene:
+// ahí la cola se envía al volver a abrir la app (offline-status.js).
+self.addEventListener("sync", (event) => {
+  if (event.tag === self.ArcaOffline.TAG_SYNC) {
+    event.waitUntil(self.ArcaOffline.sincronizarCola().then(avisarClientes));
+  }
+});
+
+function avisarClientes() {
+  return self.clients.matchAll().then((clientes) => {
+    clientes.forEach((cliente) => cliente.postMessage({ tipo: "arca-offline-sync" }));
+  });
+}

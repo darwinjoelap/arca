@@ -75,6 +75,21 @@ si se deja vacío, se usa la tasa del día. La diferencia contra la tasa oficial
 fondos disponibles: es la «diferencia por cambios» del Excel, que ya no hay que calcular a mano. Solo director
 y administradores registran y anulan traslados.
 
+**A-20 — Offline como en Edumia: con la app ya abierta.** Se registra sin conexión solo desde un formulario que
+ya estaba cargado; no se precargan pantallas ni catálogos para abrir la app desde cero sin señal. Es más simple
+y evita trabajar con cuentas, conceptos o tasa desactualizados.
+
+**A-21 — El formulario siempre envía por el endpoint de sync.** No se confía en `navigator.onLine`: con wifi
+sin internet dice que hay conexión. El formulario intenta enviar y, si no hay respuesta en 12 segundos, guarda
+en el teléfono. Si el servidor sí recibió y solo se perdió la respuesta, el reintento no duplica (`uuid_cliente`).
+
+**A-22 — Solo un JSON con `resultado` cuenta como guardado.** Una redirección al login o la página de un portal
+cautivo responden 200 con HTML; darlas por buenas borraría de la cola algo que nunca llegó. Por eso el endpoint
+nunca redirige (responde 401/409 en JSON) y el cliente exige el JSON. Edumia tenía ese hueco.
+
+**A-23 — La cola es del teléfono, pero cada pendiente es de quien lo capturó.** Lleva el usuario y la
+organización; el servidor rechaza con 409 lo que no sea de la sesión actual y el teléfono lo conserva.
+
 ## Heredadas de Edumia que siguen vigentes
 
 - **D-02 (revisado)** — El valor de una tasa se puede corregir; recalcula lo no congelado.

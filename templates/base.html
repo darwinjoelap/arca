@@ -25,7 +25,7 @@
 <link rel="stylesheet" href="{% static 'css/arca.css' %}">
 {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body{% if user.is_authenticated %} data-usuario="{{ user.pk }}" data-organizacion="{{ organizacion_activa.pk|default:'' }}"{% endif %}>
 
 {% if user.is_authenticated %}
 <div class="app-shell">
@@ -133,7 +133,16 @@
         <i class="bi bi-list fs-4"></i>
       </button>
       <p class="arca-topbar-title mb-0">{% block titulo_topbar %}{% endblock %}</p>
+      <button type="button" id="arca-offline-boton" class="btn btn-sm btn-outline-warning d-none ms-auto align-items-center gap-2"
+              data-bs-toggle="modal" data-bs-target="#arcaPendientes"
+              title="Registros guardados en este teléfono que esperan conexión para enviarse.">
+        <i class="bi bi-cloud-arrow-up-fill"></i>
+        <span><span id="arca-offline-contador">0</span> <span class="d-none d-sm-inline">pendiente(s)</span></span>
+      </button>
     </header>
+    <div id="arca-sin-conexion" class="arca-sin-conexion d-none" role="status">
+      <i class="bi bi-wifi-off"></i> Sin conexión. Puedes registrar ingresos y egresos: se guardan en este teléfono y se envían al volver la señal.
+    </div>
     <main class="arca-content">
       {% if messages %}
         {% for message in messages %}
@@ -176,6 +185,28 @@
 
 <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
 <script src="{% static 'vendor/htmx/htmx.min.js' %}"></script>
+{% if user.is_authenticated %}
+<div class="modal fade" id="arcaPendientes" tabindex="-1" aria-labelledby="arcaPendientesTitulo" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title h5" id="arcaPendientesTitulo">Pendientes por enviar</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small text-muted">Están guardados solo en este teléfono. No borres los datos del navegador ni desinstales la app hasta que se envíen.</p>
+        <div id="arca-offline-lista"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-arca-primary" id="arca-offline-enviar"><i class="bi bi-arrow-repeat"></i> Enviar ahora</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="{% static 'js/offline-sync-core.js' %}"></script>
+<script src="{% static 'js/offline-status.js' %}"></script>
+{% endif %}
 <script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {

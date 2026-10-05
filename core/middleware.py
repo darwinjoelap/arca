@@ -17,7 +17,11 @@ CLAVE_SESION = "organizacion_id"
 
 # Rutas que funcionan sin organización activa. /cambio/ es de plataforma: la
 # tasa es global y la maneja el superadmin, que no pertenece a ninguna.
-_PREFIJOS_LIBRES = ("/admin/", "/cuentas/", "/cambio/", "/static/", "/salud/", "/sw.js", "/sin-conexion/")
+# /sync/ contesta siempre en JSON y revisa la sesión por su cuenta: una
+# redirección aquí haría creer al teléfono que el envío se guardó.
+_PREFIJOS_LIBRES = (
+    "/admin/", "/cuentas/", "/cambio/", "/sync/", "/static/", "/salud/", "/sw.js", "/sin-conexion/", "/favicon.ico",
+)
 
 
 class OrganizacionActivaMiddleware:
