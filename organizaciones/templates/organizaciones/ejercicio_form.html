@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block titulo %}{% if object %}Editar ejercicio{% else %}Nuevo ejercicio{% endif %} — Arca{% endblock %}
+{% block titulo_topbar %}{% if object %}Editar ejercicio{% else %}Nuevo ejercicio{% endif %}{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-4">{% if object %}Editar «{{ object.nombre }}»{% else %}Nuevo ejercicio{% endif %}</h1>
+<div class="card card-arca" style="max-width: 480px;">
+  <div class="card-body p-4">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "organizaciones/_form_campos.html" %}
+      <button type="submit" class="btn btn-arca-primary">Guardar</button>
+      <a href="{% url 'organizaciones:ejercicio_lista' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

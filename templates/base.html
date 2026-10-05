@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="es-ve" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block titulo %}Arca{% endblock %}</title>
+<link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32.png' %}">
+<link rel="icon" type="image/png" sizes="16x16" href="{% static 'img/favicon-16.png' %}">
+<link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon-180.png' %}">
+<link rel="manifest" href="{% static 'manifest.json' %}">
+<meta name="theme-color" content="#1c1b1a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Arca">
+{% comment %}
+  Bootstrap, los iconos y htmx se sirven desde static/vendor/ para que carguen sin conexión.
+  Las fuentes siguen viniendo de Google Fonts; pasarlas a static/ queda para la Fase 2.
+{% endcomment %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+<link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/arca.css' %}">
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% if user.is_authenticated %}
+<div class="app-shell">
+  <aside class="offcanvas-lg offcanvas-start arca-sidebar" tabindex="-1" id="arcaSidebar">
+    <div class="sidebar-inner">
+      <div class="arca-sidebar-brand">
+        <a href="{% url 'inicio' %}" class="d-flex align-items-center gap-2 text-decoration-none flex-grow-1">
+          <img src="{% static 'img/isotipo-claro.png' %}" alt="">
+          <div>
+            <div class="brand-name">Arca</div>
+            <span class="brand-tag">Ingresos, egresos e inventario</span>
+          </div>
+        </a>
+        <button type="button" class="btn-close btn-close-white ms-auto d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#arcaSidebar" aria-label="Cerrar"></button>
+      </div>
+
+      {% if organizacion_activa %}
+      <div class="arca-org-actual">
+        <div class="fw-semibold text-truncate">{{ organizacion_activa.nombre }}</div>
+        {% if user.membresias.count > 1 %}<a href="{% url 'organizaciones:seleccionar' %}">Cambiar de organización</a>{% endif %}
+      </div>
+      {% endif %}
+
+      <nav class="arca-nav">
+        {% with vista=request.resolver_match.view_name|default:'' %}
+        {% if organizacion_activa %}
+        <div class="arca-nav-heading">Panel</div>
+        <a class="nav-link {% if vista == 'inicio' %}active{% endif %}" href="{% url 'inicio' %}">
+          <i class="bi bi-speedometer2"></i> Panel principal
+        </a>
+
+        {# Fase 3 en adelante: Libro de caja, Presupuestos, Mi cuenta, Inventario y Reportes se agregan aquí. #}
+
+        {% if puede_administrar %}
+        <div class="arca-nav-heading">Administración</div>
+        <a class="nav-link {% if 'organizaciones:' in vista and vista != 'organizaciones:seleccionar' %}active{% endif %}" href="{% url 'organizaciones:configuracion' %}">
+          <i class="bi bi-sliders"></i> Configuración
+        </a>
+        {% endif %}
+        {% endif %}
+
+        {% if user.is_superuser %}
+        <div class="arca-nav-heading">Plataforma</div>
+        <a class="nav-link {% if 'cambio:' in vista %}active{% endif %}" href="{% url 'cambio:tasa_lista' %}">
+          <i class="bi bi-currency-exchange"></i> Tasa de cambio
+        </a>
+        <a class="nav-link" href="/admin/">
+          <i class="bi bi-gear-fill"></i> Panel de plataforma
+        </a>
+        {% endif %}
+        {% endwith %}
+      </nav>
+
+      <div class="arca-sidebar-footer">
+        <div class="dropdown">
+          <button class="btn btn-sm w-100 text-start dropdown-toggle d-flex align-items-center gap-2" type="button" style="color: rgba(255,255,255,.9);" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-person-circle fs-5"></i>
+            <span class="text-truncate">
+              {% if membresia_activa %}{{ membresia_activa.nombre }}{% else %}{{ user.nombre_para_mostrar }}{% endif %}
+              {% if membresia_activa %}<br><small class="opacity-75">{{ membresia_activa.rol_visible }}</small>{% endif %}
+            </span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-dark">
+            <li><a class="dropdown-item" href="{% url 'password_change' %}"><i class="bi bi-key-fill me-2"></i>Cambiar contraseña</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <form method="post" action="{% url 'logout' %}" class="px-3 py-1">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-link dropdown-item p-0 text-decoration-none">
+                  <i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión
+                </button>
+              </form>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="arca-main">
+    <header class="arca-topbar">
+      <button type="button" class="btn btn-sm border-0 d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#arcaSidebar" aria-controls="arcaSidebar">
+        <i class="bi bi-list fs-4"></i>
+      </button>
+      <p class="arca-topbar-title mb-0">{% block titulo_topbar %}{% endblock %}</p>
+    </header>
+    <main class="arca-content">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags|default:'info' }} shadow-sm" role="alert">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+{% else %}
+
+<header class="arca-guest-topbar">
+  <a class="d-flex align-items-center gap-2 text-decoration-none" href="{% url 'inicio' %}">
+    <img src="{% static 'img/isotipo-claro.png' %}" alt="" style="width:34px;height:34px;object-fit:contain;">
+    <span class="fw-bold fs-5 text-white brand-name">Arca</span>
+  </a>
+</header>
+<main class="arca-guest-main">
+  <div class="w-100" style="max-width: 460px;">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} shadow-sm" role="alert">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+{% endif %}
+
+    {% block contenido %}{% endblock %}
+
+{% if user.is_authenticated %}
+    </main>
+  </div>
+</div>
+{% else %}
+  </div>
+</main>
+{% endif %}
+
+<script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'vendor/htmx/htmx.min.js' %}"></script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

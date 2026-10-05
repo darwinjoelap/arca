@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block titulo %}{% if object %}Editar tipo{% else %}Nuevo tipo{% endif %} — Arca{% endblock %}
+{% block titulo_topbar %}{% if object %}Editar tipo de miembro{% else %}Nuevo tipo de miembro{% endif %}{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-4">{% if object %}Editar «{{ object.nombre }}»{% else %}Nuevo tipo de miembro{% endif %}</h1>
+<div class="card card-arca" style="max-width: 560px;">
+  <div class="card-body p-4">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="mb-4">
+        <label class="form-label fw-semibold" for="{{ form.nombre.id_for_label }}">Nombre</label>
+        {{ form.nombre }}
+        <div class="form-text">El que use tu organización: Residente, Tesorero, Socio, Hijo…</div>
+        {% if form.nombre.errors %}<div class="text-danger small mt-1">{% for error in form.nombre.errors %}{{ error }} {% endfor %}</div>{% endif %}
+      </div>
+
+      <p class="fw-semibold mb-2">Qué puede hacer</p>
+      {% for field in form %}
+        {% if field.name != "nombre" and field.name != "activo" %}
+        <div class="form-check form-switch mb-2">
+          {{ field }}
+          <label class="form-check-label" for="{{ field.id_for_label }}">
+            {% for nombre, etiqueta, ayuda in permisos %}{% if nombre == field.name %}<span class="fw-semibold">{{ etiqueta }}</span><br><span class="text-muted small">{{ ayuda }}</span>{% endif %}{% endfor %}
+          </label>
+        </div>
+        {% endif %}
+      {% endfor %}
+
+      <hr>
+      <div class="form-check mb-3">
+        {{ form.activo }}
+        <label class="form-check-label fw-semibold" for="{{ form.activo.id_for_label }}">Activo</label>
+        <div class="form-text">Inactivo: no se ofrece para miembros nuevos, y quienes lo tienen pierden sus permisos.</div>
+      </div>
+      {% if form.non_field_errors %}<div class="alert alert-danger">{% for error in form.non_field_errors %}{{ error }} {% endfor %}</div>{% endif %}
+      <button type="submit" class="btn btn-arca-primary">Guardar</button>
+      <a href="{% url 'organizaciones:tipo_lista' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block titulo %}Ejercicios — Arca{% endblock %}
+{% block titulo_topbar %}Ejercicios{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+  <div>
+    <h1 class="h3 mb-1">Ejercicios</h1>
+    <p class="text-muted mb-0">El período contable de la organización, normalmente un año. Solo uno está activo a la vez.</p>
+  </div>
+  <a href="{% url 'organizaciones:ejercicio_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nuevo ejercicio</a>
+</div>
+
+<div class="card card-arca">
+  {% if ejercicios %}
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead><tr><th>Ejercicio</th><th>Desde</th><th>Hasta</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+      <tbody>
+      {% for e in ejercicios %}
+        <tr>
+          <td class="fw-semibold">{{ e.nombre }}</td>
+          <td>{{ e.fecha_inicio|date:"d/m/Y" }}</td>
+          <td>{{ e.fecha_fin|date:"d/m/Y" }}</td>
+          <td>
+            {% if e.cerrado %}<span class="badge text-bg-secondary">Cerrado</span>
+            {% elif e.activo %}<span class="badge text-bg-success">Activo</span>
+            {% else %}<span class="badge text-bg-light border">Sin activar</span>{% endif %}
+          </td>
+          <td class="text-end text-nowrap">
+            {% if not e.cerrado %}
+              {% if not e.activo %}
+              <form method="post" action="{% url 'organizaciones:ejercicio_activar' e.pk %}" class="d-inline">
+                {% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-success">Activar</button>
+              </form>
+              {% endif %}
+              <a href="{% url 'organizaciones:ejercicio_editar' e.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="{% url 'organizaciones:ejercicio_cerrar' e.pk %}" class="d-inline"
+                    onsubmit="return confirm('¿Cerrar el ejercicio «{{ e.nombre|escapejs }}»? Un ejercicio cerrado ya no se edita ni se reabre desde aquí.');">
+                {% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-secondary">Cerrar</button>
+              </form>
+              <form method="post" action="{% url 'organizaciones:ejercicio_eliminar' e.pk %}" class="d-inline"
+                    onsubmit="return confirm('¿Eliminar el ejercicio «{{ e.nombre|escapejs }}»?');">
+                {% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+              </form>
+            {% else %}
+              <span class="text-muted small">Cerrado el {{ e.fecha_cierre|date:"d/m/Y" }}</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-calendar3 d-block mb-2"></i>
+    Todavía no hay ejercicios. Crea el del año en curso y actívalo.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

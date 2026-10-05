@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titulo %}{% if miembro %}Editar miembro{% else %}Nuevo miembro{% endif %} — Arca{% endblock %}
+{% block titulo_topbar %}{% if miembro %}Editar miembro{% else %}Nuevo miembro{% endif %}{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-4">{% if miembro %}Editar a «{{ miembro.nombre }}»{% else %}Nuevo miembro{% endif %}</h1>
+<div class="card card-arca" style="max-width: 560px;">
+  <div class="card-body p-4">
+    {% if miembro %}<p class="text-muted small">Usuario: <code>{{ miembro.user.username }}</code></p>{% endif %}
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "organizaciones/_form_campos.html" %}
+      <button type="submit" class="btn btn-arca-primary">Guardar</button>
+      <a href="{% url 'organizaciones:miembro_lista' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

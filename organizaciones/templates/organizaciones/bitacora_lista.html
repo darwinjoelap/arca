@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block titulo %}Bitácora — Arca{% endblock %}
+{% block titulo_topbar %}Bitácora{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-1">Bitácora</h1>
+<p class="text-muted mb-4">Registro de lo que se hizo en {{ organizacion_activa.nombre }}. No se puede editar ni borrar.</p>
+
+<form method="get" class="mb-3 d-flex flex-wrap align-items-end gap-2">
+  <div>
+    <label for="accion" class="form-label small fw-semibold mb-0">Acción</label>
+    <select name="accion" id="accion" class="form-select" onchange="this.form.submit()">
+      <option value="">Todas</option>
+      {% for valor, etiqueta in acciones %}
+        <option value="{{ valor }}" {% if valor == accion_filtro %}selected{% endif %}>{{ etiqueta }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+<div class="card card-arca">
+  {% if registros %}
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Detalle</th><th>IP</th></tr></thead>
+      <tbody>
+      {% for r in registros %}
+        <tr>
+          <td class="text-nowrap">{{ r.fecha|date:"d/m/Y H:i" }}</td>
+          <td>{{ r.usuario.username|default:"—" }}</td>
+          <td>{{ r.get_accion_display }}</td>
+          <td class="small">{{ r.descripcion|default:"—" }}</td>
+          <td class="small text-muted">{{ r.ip|default:"—" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if is_paginated %}
+  <div class="card-body py-2">
+    <nav class="d-flex justify-content-between">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&accion={{ accion_filtro }}" class="btn btn-sm btn-outline-secondary">« Más recientes</a>
+      {% else %}<span></span>{% endif %}
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&accion={{ accion_filtro }}" class="btn btn-sm btn-outline-secondary">Más antiguos »</a>
+      {% endif %}
+    </nav>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-journal-text d-block mb-2"></i>
+    No hay registros{% if accion_filtro %} de esa acción{% endif %} todavía.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

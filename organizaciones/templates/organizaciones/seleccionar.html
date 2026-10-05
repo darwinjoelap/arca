@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titulo %}Elegir organización — Arca{% endblock %}
+{% block titulo_topbar %}Elegir organización{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-4">¿Con qué organización quieres trabajar?</h1>
+{% if membresias %}
+<div class="row g-3" style="max-width: 760px;">
+  {% for m in membresias %}
+  <div class="col-md-6">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="organizacion" value="{{ m.organizacion_id }}">
+      <button type="submit" class="quick-action w-100 text-start">
+        <span class="quick-action-icon"><i class="bi bi-building"></i></span>
+        <span>
+          <span class="fw-semibold d-block">{{ m.organizacion.nombre }}</span>
+          <span class="text-muted small">{{ m.rol_visible }}{% if m.organizacion_id == organizacion_activa.pk %} · actual{% endif %}</span>
+        </span>
+      </button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card card-arca" style="max-width: 560px;"><div class="empty-state">
+  <i class="bi bi-building d-block mb-2"></i>
+  Tu usuario no tiene acceso activo a ninguna organización.
+</div></div>
+{% endif %}
+{% endblock %}

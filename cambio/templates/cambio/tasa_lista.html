@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block titulo %}Tasa de cambio — Plataforma{% endblock %}
+{% block titulo_topbar %}Tasa de cambio{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+  <div>
+    <h1 class="h3 mb-1">Tasa de cambio</h1>
+    <p class="text-muted mb-0">
+      La tasa es global: una por día sirve a todas las organizaciones. Si una quedó mal, se puede
+      corregir su valor.
+    </p>
+  </div>
+  <a href="{% url 'cambio:tasa_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Cargar tasa</a>
+</div>
+
+<div class="card card-arca">
+  {% if tasas %}
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead>
+        <tr><th>Fecha</th><th>Fuente</th><th>Valor (Bs. por USD)</th><th>Cargada por</th><th>Uso</th><th class="text-end">Acciones</th></tr>
+      </thead>
+      <tbody>
+      {% for tasa in tasas %}
+        <tr>
+          <td>{{ tasa.fecha }}</td>
+          <td>{{ tasa.get_fuente_display }}</td>
+          <td>{{ tasa.valor }}</td>
+          <td>{{ tasa.cargada_por }}</td>
+          <td>
+            {% if tasa.tiene_transacciones %}
+              <span class="badge text-bg-info">En uso</span>
+            {% else %}
+              <span class="text-muted small">Sin usar</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{% url 'cambio:tasa_editar' tasa.pk %}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-pencil"></i> Corregir valor
+            </a>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if is_paginated %}
+  <div class="card-body py-2">
+    <nav class="d-flex justify-content-between">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-sm btn-outline-secondary">« Más recientes</a>
+      {% else %}<span></span>{% endif %}
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="btn btn-sm btn-outline-secondary">Más antiguas »</a>
+      {% endif %}
+    </nav>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-currency-exchange d-block mb-2"></i>
+    No hay ninguna tasa de cambio cargada todavía.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

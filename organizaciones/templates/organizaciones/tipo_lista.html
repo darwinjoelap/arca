@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block titulo %}Tipos de miembro — Arca{% endblock %}
+{% block titulo_topbar %}Tipos de miembro{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+  <div>
+    <h1 class="h3 mb-1">Tipos de miembro</h1>
+    <p class="text-muted mb-0">Ponles el nombre que use tu organización y enciende lo que cada tipo puede hacer.</p>
+  </div>
+  <a href="{% url 'organizaciones:tipo_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nuevo tipo</a>
+</div>
+
+<div class="card card-arca">
+  {% if tipos %}
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>Tipo</th>
+          {% for nombre, etiqueta, ayuda in permisos %}<th class="text-center" title="{{ ayuda }}">{{ etiqueta }}</th>{% endfor %}
+          <th class="text-center">Miembros</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for tipo in tipos %}
+        <tr>
+          <td>
+            <span class="fw-semibold">{{ tipo.nombre }}</span>
+            {% if not tipo.activo %}<span class="badge text-bg-secondary">Inactivo</span>{% endif %}
+          </td>
+          <td class="text-center">{% if tipo.puede_registrar_ingresos %}<i class="bi bi-check-circle-fill permiso-si" aria-label="Sí"></i>{% else %}<i class="bi bi-dash permiso-no" aria-label="No"></i>{% endif %}</td>
+          <td class="text-center">{% if tipo.puede_registrar_egresos %}<i class="bi bi-check-circle-fill permiso-si" aria-label="Sí"></i>{% else %}<i class="bi bi-dash permiso-no" aria-label="No"></i>{% endif %}</td>
+          <td class="text-center">{% if tipo.puede_ver_presupuesto %}<i class="bi bi-check-circle-fill permiso-si" aria-label="Sí"></i>{% else %}<i class="bi bi-dash permiso-no" aria-label="No"></i>{% endif %}</td>
+          <td class="text-center">{% if tipo.puede_ver_movimientos %}<i class="bi bi-check-circle-fill permiso-si" aria-label="Sí"></i>{% else %}<i class="bi bi-dash permiso-no" aria-label="No"></i>{% endif %}</td>
+          <td class="text-center">{% if tipo.puede_gestionar_inventario %}<i class="bi bi-check-circle-fill permiso-si" aria-label="Sí"></i>{% else %}<i class="bi bi-dash permiso-no" aria-label="No"></i>{% endif %}</td>
+          <td class="text-center">{% if tipo.tiene_cuenta_personal %}<i class="bi bi-check-circle-fill permiso-si" aria-label="Sí"></i>{% else %}<i class="bi bi-dash permiso-no" aria-label="No"></i>{% endif %}</td>
+          <td class="text-center">{{ tipo.total_miembros }}</td>
+          <td class="text-end text-nowrap">
+            <a href="{% url 'organizaciones:tipo_editar' tipo.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+            <form method="post" action="{% url 'organizaciones:tipo_eliminar' tipo.pk %}" class="d-inline"
+                  onsubmit="return confirm('¿Eliminar el tipo «{{ tipo.nombre|escapejs }}»?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-person-gear d-block mb-2"></i>
+    Todavía no hay tipos de miembro. Crea el primero para poder agregar miembros.
+  </div>
+  {% endif %}
+</div>
+<p class="text-muted small mt-3">
+  El director y los administradores tienen todos los permisos y no necesitan un tipo.
+</p>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block titulo %}Panel — Arca{% endblock %}
+{% block titulo_topbar %}Panel principal{% endblock %}
+{% block contenido %}
+<div class="arca-hero mb-4">
+  <p class="text-muted small text-uppercase fw-semibold mb-1">{{ membresia_activa.rol_visible }}</p>
+  <h1 class="h3 mb-1">{{ organizacion_activa.nombre }}</h1>
+  <p class="text-muted mb-0">Hola, {{ membresia_activa.nombre }}.</p>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-tile">
+      <div class="stat-icon stat-icon-navy"><i class="bi bi-calendar3"></i></div>
+      <div>
+        <div class="stat-label">Ejercicio activo</div>
+        {% if ejercicio_activo %}
+          <div class="stat-value" style="font-size:1.4rem;">{{ ejercicio_activo.nombre }}</div>
+          <div class="text-muted small">{{ ejercicio_activo.fecha_inicio|date:"d/m/Y" }} – {{ ejercicio_activo.fecha_fin|date:"d/m/Y" }}</div>
+        {% else %}
+          <div class="fw-semibold">Ninguno</div>
+          {% if puede_administrar %}<a class="small" href="{% url 'organizaciones:ejercicio_lista' %}">Crear o activar uno</a>{% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-tile">
+      <div class="stat-icon stat-icon-teal"><i class="bi bi-currency-exchange"></i></div>
+      <div>
+        <div class="stat-label">Tasa de cambio</div>
+        {% if tasa %}
+          <div class="stat-value" style="font-size:1.4rem;">Bs. {{ tasa.valor|floatformat:2 }}</div>
+          <div class="text-muted small">
+            {{ tasa.get_fuente_display }} · {{ tasa.fecha|date:"d/m/Y" }}
+            {% if not tasa_exacta %}<span class="badge text-bg-warning">No es de hoy</span>{% endif %}
+          </div>
+        {% else %}
+          <div class="fw-semibold">Sin tasa cargada</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% if puede_administrar %}
+  <div class="col-md-4">
+    <a class="stat-tile text-decoration-none" href="{% url 'organizaciones:miembro_lista' %}">
+      <div class="stat-icon stat-icon-blue"><i class="bi bi-people-fill"></i></div>
+      <div>
+        <div class="stat-label">Miembros activos</div>
+        <div class="stat-value">{{ total_miembros }}</div>
+      </div>
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card card-arca">
+  <div class="card-body p-4">
+    <h2 class="h6 mb-2">En construcción</h2>
+    <p class="text-muted mb-0">
+      Los saldos en Bs. y USD, el registro de ingresos y egresos, los presupuestos, la cuenta personal
+      y el inventario se van habilitando por fases.
+      {% if puede_administrar %}Mientras tanto puedes dejar lista la organización en
+      <a href="{% url 'organizaciones:configuracion' %}">Configuración</a>: tipos de miembro, miembros y ejercicio.{% endif %}
+    </p>
+  </div>
+</div>
+{% endblock %}

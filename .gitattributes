@@ -1,0 +1,3 @@
+# Normaliza saltos de línea en el repositorio (LF), independientemente
+# del sistema operativo de quien clone o edite.
+* text=auto eol=lf

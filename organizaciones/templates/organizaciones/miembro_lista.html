@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block titulo %}Miembros — Arca{% endblock %}
+{% block titulo_topbar %}Miembros{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+  <h1 class="h3 mb-0">Miembros</h1>
+  <a href="{% url 'organizaciones:miembro_crear' %}" class="btn btn-arca-primary"><i class="bi bi-person-plus"></i> Nuevo miembro</a>
+</div>
+
+<form method="get" class="mb-3 d-flex flex-wrap align-items-end gap-2">
+  <div>
+    <label for="tipo" class="form-label small fw-semibold mb-0">Tipo</label>
+    <select name="tipo" id="tipo" class="form-select" onchange="this.form.submit()">
+      <option value="">Todos</option>
+      {% for t in tipos %}
+        <option value="{{ t.pk }}" {% if t.pk|stringformat:"s" == tipo_filtro %}selected{% endif %}>{{ t.nombre }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="q" class="form-label small fw-semibold mb-0">Buscar</label>
+    <input type="text" name="q" id="q" class="form-control" value="{{ q }}" placeholder="Nombre o usuario">
+  </div>
+  <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-funnel"></i> Filtrar</button>
+</form>
+
+<div class="card card-arca">
+  {% if miembros %}
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead>
+        <tr><th>Nombre</th><th>Usuario</th><th>Tipo</th><th>Estado</th><th class="text-end">Acciones</th></tr>
+      </thead>
+      <tbody>
+      {% for m in miembros %}
+        <tr>
+          <td class="fw-semibold">{{ m.nombre }}</td>
+          <td><code>{{ m.user.username }}</code></td>
+          <td>
+            {{ m.rol_visible }}
+            {% if m.es_administrador and m.tipo %}<span class="text-muted small">({{ m.tipo.nombre }})</span>{% endif %}
+          </td>
+          <td>
+            {% if m.activa %}<span class="badge text-bg-success">Activo</span>{% else %}<span class="badge text-bg-secondary">Inactivo</span>{% endif %}
+            {% if m.user.debe_cambiar_clave %}<span class="badge text-bg-warning">Clave temporal</span>{% endif %}
+          </td>
+          <td class="text-end text-nowrap">
+            {% if m.es_dueno %}
+              <span class="text-muted small">—</span>
+            {% elif m.es_administrador and not membresia_activa.es_dueno %}
+              <span class="text-muted small">Solo el director</span>
+            {% else %}
+              <a href="{% url 'organizaciones:miembro_editar' m.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'organizaciones:miembro_restablecer_clave' m.pk %}" class="btn btn-sm btn-outline-secondary" title="Restablecer contraseña"><i class="bi bi-key"></i></a>
+              {% if m.pk != membresia_activa.pk %}
+              <form method="post" action="{% url 'organizaciones:miembro_toggle_activa' m.pk %}" class="d-inline">
+                {% csrf_token %}
+                {% if m.activa %}
+                  <button type="submit" class="btn btn-sm btn-outline-danger">Desactivar</button>
+                {% else %}
+                  <button type="submit" class="btn btn-sm btn-outline-success">Activar</button>
+                {% endif %}
+              </form>
+              {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if is_paginated %}
+  <div class="card-body py-2">
+    <nav class="d-flex justify-content-between">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&tipo={{ tipo_filtro|urlencode }}&q={{ q|urlencode }}" class="btn btn-sm btn-outline-secondary">« Anteriores</a>
+      {% else %}<span></span>{% endif %}
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&tipo={{ tipo_filtro|urlencode }}&q={{ q|urlencode }}" class="btn btn-sm btn-outline-secondary">Siguientes »</a>
+      {% endif %}
+    </nav>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-people d-block mb-2"></i>
+    No hay miembros{% if tipo_filtro or q %} con ese filtro{% endif %}.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

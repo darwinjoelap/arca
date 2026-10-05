@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block titulo %}{% if object %}Corregir tasa{% else %}Cargar tasa{% endif %} — Plataforma{% endblock %}
+{% block titulo_topbar %}{% if object %}Corregir tasa{% else %}Cargar tasa{% endif %}{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-4">{% if object %}Corregir tasa{% else %}Cargar tasa del día{% endif %}</h1>
+
+{% if object and tiene_transacciones %}
+<div class="alert alert-warning">
+  Esta tasa ya tiene movimientos asociados. Si cambias el valor, los que todavía no están
+  aprobados se recalculan con el valor nuevo. Los aprobados o anulados no se tocan.
+</div>
+{% endif %}
+
+<div class="card card-arca" style="max-width: 480px;">
+  <div class="card-body p-4">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}
+            <div class="text-danger small mt-1">{% for error in field.errors %}{{ error }}{% endfor %}</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{% for error in form.non_field_errors %}{{ error }}{% endfor %}</div>
+      {% endif %}
+      <button type="submit" class="btn btn-arca-primary">Guardar</button>
+      <a href="{% url 'cambio:tasa_lista' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

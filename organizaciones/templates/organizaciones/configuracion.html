@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block titulo %}Configuración — Arca{% endblock %}
+{% block titulo_topbar %}Configuración{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-1">Configuración</h1>
+<p class="text-muted mb-4">{{ organizacion_activa.nombre }}</p>
+
+<div class="row g-3">
+  <div class="col-md-6 col-xl-4">
+    <a class="quick-action h-100" href="{% url 'organizaciones:organizacion_editar' %}">
+      <span class="quick-action-icon"><i class="bi bi-building"></i></span>
+      <span><span class="fw-semibold d-block">Datos de la organización</span>
+      <span class="text-muted small">Nombre, RIF, contacto, moneda base y aprobación de egresos</span></span>
+    </a>
+  </div>
+  <div class="col-md-6 col-xl-4">
+    <a class="quick-action h-100" href="{% url 'organizaciones:tipo_lista' %}">
+      <span class="quick-action-icon"><i class="bi bi-person-gear"></i></span>
+      <span><span class="fw-semibold d-block">Tipos de miembro</span>
+      <span class="text-muted small">{{ total_tipos }} definido{{ total_tipos|pluralize }} · nombre libre y permisos</span></span>
+    </a>
+  </div>
+  <div class="col-md-6 col-xl-4">
+    <a class="quick-action h-100" href="{% url 'organizaciones:miembro_lista' %}">
+      <span class="quick-action-icon"><i class="bi bi-people-fill"></i></span>
+      <span><span class="fw-semibold d-block">Miembros</span>
+      <span class="text-muted small">{{ total_miembros }} activo{{ total_miembros|pluralize }}</span></span>
+    </a>
+  </div>
+  <div class="col-md-6 col-xl-4">
+    <a class="quick-action h-100" href="{% url 'organizaciones:ejercicio_lista' %}">
+      <span class="quick-action-icon"><i class="bi bi-calendar3"></i></span>
+      <span><span class="fw-semibold d-block">Ejercicios</span>
+      <span class="text-muted small">{% if ejercicio_activo %}Activo: {{ ejercicio_activo.nombre }}{% else %}Ninguno activo{% endif %}</span></span>
+    </a>
+  </div>
+  <div class="col-md-6 col-xl-4">
+    <a class="quick-action h-100" href="{% url 'organizaciones:bitacora_lista' %}">
+      <span class="quick-action-icon"><i class="bi bi-journal-text"></i></span>
+      <span><span class="fw-semibold d-block">Bitácora</span>
+      <span class="text-muted small">Quién hizo qué y cuándo</span></span>
+    </a>
+  </div>
+</div>
+
+<div class="card card-arca mt-4" style="max-width: 760px;">
+  <div class="card-body">
+    <h2 class="h6 mb-2"><i class="bi bi-eye{% if not organizacion_activa.director_ve_cuentas_personales %}-slash{% endif %}"></i> Cuentas personales de los miembros</h2>
+    <p class="text-muted small mb-0">
+      {% if organizacion_activa.director_ve_cuentas_personales %}
+        El director puede ver los saldos y movimientos personales de cada miembro, en solo lectura.
+        Cada miembro ve un aviso de esto en su cuenta.
+      {% else %}
+        El director ve cuánto asignó a cada miembro, pero no sus saldos ni sus movimientos personales.
+      {% endif %}
+      Esta opción la define el soporte de Arca, no la organización.
+    </p>
+  </div>
+</div>
+{% endblock %}

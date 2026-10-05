@@ -1,0 +1,23 @@
+# Entorno virtual y secretos
+.venv/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Base de datos local y respaldos
+*.sqlite3
+*.dump
+*.sql
+respaldos/
+
+# Django
+staticfiles/
+
+# Editor / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
