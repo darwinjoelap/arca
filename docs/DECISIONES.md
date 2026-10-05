@@ -69,6 +69,12 @@ los saldos. Quien solo registra ve únicamente lo que registró él, y no ve sal
 **A-18 — Un movimiento no se edita.** Ni siquiera recién creado: se anula con motivo y se registra de nuevo
 (D-09). El `uuid_cliente` evita el duplicado por doble envío y será la clave de la cola offline.
 
+**A-19 — Un traslado no es ingreso ni egreso.** Mueve dinero entre dos cuentas de la organización y guarda
+dos montos, cada uno en la moneda de su cuenta. En un cambio de divisas se escribe lo que de verdad se recibió;
+si se deja vacío, se usa la tasa del día. La diferencia contra la tasa oficial se ve como una variación de los
+fondos disponibles: es la «diferencia por cambios» del Excel, que ya no hay que calcular a mano. Solo director
+y administradores registran y anulan traslados.
+
 ## Heredadas de Edumia que siguen vigentes
 
 - **D-02 (revisado)** — El valor de una tasa se puede corregir; recalcula lo no congelado.

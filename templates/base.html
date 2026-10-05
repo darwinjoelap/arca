@@ -72,6 +72,11 @@
         <a class="nav-link {% if 'finanzas:movimiento' in vista %}active{% endif %}" href="{% url 'finanzas:movimiento_lista' %}">
           <i class="bi bi-journal-text"></i> Movimientos
         </a>
+        {% if puede_administrar %}
+        <a class="nav-link {% if 'finanzas:traslado' in vista %}active{% endif %}" href="{% url 'finanzas:traslado_lista' %}">
+          <i class="bi bi-arrow-left-right"></i> Traslados
+        </a>
+        {% endif %}
         {% endif %}
 
         {# Fases siguientes: Presupuestos, Mi cuenta, Inventario y Reportes se agregan aquí. #}

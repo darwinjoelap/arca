@@ -15,8 +15,8 @@ from core.models import RegistroAuditoria
 from organizaciones.models import Ejercicio, Membresia, Organizacion, TipoMiembro
 from organizaciones.services import crear_organizacion
 
-from .models import Caja, Concepto, Cuenta, Movimiento
-from .services import registrar_movimiento, resumen_saldos, saldo_cuenta, totales_periodo
+from .models import Caja, Concepto, Cuenta, Movimiento, Traslado
+from .services import registrar_movimiento, registrar_traslado, resumen_saldos, saldo_cuenta, totales_periodo
 
 Usuario = get_user_model()
 CLAVE = "clave-de-prueba-123"
@@ -398,3 +398,92 @@ class AislamientoLibroTests(LibroMixin, TestCase):
         a = self.mov(uuid_cliente=clave)
         b = self.mov(cuenta=self.cuenta_b, concepto=self.concepto_b, org=self.org_b, membresia=self.director_b, uuid_cliente=clave)
         self.assertNotEqual(a.pk, b.pk)
+
+
+class TrasladosTests(LibroMixin, TestCase):
+    def tras(self, origen, destino, monto, recibido=None, org=None, usuario=None, **extra):
+        t = Traslado(
+            organizacion=org or self.org, fecha=self.hoy, cuenta_origen=origen, cuenta_destino=destino,
+            monto_origen=D(monto), monto_destino=D(recibido) if recibido else None, **extra,
+        )
+        return registrar_traslado(t, usuario=usuario or self.director.user)[0]
+
+    def test_misma_moneda_mueve_el_mismo_monto_y_no_es_ingreso_ni_egreso(self):
+        otra = Cuenta.objects.create(organizacion=self.org, caja=self.caja, nombre="Caja fuerte", moneda="USD")
+        t = self.tras(self.usd, otra, "20", recibido="999")  # lo escrito se ignora: misma moneda
+        self.assertEqual(t.monto_destino, D("20"))
+        self.assertEqual((saldo_cuenta(self.usd), saldo_cuenta(otra)), (D("30"), D("20")))
+        totales = totales_periodo(self.org, self.hoy.replace(day=1), self.hoy)
+        self.assertEqual((totales["ingreso"]["usd"], totales["egreso"]["usd"]), (D("0"), D("0")))
+        # El total de la organización no cambia.
+        self.assertEqual(resumen_saldos(self.org, self.tasa)["usd"], D("50"))
+
+    def test_cambio_de_moneda_usa_lo_recibido_o_la_tasa_del_dia(self):
+        self.tras(self.usd, self.ves, "10")                    # tasa 100 -> Bs. 1000
+        self.assertEqual(saldo_cuenta(self.ves), D("1000"))
+        t = self.tras(self.usd, self.ves, "10", recibido="1250")  # se cambió en la calle a 125
+        self.assertEqual(saldo_cuenta(self.ves), D("2250"))
+        self.assertEqual(saldo_cuenta(self.usd), D("30"))
+        self.assertEqual(t.tasa_implicita, D("125"))
+
+    def test_anular_devuelve_los_saldos(self):
+        t = self.tras(self.usd, self.ves, "10")
+        with self.assertRaises(ValidationError):
+            t.anular(self.director.user, " ")
+        t.anular(self.director.user, "Me equivoqué de cuenta")
+        self.assertEqual((saldo_cuenta(self.usd), saldo_cuenta(self.ves)), (D("50"), D("0")))
+        with self.assertRaises(ValidationError):
+            t.anular(self.director.user, "otra vez")
+
+    def test_reglas(self):
+        with self.assertRaises(ValidationError):
+            self.tras(self.usd, self.usd, "5")
+        with self.assertRaises(ValidationError):
+            self.tras(self.usd, self.ves, "0")
+        with self.assertRaises(ValidationError):
+            self.tras(self.usd, self.cuenta_b, "5")
+        clave = uuid.uuid4()
+        a = self.tras(self.usd, self.ves, "5", uuid_cliente=clave)
+        b = self.tras(self.usd, self.ves, "5", uuid_cliente=clave)
+        self.assertEqual(a.pk, b.pk)
+        self.assertEqual(Traslado.objects.count(), 1)
+
+    def test_sin_tasa_el_cambio_de_moneda_exige_el_monto_recibido(self):
+        TasaCambio.objects.all().delete()
+        with self.assertRaises(ValidationError):
+            self.tras(self.usd, self.ves, "10")
+        self.assertEqual(self.tras(self.usd, self.ves, "10", recibido="1300").monto_destino, D("1300"))
+
+    def test_vistas_solo_para_quien_administra(self):
+        self.entrar("tesorero")
+        for vista in ("finanzas:traslado_lista", "finanzas:traslado_registrar"):
+            self.assertEqual(self.client.get(reverse(vista)).status_code, 403)
+        self.entrar("dir_a")
+        datos = {"fecha": self.hoy.isoformat(), "cuenta_origen": self.usd.pk, "cuenta_destino": self.ves.pk,
+                 "monto_origen": "10", "monto_recibido": "", "descripcion": "Cambio", "referencia": "",
+                 "uuid_cliente": str(uuid.uuid4())}
+        r = self.client.post(reverse("finanzas:traslado_registrar"), datos)
+        self.assertRedirects(r, reverse("finanzas:traslado_lista"))
+        self.client.post(reverse("finanzas:traslado_registrar"), datos)  # doble envío
+        t = Traslado.objects.get()
+        self.assertEqual(t.monto_destino, D("1000"))
+        self.assertTrue(RegistroAuditoria.objects.filter(accion="registrar_traslado", organizacion=self.org).exists())
+        self.assertContains(self.client.get(reverse("finanzas:traslado_lista")), "Cambio")
+        self.client.post(reverse("finanzas:traslado_anular", args=[t.pk]), {"motivo": "Prueba"})
+        t.refresh_from_db()
+        self.assertEqual(t.estado, "anulado")
+        self.assertTrue(RegistroAuditoria.objects.filter(accion="anular_traslado").exists())
+
+    def test_aislamiento(self):
+        otra_b = Cuenta.objects.create(organizacion=self.org_b, caja=self.caja_b, nombre="Banco B", moneda="USD")
+        ajeno = self.tras(self.cuenta_b, otra_b, "7", org=self.org_b, usuario=self.director_b.user)
+        self.entrar("dir_a")
+        self.assertEqual(list(self.client.get(reverse("finanzas:traslado_lista")).context["traslados"]), [])
+        url = reverse("finanzas:traslado_anular", args=[ajeno.pk])
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.assertEqual(self.client.post(url, {"motivo": "x"}).status_code, 404)
+        r = self.client.post(reverse("finanzas:traslado_registrar"), {
+            "fecha": self.hoy.isoformat(), "cuenta_origen": self.usd.pk, "cuenta_destino": otra_b.pk, "monto_origen": "5",
+        })
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(Traslado.objects.filter(organizacion=self.org).count(), 0)

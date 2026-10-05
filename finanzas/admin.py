@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Caja, Concepto, Cuenta, Movimiento
+from .models import Caja, Concepto, Cuenta, Movimiento, Traslado
 
 # Solo consulta para soporte: el superadmin no registra ni corrige dinero de
 # una organización desde aquí (A-07).
@@ -39,4 +39,11 @@ class ConceptoAdmin(SoloLecturaAdmin):
 class MovimientoAdmin(SoloLecturaAdmin):
     list_display = ["fecha", "organizacion", "tipo", "numero_vale", "cuenta", "moneda", "monto", "estado"]
     list_filter = ["organizacion", "tipo", "estado"]
+    date_hierarchy = "fecha"
+
+
+@admin.register(Traslado)
+class TrasladoAdmin(SoloLecturaAdmin):
+    list_display = ["fecha", "organizacion", "cuenta_origen", "monto_origen", "cuenta_destino", "monto_destino", "estado"]
+    list_filter = ["organizacion", "estado"]
     date_hierarchy = "fecha"

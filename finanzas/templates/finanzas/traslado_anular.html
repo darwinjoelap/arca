@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load arca %}
+{% block titulo %}Anular traslado — Arca{% endblock %}
+{% block titulo_topbar %}Anular traslado{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-3">Anular traslado</h1>
+<div class="card card-arca" style="max-width: 560px;">
+  <div class="card-body p-4">
+    <p class="mb-3">
+      {{ t.fecha|date:"d/m/Y" }} · {{ t.cuenta_origen.nombre }} → {{ t.cuenta_destino.nombre }} ·
+      <span class="monto">{{ t.cuenta_origen.moneda|simbolo }} {{ t.monto_origen|monto }}</span>
+    </p>
+    <div class="alert alert-warning">Anular no se puede deshacer. Los dos saldos vuelven a como estaban antes del traslado.</div>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "organizaciones/_form_campos.html" %}
+      <button type="submit" class="btn btn-danger">Anular traslado</button>
+      <a href="{% url 'finanzas:traslado_lista' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

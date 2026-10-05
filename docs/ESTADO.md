@@ -30,15 +30,14 @@ Se trabaja por fases, como en Edumia: una fase se cierra aquí antes de abrir la
 - [x] Aprobación opcional de egresos y anulación con motivo
 - [x] Panel: fondos disponibles con «Ver en USD / Ver en Bs.», ingresos y egresos del mes, saldo por cuenta y últimos movimientos
 - [x] Lista de movimientos con filtros
-- [x] 33 pruebas nuevas (86 en total), incluido el aislamiento del libro
+- [x] Traslados entre cuentas (misma moneda o cambio de divisas), solo director y administradores
+- [x] 93 pruebas en total, incluido el aislamiento del libro y de los traslados
 
-Pendiente de verificar en tu máquina: correr las 86 pruebas contra PostgreSQL (aquí, SQLite).
+Pendiente de verificar en tu máquina: correr las 93 pruebas contra PostgreSQL (aquí, SQLite).
 
 ## Lo que NO está todavía
 
 - Captura offline de ingresos y egresos (Fase 3, parte 2). Hoy registrar exige conexión.
-- Traslados entre cuentas o cajas: mover dinero del banco al efectivo hoy serían un egreso y un ingreso, que
-  inflan los totales del mes. Hace falta antes de usarlo en serio.
 - Editar un movimiento: no existe a propósito (A-18).
 - Exportar el libro a Excel o PDF y el resumen por concepto (Fase 6).
 - Presupuestos, cuenta personal e inventario.
@@ -51,7 +50,6 @@ Pendiente de verificar en tu máquina: correr las 86 pruebas contra PostgreSQL (
 
 - [ ] Cola en IndexedDB y endpoints idempotentes en `sync` (patrón de la Fase 7 de Edumia)
 - [ ] Precaché de los formularios y catálogos (cuentas, conceptos, última tasa)
-- [ ] Traslados entre cuentas
 
 ## Pendiente — Fase 2 (moneda e identidad)
 

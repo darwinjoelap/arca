@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load arca l10n %}
+{% block titulo %}Traslado entre cuentas — Arca{% endblock %}
+{% block titulo_topbar %}Traslado entre cuentas{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-1"><i class="bi bi-arrow-left-right"></i> Traslado entre cuentas</h1>
+<p class="text-muted mb-4" style="max-width: 560px;">
+  Para pasar dinero del banco al efectivo, de una caja a otra, o cambiar divisas.
+  No cuenta como ingreso ni como egreso: solo mueve los saldos.
+</p>
+
+{% if pocas_cuentas %}
+<div class="alert alert-warning" style="max-width: 560px;">
+  Hacen falta al menos dos cuentas para hacer un traslado. <a href="{% url 'finanzas:caja_lista' %}">Ir a cajas y cuentas</a>.
+</div>
+{% else %}
+<div class="card card-arca" style="max-width: 560px;">
+  <div class="card-body p-4">
+    <form method="post" novalidate id="form-traslado">
+      {% csrf_token %}
+      {{ form.uuid_cliente }}
+      {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label fw-semibold" for="{{ form.fecha.id_for_label }}">Fecha</label>
+          {{ form.fecha }}
+          {% if form.fecha.errors %}<div class="text-danger small mt-1">{{ form.fecha.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label fw-semibold" for="{{ form.cuenta_origen.id_for_label }}">{{ form.cuenta_origen.label }}</label>
+          {{ form.cuenta_origen }}
+          {% if form.cuenta_origen.errors %}<div class="text-danger small mt-1">{{ form.cuenta_origen.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label fw-semibold" for="{{ form.cuenta_destino.id_for_label }}">{{ form.cuenta_destino.label }}</label>
+          {{ form.cuenta_destino }}
+          {% if form.cuenta_destino.errors %}<div class="text-danger small mt-1">{{ form.cuenta_destino.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label fw-semibold" for="{{ form.monto_origen.id_for_label }}">{{ form.monto_origen.label }}</label>
+          <div class="input-group"><span class="input-group-text" id="simbolo-origen">—</span>{{ form.monto_origen }}</div>
+          {% if form.monto_origen.errors %}<div class="text-danger small mt-1">{{ form.monto_origen.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="col-sm-6" id="bloque-recibido">
+          <label class="form-label fw-semibold" for="{{ form.monto_recibido.id_for_label }}">{{ form.monto_recibido.label }}</label>
+          <div class="input-group"><span class="input-group-text" id="simbolo-destino">—</span>{{ form.monto_recibido }}</div>
+          {% if form.monto_recibido.errors %}<div class="text-danger small mt-1">{{ form.monto_recibido.errors|join:" " }}</div>{% endif %}
+          <div class="form-text" id="ayuda-recibido">{{ form.monto_recibido.help_text }}</div>
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold" for="{{ form.descripcion.id_for_label }}">Descripción <span class="text-muted fw-normal">(opcional)</span></label>
+          {{ form.descripcion }}
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold" for="{{ form.referencia.id_for_label }}">Referencia <span class="text-muted fw-normal">(opcional)</span></label>
+          {{ form.referencia }}
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-4">
+        <button type="submit" class="btn btn-arca-primary">Registrar traslado</button>
+        <a href="{% url 'finanzas:traslado_lista' %}" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{{ monedas_por_cuenta|json_script:"monedas-por-cuenta" }}
+<script>
+(function () {
+  var origen = document.getElementById("{{ form.cuenta_origen.id_for_label }}");
+  var destino = document.getElementById("{{ form.cuenta_destino.id_for_label }}");
+  var monto = document.getElementById("{{ form.monto_origen.id_for_label }}");
+  var recibido = document.getElementById("{{ form.monto_recibido.id_for_label }}");
+  if (!origen || !destino) return;
+  var monedas = JSON.parse(document.getElementById("monedas-por-cuenta").textContent);
+  var tasa = {% if tasa %}{{ tasa.valor|unlocalize }}{% else %}null{% endif %};
+  var bloque = document.getElementById("bloque-recibido");
+  var ayuda = document.getElementById("ayuda-recibido");
+  var textoAyuda = ayuda.textContent;
+  var formato = new Intl.NumberFormat("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function simbolo(m) { return m === "USD" ? "$" : m === "VES" ? "Bs." : "—"; }
+
+  function actualizar() {
+    var mo = monedas[origen.value], md = monedas[destino.value];
+    document.getElementById("simbolo-origen").textContent = simbolo(mo);
+    document.getElementById("simbolo-destino").textContent = simbolo(md);
+    // Misma moneda: entra lo mismo que sale, no hay nada que escribir.
+    var cambio = mo && md && mo !== md;
+    bloque.style.display = cambio ? "" : "none";
+    if (!cambio) { recibido.value = ""; return; }
+    var valor = parseFloat(monto.value);
+    if (tasa && valor > 0) {
+      var estimado = mo === "USD" ? valor * tasa : valor / tasa;
+      ayuda.textContent = "Con la tasa del día serían " + simbolo(md) + " " + formato.format(estimado) + ". Escribe lo que de verdad se recibió, o déjalo vacío para usar ese valor.";
+    } else { ayuda.textContent = textoAyuda; }
+  }
+  [origen, destino].forEach(function (el) { el.addEventListener("change", actualizar); });
+  monto.addEventListener("input", actualizar);
+  actualizar();
+
+  document.getElementById("form-traslado").addEventListener("submit", function (e) {
+    if (this.dataset.enviado) { e.preventDefault(); return; }
+    this.dataset.enviado = "1";
+  });
+})();
+</script>
+{% endblock %}

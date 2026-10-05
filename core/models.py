@@ -59,6 +59,8 @@ class RegistroAuditoria(models.Model):
         REGISTRAR_MOVIMIENTO = "registrar_movimiento", "Registro de ingreso o egreso"
         APROBAR_MOVIMIENTO = "aprobar_movimiento", "Aprobación de egreso"
         ANULAR_MOVIMIENTO = "anular_movimiento", "Anulación de movimiento"
+        REGISTRAR_TRASLADO = "registrar_traslado", "Traslado entre cuentas"
+        ANULAR_TRASLADO = "anular_traslado", "Anulación de traslado"
 
     organizacion = models.ForeignKey(
         "organizaciones.Organizacion", null=True, blank=True,

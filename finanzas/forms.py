@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 
 from django import forms
 from django.db.models import Q
@@ -7,7 +8,7 @@ from django.utils import timezone
 from organizaciones.forms import _EstiloBootstrapMixin
 from organizaciones.models import Membresia
 
-from .models import Caja, Concepto, Cuenta, Movimiento
+from .models import Caja, Concepto, Cuenta, Movimiento, Traslado
 
 
 class CajaForm(_EstiloBootstrapMixin, forms.ModelForm):
@@ -147,6 +148,50 @@ class MovimientoForm(_EstiloBootstrapMixin, forms.ModelForm):
     def cuentas_para_js(self):
         """{id: moneda} para que el formulario muestre el símbolo correcto."""
         return {str(c.pk): c.moneda for c in self.fields["cuenta"].queryset}
+
+
+class TrasladoForm(_EstiloBootstrapMixin, forms.ModelForm):
+    uuid_cliente = forms.UUIDField(widget=forms.HiddenInput, required=False)
+    monto_recibido = forms.DecimalField(
+        label="Monto que entra", required=False, min_value=Decimal("0.01"), max_digits=18, decimal_places=4,
+        help_text="Solo si las cuentas tienen monedas distintas: lo que de verdad se recibió. "
+        "Vacío, se calcula con la tasa del día.",
+    )
+
+    field_order = ["fecha", "cuenta_origen", "cuenta_destino", "monto_origen", "monto_recibido", "descripcion", "referencia"]
+
+    class Meta:
+        model = Traslado
+        # `monto_destino` no va aquí: llega por `monto_recibido`, que puede venir vacío.
+        fields = ["fecha", "cuenta_origen", "cuenta_destino", "monto_origen", "descripcion", "referencia"]
+        widgets = {"fecha": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")}
+
+    def __init__(self, *args, organizacion, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.instance.organizacion = organizacion
+        self.fields["fecha"].initial = timezone.localdate()
+        self.fields["uuid_cliente"].initial = uuid.uuid4()
+        cuentas = Cuenta.objects.filter(organizacion=organizacion, activa=True, caja__activa=True).select_related("caja")
+        for nombre, etiqueta in (("cuenta_origen", "Sale de"), ("cuenta_destino", "Entra a")):
+            self.fields[nombre].queryset = cuentas
+            self.fields[nombre].label = etiqueta
+            self.fields[nombre].label_from_instance = lambda c: f"{c.caja.nombre} · {c.nombre} ({c.moneda})"
+            self.fields[nombre].empty_label = "— Elige una cuenta —"
+        self.fields["monto_origen"].label = "Monto que sale"
+        for nombre in ("monto_origen", "monto_recibido"):
+            self.fields[nombre].widget.attrs.update({"step": "0.01", "min": "0.01", "inputmode": "decimal"})
+        self.fields["descripcion"].required = False
+        self._aplicar_estilo()
+
+    def clean(self):
+        datos = super().clean()
+        origen, destino = datos.get("cuenta_origen"), datos.get("cuenta_destino")
+        if origen and destino and origen == destino:
+            self.add_error("cuenta_destino", "Elige una cuenta distinta a la de origen.")
+        return datos
+
+    def cuentas_para_js(self):
+        return {str(c.pk): c.moneda for c in self.fields["cuenta_origen"].queryset}
 
 
 class AnularForm(_EstiloBootstrapMixin, forms.Form):

@@ -21,9 +21,11 @@ from core.mixins import ADMINISTRAR, DeLaOrganizacionMixin, PermisoRequeridoMixi
 from core.models import RegistroAuditoria
 from core.utils import eliminar_protegido
 
-from .forms import AnularForm, CajaForm, ConceptoForm, CuentaForm, FiltroMovimientosForm, MovimientoForm
-from .models import Caja, Concepto, Cuenta, Movimiento
-from .services import _sumas_por_cuenta, registrar_movimiento, tasa_vigente
+from .forms import (
+    AnularForm, CajaForm, ConceptoForm, CuentaForm, FiltroMovimientosForm, MovimientoForm, TrasladoForm,
+)
+from .models import Caja, Concepto, Cuenta, Movimiento, Traslado
+from .services import _sumas_por_cuenta, registrar_movimiento, registrar_traslado, tasa_vigente
 
 Accion = RegistroAuditoria.Accion
 
@@ -196,6 +198,77 @@ def movimiento_anular(request, pk):
             messages.success(request, f"{movimiento.get_tipo_display()} #{movimiento.numero_vale} anulado.")
             return redirect("finanzas:movimiento_detalle", pk=pk)
     return render(request, "finanzas/movimiento_anular.html", {"form": form, "m": movimiento})
+
+
+# --- Traslados entre cuentas -----------------------------------------------
+# Solo director y administradores: mueven dinero entre cuentas y cajas.
+
+
+class TrasladoListView(PermisoRequeridoMixin, DeLaOrganizacionMixin, ListView):
+    model = Traslado
+    template_name = "finanzas/traslado_lista.html"
+    context_object_name = "traslados"
+    paginate_by = 40
+
+    def get_queryset(self):
+        return super().get_queryset().select_related(
+            "cuenta_origen", "cuenta_origen__caja", "cuenta_destino", "cuenta_destino__caja", "registrado_por"
+        )
+
+
+@requiere_permiso()
+def traslado_registrar(request):
+    form = TrasladoForm(request.POST or None, organizacion=request.organizacion)
+    if request.method == "POST" and form.is_valid():
+        traslado = form.save(commit=False)
+        traslado.uuid_cliente = form.cleaned_data.get("uuid_cliente")
+        traslado.monto_destino = form.cleaned_data.get("monto_recibido")
+        try:
+            traslado, creado = registrar_traslado(traslado, usuario=request.user)
+        except ValidationError as error:
+            if hasattr(error, "message_dict"):
+                for campo, mensajes in error.message_dict.items():
+                    campo = "monto_recibido" if campo == "monto_destino" else campo
+                    form.add_error(campo if campo in form.fields else None, mensajes)
+            else:
+                form.add_error(None, error.messages)
+        else:
+            if creado:
+                o, d = traslado.cuenta_origen, traslado.cuenta_destino
+                registrar(
+                    request, Accion.REGISTRAR_TRASLADO, modelo="Traslado", objeto_id=traslado.pk,
+                    descripcion=f"{o.caja.nombre} · {o.nombre}: {o.moneda} {traslado.monto_origen:.2f} → "
+                    f"{d.caja.nombre} · {d.nombre}: {d.moneda} {traslado.monto_destino:.2f}",
+                )
+                messages.success(request, "Traslado registrado.")
+            else:
+                messages.info(request, "Ese traslado ya estaba registrado; no se duplicó.")
+            return redirect("finanzas:traslado_lista")
+
+    tasa, tasa_exacta = tasa_vigente()
+    return render(request, "finanzas/traslado_form.html", {
+        "form": form, "tasa": tasa, "tasa_exacta": tasa_exacta,
+        "monedas_por_cuenta": form.cuentas_para_js(),
+        "pocas_cuentas": form.fields["cuenta_origen"].queryset.count() < 2,
+    })
+
+
+@requiere_permiso()
+def traslado_anular(request, pk):
+    traslado = get_object_or_404(
+        Traslado.objects.select_related("cuenta_origen", "cuenta_destino"), pk=pk, organizacion=request.organizacion
+    )
+    if traslado.estado == Traslado.Estado.ANULADO:
+        messages.info(request, "Ese traslado ya está anulado.")
+        return redirect("finanzas:traslado_lista")
+    form = AnularForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        traslado.anular(request.user, form.cleaned_data["motivo"])
+        registrar(request, Accion.ANULAR_TRASLADO, modelo="Traslado", objeto_id=traslado.pk,
+                  descripcion=f"{traslado} · Motivo: {traslado.motivo_anulacion}")
+        messages.success(request, "Traslado anulado.")
+        return redirect("finanzas:traslado_lista")
+    return render(request, "finanzas/traslado_anular.html", {"form": form, "t": traslado})
 
 
 # --- Cajas y cuentas -------------------------------------------------------

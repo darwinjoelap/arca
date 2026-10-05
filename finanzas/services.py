@@ -17,7 +17,7 @@ from django.utils import timezone
 from cambio.services import SinTasaError, convertir, obtener_tasa
 from organizaciones.models import Ejercicio
 
-from .models import Caja, Cuenta, Movimiento
+from .models import Caja, Cuenta, Movimiento, Traslado
 
 CERO = Decimal("0")
 
@@ -100,8 +100,41 @@ def registrar_movimiento(movimiento, *, membresia):
     return movimiento, True
 
 
+@transaction.atomic
+def registrar_traslado(traslado, *, usuario):
+    """Guarda un Traslado nuevo. Devuelve (traslado, creado), igual que
+    `registrar_movimiento`. Si las cuentas tienen la misma moneda, el monto
+    que llega es el mismo que sale, se haya escrito lo que se haya escrito."""
+    organizacion = traslado.organizacion
+    if traslado.uuid_cliente:
+        existente = Traslado.objects.filter(organizacion=organizacion, uuid_cliente=traslado.uuid_cliente).first()
+        if existente:
+            return existente, False
+
+    ejercicio = ejercicio_para(organizacion, traslado.fecha)
+    if ejercicio is None:
+        raise ValidationError({"fecha": "No hay un ejercicio abierto que incluya esa fecha."})
+
+    origen, destino = traslado.cuenta_origen, traslado.cuenta_destino
+    if origen.moneda == destino.moneda:
+        traslado.monto_destino = traslado.monto_origen
+    elif not traslado.monto_destino:
+        try:
+            tasa, _ = tasa_para(traslado.fecha)
+        except SinTasaError:
+            raise ValidationError({"monto_destino": "No hay tasa de cambio cargada: escribe cuánto se recibió."})
+        ves, usd = convertir(traslado.monto_origen, origen.moneda, tasa.valor)
+        traslado.monto_destino = usd if destino.moneda == "USD" else ves
+
+    traslado.ejercicio = ejercicio
+    traslado.registrado_por = usuario
+    traslado.full_clean()
+    traslado.save()
+    return traslado, True
+
+
 def _sumas_por_cuenta(organizacion, hasta=None):
-    """{cuenta_id: saldo de movimientos confirmados, en la moneda de la cuenta}."""
+    """{cuenta_id: neto de movimientos y traslados confirmados, en la moneda de la cuenta}."""
     qs = Movimiento.objects.filter(organizacion=organizacion, estado=Movimiento.Estado.CONFIRMADO)
     if hasta is not None:
         qs = qs.filter(fecha__lte=hasta)
@@ -109,6 +142,15 @@ def _sumas_por_cuenta(organizacion, hasta=None):
     for fila in qs.values("cuenta_id", "tipo").annotate(total=Sum("monto")):
         signo = 1 if fila["tipo"] == Movimiento.Tipo.INGRESO else -1
         sumas[fila["cuenta_id"]] = sumas.get(fila["cuenta_id"], CERO) + signo * fila["total"]
+
+    # Traslados: salen de una cuenta y entran en otra, cada monto en su moneda.
+    traslados = Traslado.objects.filter(organizacion=organizacion, estado=Traslado.Estado.CONFIRMADO)
+    if hasta is not None:
+        traslados = traslados.filter(fecha__lte=hasta)
+    for fila in traslados.values("cuenta_origen_id").annotate(total=Sum("monto_origen")):
+        sumas[fila["cuenta_origen_id"]] = sumas.get(fila["cuenta_origen_id"], CERO) - fila["total"]
+    for fila in traslados.values("cuenta_destino_id").annotate(total=Sum("monto_destino")):
+        sumas[fila["cuenta_destino_id"]] = sumas.get(fila["cuenta_destino_id"], CERO) + fila["total"]
     return sumas
 
 

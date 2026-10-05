@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load arca %}
+{% block titulo %}Traslados — Arca{% endblock %}
+{% block titulo_topbar %}Traslados{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+  <div>
+    <h1 class="h3 mb-1">Traslados entre cuentas</h1>
+    <p class="text-muted mb-0">Dinero que cambia de cuenta o de caja. No cuenta como ingreso ni como egreso.</p>
+  </div>
+  <a href="{% url 'finanzas:traslado_registrar' %}" class="btn btn-arca-primary"><i class="bi bi-arrow-left-right"></i> Nuevo traslado</a>
+</div>
+
+<div class="card card-arca">
+  {% if traslados %}
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead><tr><th>Fecha</th><th>Sale de</th><th>Entra a</th><th class="text-end">Salió</th><th class="text-end">Entró</th><th class="d-none d-md-table-cell">Detalle</th><th></th></tr></thead>
+      <tbody>
+      {% for t in traslados %}
+        <tr class="{% if t.estado == 'anulado' %}text-decoration-line-through text-muted{% endif %}">
+          <td class="text-nowrap">{{ t.fecha|date:"d/m/Y" }}</td>
+          <td>{{ t.cuenta_origen.caja.nombre }} · {{ t.cuenta_origen.nombre }}</td>
+          <td>{{ t.cuenta_destino.caja.nombre }} · {{ t.cuenta_destino.nombre }}</td>
+          <td class="text-end text-nowrap monto">{{ t.cuenta_origen.moneda|simbolo }} {{ t.monto_origen|monto }}</td>
+          <td class="text-end text-nowrap monto">{{ t.cuenta_destino.moneda|simbolo }} {{ t.monto_destino|monto }}</td>
+          <td class="d-none d-md-table-cell small">
+            {{ t.descripcion }}{% if t.referencia %} <span class="text-muted">Ref. {{ t.referencia }}</span>{% endif %}
+            {% if t.tasa_implicita %}<div class="text-muted">Cambio a Bs. {{ t.tasa_implicita|monto }} por $</div>{% endif %}
+            {% if t.estado == 'anulado' %}<div class="text-decoration-none">Anulado: {{ t.motivo_anulacion }}</div>{% endif %}
+          </td>
+          <td class="text-end">
+            {% if t.estado != 'anulado' %}<a href="{% url 'finanzas:traslado_anular' t.pk %}" class="btn btn-sm btn-outline-danger">Anular</a>
+            {% else %}<span class="badge text-bg-secondary">Anulado</span>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if is_paginated %}
+  <div class="card-body py-2"><nav class="d-flex justify-content-between">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="btn btn-sm btn-outline-secondary">« Más recientes</a>{% else %}<span></span>{% endif %}
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="btn btn-sm btn-outline-secondary">Más antiguos »</a>{% endif %}
+  </nav></div>
+  {% endif %}
+  {% else %}
+  <div class="empty-state"><i class="bi bi-arrow-left-right d-block mb-2"></i>Todavía no hay traslados.</div>
+  {% endif %}
+</div>
+{% endblock %}

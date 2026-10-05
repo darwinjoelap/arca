@@ -295,3 +295,111 @@ class Movimiento(MontoBimonedaMixin, ModeloDeOrganizacion):
         self.estado = nuevo_estado
         # update_fields a propósito: no pasa por calcular_montos().
         models.Model.save(self, update_fields=campos)
+
+
+class Traslado(ModeloDeOrganizacion):
+    """Dinero que pasa de una cuenta a otra de la misma organización: del
+    banco al efectivo, de una caja a otra, o un cambio de divisas.
+
+    No es un ingreso ni un egreso: mueve los saldos de las dos cuentas y no
+    aparece en los totales del mes ni contará contra el presupuesto.
+
+    Guarda dos montos, cada uno en la moneda de su cuenta. Entre cuentas de
+    la misma moneda son iguales; entre monedas distintas, `monto_destino` es
+    lo que de verdad se recibió (que puede no coincidir con la tasa oficial).
+    """
+
+    class Estado(models.TextChoices):
+        CONFIRMADO = "confirmado", "Confirmado"
+        ANULADO = "anulado", "Anulado"
+
+    fecha = models.DateField()
+    cuenta_origen = models.ForeignKey(Cuenta, on_delete=models.PROTECT, related_name="traslados_salientes")
+    cuenta_destino = models.ForeignKey(Cuenta, on_delete=models.PROTECT, related_name="traslados_entrantes")
+    monto_origen = models.DecimalField(max_digits=18, decimal_places=4)
+    monto_destino = models.DecimalField(max_digits=18, decimal_places=4)
+    ejercicio = models.ForeignKey("organizaciones.Ejercicio", on_delete=models.PROTECT, related_name="traslados")
+    descripcion = models.CharField("descripción", max_length=200, blank=True)
+    referencia = models.CharField(max_length=60, blank=True)
+    estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.CONFIRMADO)
+    uuid_cliente = models.UUIDField(null=True, blank=True, editable=False)
+    registrado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="traslados_registrados",
+    )
+    anulado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="traslados_anulados",
+    )
+    motivo_anulacion = models.TextField("motivo de la anulación", blank=True)
+    fecha_anulacion = models.DateTimeField(null=True, blank=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "traslado"
+        verbose_name_plural = "traslados"
+        ordering = ["-fecha", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organizacion", "uuid_cliente"], condition=Q(uuid_cliente__isnull=False),
+                name="traslado_uuid_cliente_unico",
+            ),
+            models.CheckConstraint(
+                condition=Q(monto_origen__gt=0) & Q(monto_destino__gt=0), name="traslado_montos_positivos",
+            ),
+            models.CheckConstraint(
+                condition=~Q(cuenta_origen=models.F("cuenta_destino")), name="traslado_cuentas_distintas",
+            ),
+        ]
+        indexes = [models.Index(fields=["organizacion", "fecha"])]
+
+    def __str__(self):
+        return f"Traslado {self.cuenta_origen.nombre} → {self.cuenta_destino.nombre}"
+
+    @property
+    def es_cambio_de_moneda(self):
+        return self.cuenta_origen.moneda != self.cuenta_destino.moneda
+
+    @property
+    def tasa_implicita(self):
+        """Bs. por USD que resultó del cambio, o None si no hubo cambio de moneda."""
+        if not self.es_cambio_de_moneda:
+            return None
+        ves, usd = (
+            (self.monto_origen, self.monto_destino) if self.cuenta_origen.moneda == "VES"
+            else (self.monto_destino, self.monto_origen)
+        )
+        return ves / usd if usd else None
+
+    def clean(self):
+        errores = {}
+        org = self.organizacion_id
+        if self.cuenta_origen_id and self.cuenta_origen.organizacion_id != org:
+            errores["cuenta_origen"] = "Esa cuenta es de otra organización."
+        if self.cuenta_destino_id and self.cuenta_destino.organizacion_id != org:
+            errores["cuenta_destino"] = "Esa cuenta es de otra organización."
+        if self.cuenta_origen_id and self.cuenta_origen_id == self.cuenta_destino_id:
+            errores["cuenta_destino"] = "Elige una cuenta distinta a la de origen."
+        if self.monto_origen is not None and self.monto_origen <= 0:
+            errores["monto_origen"] = "El monto debe ser mayor que cero."
+        if self.monto_destino is not None and self.monto_destino <= 0:
+            errores["monto_destino"] = "El monto debe ser mayor que cero."
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        for cuenta in (self.cuenta_origen, self.cuenta_destino):
+            if cuenta.organizacion_id != self.organizacion_id:
+                raise ValidationError("El traslado mezcla cuentas de dos organizaciones.")
+        if self.ejercicio.organizacion_id != self.organizacion_id:
+            raise ValidationError("El ejercicio es de otra organización.")
+        super().save(*args, **kwargs)
+
+    def anular(self, usuario, motivo):
+        if self.estado == self.Estado.ANULADO:
+            raise ValidationError("Este traslado ya está anulado.")
+        if not (motivo or "").strip():
+            raise ValidationError({"motivo": "Indica el motivo de la anulación."})
+        self.estado = self.Estado.ANULADO
+        self.motivo_anulacion = motivo.strip()
+        self.anulado_por = usuario
+        self.fecha_anulacion = timezone.now()
+        self.save(update_fields=["estado", "motivo_anulacion", "anulado_por", "fecha_anulacion"])
