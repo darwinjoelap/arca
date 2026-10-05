@@ -28,6 +28,20 @@
     </a>
   </div>
   <div class="col-md-6 col-xl-4">
+    <a class="quick-action h-100" href="{% url 'finanzas:caja_lista' %}">
+      <span class="quick-action-icon"><i class="bi bi-safe"></i></span>
+      <span><span class="fw-semibold d-block">Cajas y cuentas</span>
+      <span class="text-muted small">Dónde está el dinero y su saldo inicial</span></span>
+    </a>
+  </div>
+  <div class="col-md-6 col-xl-4">
+    <a class="quick-action h-100" href="{% url 'finanzas:concepto_lista' %}">
+      <span class="quick-action-icon"><i class="bi bi-tags"></i></span>
+      <span><span class="fw-semibold d-block">Conceptos</span>
+      <span class="text-muted small">La lista de ingresos y egresos para elegir</span></span>
+    </a>
+  </div>
+  <div class="col-md-6 col-xl-4">
     <a class="quick-action h-100" href="{% url 'organizaciones:ejercicio_lista' %}">
       <span class="quick-action-icon"><i class="bi bi-calendar3"></i></span>
       <span><span class="fw-semibold d-block">Ejercicios</span>

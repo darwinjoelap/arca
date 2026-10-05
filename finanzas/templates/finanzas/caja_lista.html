@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load arca %}
+{% block titulo %}Cajas y cuentas — Arca{% endblock %}
+{% block titulo_topbar %}Cajas y cuentas{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+  <div>
+    <h1 class="h3 mb-1">Cajas y cuentas</h1>
+    <p class="text-muted mb-0">Una caja es una bolsa de dinero con su propio presupuesto. Sus cuentas dicen dónde está ese dinero: efectivo o banco, en una sola moneda cada una.</p>
+  </div>
+  <a href="{% url 'finanzas:caja_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nueva caja</a>
+</div>
+
+{% for caja in cajas %}
+<div class="card card-arca mb-3">
+  <div class="card-header bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <span class="fw-bold">{{ caja.nombre }}</span>
+      {% if not caja.activa %}<span class="badge text-bg-secondary">Inactiva</span>{% endif %}
+      {% if caja.descripcion %}<div class="small text-muted fw-normal">{{ caja.descripcion }}</div>{% endif %}
+    </div>
+    <div class="text-nowrap">
+      <a href="{% url 'finanzas:cuenta_crear' %}?caja={{ caja.pk }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-lg"></i> Cuenta</a>
+      <a href="{% url 'finanzas:caja_editar' caja.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar caja"><i class="bi bi-pencil"></i></a>
+      <form method="post" action="{% url 'finanzas:caja_eliminar' caja.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar la caja «{{ caja.nombre|escapejs }}»?');">
+        {% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar caja"><i class="bi bi-trash"></i></button>
+      </form>
+    </div>
+  </div>
+  {% if caja.cuentas_con_saldo %}
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead><tr><th>Cuenta</th><th>Tipo</th><th class="text-end">Saldo inicial</th><th class="text-end">Saldo actual</th><th class="text-end">Acciones</th></tr></thead>
+      <tbody>
+      {% for cuenta, saldo in caja.cuentas_con_saldo %}
+        <tr>
+          <td><span class="fw-semibold">{{ cuenta.nombre }}</span>{% if not cuenta.activa %} <span class="badge text-bg-secondary">Inactiva</span>{% endif %}{% if cuenta.banco %}<div class="small text-muted">{{ cuenta.banco }}</div>{% endif %}</td>
+          <td>{{ cuenta.get_tipo_display }} · {{ cuenta.moneda }}</td>
+          <td class="text-end monto">{{ cuenta.moneda|simbolo }} {{ cuenta.saldo_inicial|monto }}</td>
+          <td class="text-end monto fw-semibold">{{ cuenta.moneda|simbolo }} {{ saldo|monto }}</td>
+          <td class="text-end text-nowrap">
+            <a href="{% url 'finanzas:cuenta_editar' cuenta.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+            <form method="post" action="{% url 'finanzas:cuenta_eliminar' cuenta.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar la cuenta «{{ cuenta.nombre|escapejs }}»?');">
+              {% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card-body text-muted small">Esta caja no tiene cuentas todavía. Agrega al menos una para poder registrar movimientos.</div>
+  {% endif %}
+</div>
+{% empty %}
+<div class="card card-arca"><div class="empty-state">
+  <i class="bi bi-safe d-block mb-2"></i>
+  Todavía no hay cajas. Crea la primera y luego agrégale una cuenta.
+</div></div>
+{% endfor %}
+{% endblock %}

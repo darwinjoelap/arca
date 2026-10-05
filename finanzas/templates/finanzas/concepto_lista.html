@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titulo %}Conceptos — Arca{% endblock %}
+{% block titulo_topbar %}Conceptos{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+  <div>
+    <h1 class="h3 mb-1">Conceptos</h1>
+    <p class="text-muted mb-0">La lista de la que se elige al registrar. Quien registra también puede escribir uno libre en la descripción.</p>
+  </div>
+  <a href="{% url 'finanzas:concepto_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nuevo concepto</a>
+</div>
+
+<div class="row g-3">
+{% for titulo, tipo, lista in grupos %}
+  <div class="col-lg-6">
+    <div class="card card-arca h-100">
+      <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+        <span class="fw-bold">{{ titulo }}</span>
+        <a href="{% url 'finanzas:concepto_crear' %}?tipo={{ tipo }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-lg"></i></a>
+      </div>
+      {% if lista %}
+      <ul class="list-group list-group-flush">
+        {% for concepto, hijos in lista %}
+          {% include "finanzas/_concepto_fila.html" with c=concepto hijo=False %}
+          {% for h in hijos %}{% include "finanzas/_concepto_fila.html" with c=h hijo=True %}{% endfor %}
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="card-body text-muted small">Sin conceptos de {{ titulo|lower }} todavía.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

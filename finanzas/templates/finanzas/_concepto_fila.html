@@ -1,0 +1,13 @@
+<li class="list-group-item d-flex justify-content-between align-items-center gap-2 {% if hijo %}ps-5{% endif %}">
+  <span>
+    <span class="{% if not hijo %}fw-semibold{% endif %} {% if not c.activo %}text-muted{% endif %}">{{ c.nombre }}</span>
+    {% if not c.activo %}<span class="badge text-bg-secondary">Inactivo</span>{% endif %}
+    {% if c.caja %}<span class="badge text-bg-light border">{{ c.caja.nombre }}</span>{% endif %}
+  </span>
+  <span class="text-nowrap">
+    <a href="{% url 'finanzas:concepto_editar' c.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+    <form method="post" action="{% url 'finanzas:concepto_eliminar' c.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar el concepto «{{ c.nombre|escapejs }}»?');">
+      {% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+    </form>
+  </span>
+</li>

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load arca l10n %}
+{% block titulo %}Registrar {{ tipo }} — Arca{% endblock %}
+{% block titulo_topbar %}Registrar {{ tipo }}{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-4">
+  <i class="bi {% if es_ingreso %}bi-arrow-down-circle-fill monto-ingreso{% else %}bi-arrow-up-circle-fill monto-egreso{% endif %}"></i>
+  Registrar {{ tipo }}
+</h1>
+
+{% if sin_cuentas %}
+<div class="alert alert-warning" style="max-width: 560px;">
+  Todavía no hay ninguna cuenta donde registrar dinero.
+  {% if puede_administrar %}<a href="{% url 'finanzas:caja_lista' %}">Crea una caja y su primera cuenta</a>.{% else %}Pide al director que cree una.{% endif %}
+</div>
+{% else %}
+<div class="card card-arca" style="max-width: 560px;">
+  <div class="card-body p-4">
+    <form method="post" novalidate id="form-movimiento">
+      {% csrf_token %}
+      {{ form.uuid_cliente }}
+      {% if form.non_field_errors %}<div class="alert alert-danger">{% for error in form.non_field_errors %}{{ error }} {% endfor %}</div>{% endif %}
+
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label fw-semibold" for="{{ form.cuenta.id_for_label }}">{{ form.cuenta.label }}</label>
+          {{ form.cuenta }}
+          {% if form.cuenta.errors %}<div class="text-danger small mt-1">{{ form.cuenta.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="col-sm-5">
+          <label class="form-label fw-semibold" for="{{ form.fecha.id_for_label }}">Fecha</label>
+          {{ form.fecha }}
+          {% if form.fecha.errors %}<div class="text-danger small mt-1">{{ form.fecha.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="col-sm-7">
+          <label class="form-label fw-semibold" for="{{ form.monto.id_for_label }}">Monto</label>
+          <div class="input-group">
+            <span class="input-group-text" id="simbolo-moneda">—</span>
+            {{ form.monto }}
+          </div>
+          {% if form.monto.errors %}<div class="text-danger small mt-1">{{ form.monto.errors|join:" " }}</div>{% endif %}
+          <div class="form-text" id="equivalente">{{ form.monto.help_text }}</div>
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold" for="{{ form.concepto.id_for_label }}">Concepto</label>
+          {{ form.concepto }}
+          {% if form.concepto.errors %}<div class="text-danger small mt-1">{{ form.concepto.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold" for="{{ form.descripcion.id_for_label }}">Descripción</label>
+          {{ form.descripcion }}
+          <div class="form-text">{{ form.descripcion.help_text }}</div>
+          {% if form.descripcion.errors %}<div class="text-danger small mt-1">{{ form.descripcion.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label fw-semibold" for="{{ form.miembro.id_for_label }}">{{ form.miembro.label }}</label>
+          {{ form.miembro }}
+          {% if form.miembro.errors %}<div class="text-danger small mt-1">{{ form.miembro.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label fw-semibold" for="{{ form.tercero.id_for_label }}">{{ form.tercero.label }}</label>
+          {{ form.tercero }}
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold" for="{{ form.referencia.id_for_label }}">Referencia <span class="text-muted fw-normal">(opcional)</span></label>
+          {{ form.referencia }}
+          <div class="form-text">{{ form.referencia.help_text }}</div>
+        </div>
+      </div>
+
+      <p class="text-muted small mt-3 mb-3">
+        {% if tasa %}
+          <i class="bi bi-currency-exchange"></i> Tasa: Bs. {{ tasa.valor|monto }} ({{ tasa.get_fuente_display }}, {{ tasa.fecha|date:"d/m/Y" }}){% if not tasa_exacta %} — <strong>no es de hoy</strong>{% endif %}.
+          El movimiento guarda la tasa de su fecha.
+        {% else %}
+          <i class="bi bi-exclamation-triangle"></i> No hay ninguna tasa de cambio cargada: no se podrá guardar hasta que el soporte de Arca cargue una.
+        {% endif %}
+      </p>
+
+      <div class="d-flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-arca-primary">Guardar</button>
+        <button type="submit" name="otro" value="1" class="btn btn-outline-secondary">Guardar y registrar otro</button>
+        <a href="{% url 'finanzas:movimiento_lista' %}" class="btn btn-link text-muted">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{{ monedas_por_cuenta|json_script:"monedas-por-cuenta" }}
+<script>
+(function () {
+  var cuenta = document.getElementById("{{ form.cuenta.id_for_label }}");
+  var monto = document.getElementById("{{ form.monto.id_for_label }}");
+  var simbolo = document.getElementById("simbolo-moneda");
+  var equivalente = document.getElementById("equivalente");
+  if (!cuenta || !monto) return;
+  var monedas = JSON.parse(document.getElementById("monedas-por-cuenta").textContent);
+  var tasa = {% if tasa %}{{ tasa.valor|unlocalize }}{% else %}null{% endif %};
+  var ayuda = equivalente.textContent;
+  var formato = new Intl.NumberFormat("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  function actualizar() {
+    var moneda = monedas[cuenta.value];
+    simbolo.textContent = moneda === "USD" ? "$" : moneda === "VES" ? "Bs." : "—";
+    var valor = parseFloat(monto.value);
+    if (!moneda || !tasa || !(valor > 0)) { equivalente.textContent = ayuda; return; }
+    equivalente.textContent = moneda === "USD"
+      ? "≈ Bs. " + formato.format(valor * tasa)
+      : "≈ $ " + formato.format(valor / tasa);
+  }
+  cuenta.addEventListener("change", actualizar);
+  monto.addEventListener("input", actualizar);
+  actualizar();
+
+  // Evita el doble envío por doble toque.
+  document.getElementById("form-movimiento").addEventListener("submit", function (e) {
+    if (this.dataset.enviado) { e.preventDefault(); return; }
+    this.dataset.enviado = "1";
+  });
+})();
+</script>
+{% endblock %}

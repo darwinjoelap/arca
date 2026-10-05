@@ -18,22 +18,42 @@ Se trabaja por fases, como en Edumia: una fase se cierra aquí antes de abrir la
 
 ## Pendiente de verificar en tu máquina
 
-- [ ] Correr las pruebas contra PostgreSQL. Aquí se corrieron contra SQLite; las restricciones condicionales
-      (un solo dueño, un solo ejercicio activo) existen en ambos, pero hay que confirmarlo en Postgres.
+- [x] Pruebas contra PostgreSQL: las 53 pasan (2026-10-05).
 - [ ] Primer despliegue en Railway (no se ha hecho ninguno).
 - [ ] `git init` y primer commit: la carpeta todavía no es un repositorio.
 
+## Hecho — Fase 3, parte 1 (libro de caja)
+
+- [x] App `finanzas`: `Caja`, `Cuenta`, `Concepto` (dos niveles) y `Movimiento`
+- [x] Registro de ingresos y egresos, con concepto de la lista o libre, miembro o tercero, y referencia
+- [x] Vale correlativo por caja y ejercicio; protección contra doble envío
+- [x] Aprobación opcional de egresos y anulación con motivo
+- [x] Panel: fondos disponibles con «Ver en USD / Ver en Bs.», ingresos y egresos del mes, saldo por cuenta y últimos movimientos
+- [x] Lista de movimientos con filtros
+- [x] 33 pruebas nuevas (86 en total), incluido el aislamiento del libro
+
+Pendiente de verificar en tu máquina: correr las 86 pruebas contra PostgreSQL (aquí, SQLite).
+
 ## Lo que NO está todavía
 
-- Ningún movimiento de dinero: ni ingresos, ni egresos, ni saldos, ni presupuestos, ni cuenta personal, ni inventario.
-  El interruptor de visibilidad ya se guarda y se audita, pero aún no hay cuentas personales que mostrar u ocultar.
-- Captura offline: el service worker solo cachea el "shell". La cola en IndexedDB de Edumia entra en la Fase 3.
+- Captura offline de ingresos y egresos (Fase 3, parte 2). Hoy registrar exige conexión.
+- Traslados entre cuentas o cajas: mover dinero del banco al efectivo hoy serían un egreso y un ingreso, que
+  inflan los totales del mes. Hace falta antes de usarlo en serio.
+- Editar un movimiento: no existe a propósito (A-18).
+- Exportar el libro a Excel o PDF y el resumen por concepto (Fase 6).
+- Presupuestos, cuenta personal e inventario.
 - Actualización automática de la tasa BCV (Fase 2).
 - Fuentes Inter y Manrope servidas desde `static/` (hoy vienen de Google Fonts; sin conexión cae a la fuente del sistema).
 - Agregar a una organización un usuario que ya existe en otra: solo desde `/admin/`.
 - Respaldo automático de la base (el workflow de Neon de Edumia no se copió; hay que hacerlo para Railway).
 
-## Siguiente — Fase 2 (moneda e identidad)
+## Siguiente — Fase 3, parte 2: captura offline
+
+- [ ] Cola en IndexedDB y endpoints idempotentes en `sync` (patrón de la Fase 7 de Edumia)
+- [ ] Precaché de los formularios y catálogos (cuentas, conceptos, última tasa)
+- [ ] Traslados entre cuentas
+
+## Pendiente — Fase 2 (moneda e identidad)
 
 - [ ] Comando `actualizar_tasa_bcv` + cron de Railway; probar la fuente desde Railway antes de comprometerse
 - [ ] Fuentes en `static/`
@@ -42,5 +62,5 @@ Se trabaja por fases, como en Edumia: una fase se cierra aquí antes de abrir la
 
 ## Luego
 
-Fase 3 libro de caja (con captura offline) · Fase 4 presupuestos · Fase 5 miembros y cuenta personal ·
+Fase 4 presupuestos · Fase 5 miembros y cuenta personal ·
 Fase 6 reportes · Fase 7 inventario · Fase 8 cierre (arqueo, importador de Excel, alta de organizaciones).

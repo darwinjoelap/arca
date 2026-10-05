@@ -46,6 +46,29 @@ carga el superadmin (y, desde la Fase 2, un comando).
 se reescriben como `finanzas`, `presupuestos`, `personal`, `inventario`, `reportes` y `sync` en sus fases,
 tomando de Edumia el patrón y el código que sirva.
 
+**A-13 — Saldos en la moneda de la cuenta; la conversión es solo para verlos.** Cada cuenta tiene una
+moneda y todo movimiento toma la de su cuenta, así que el saldo de una cuenta es una suma exacta. «Ver en USD /
+Ver en Bs.» convierte esos saldos con la tasa vigente (cuánto tengo hoy). Los ingresos y egresos de un período
+usan el equivalente congelado de cada movimiento (cuánto entró y salió, a la tasa de su día). Edumia sumaba
+equivalentes congelados también para el saldo; con cuentas en dos monedas eso da una cifra que no existe en
+ninguna parte.
+
+**A-14 — Un movimiento, un monto.** Sin renglones de producto, cantidad y precio como en Edumia: el libro del
+Excel trabaja así y es mucho más rápido de capturar en el teléfono.
+
+**A-15 — El saldo inicial vive en la cuenta, no en la caja.** La caja agrupa cuentas y tendrá el presupuesto;
+el dinero está en las cuentas. Cambiar un saldo inicial queda en la bitácora como evento propio.
+
+**A-16 — Aprobación de egresos opcional.** Con `requiere_aprobacion_egresos` apagado, todo se confirma al
+registrarse. Encendido, el egreso de quien no es director ni administrador queda «por aprobar» y no cuenta en el
+saldo hasta que uno de ellos lo apruebe. Los ingresos nunca esperan.
+
+**A-17 — Quién ve el libro.** Director, administradores y quien tenga `puede_ver_movimientos` ven todo y ven
+los saldos. Quien solo registra ve únicamente lo que registró él, y no ve saldos.
+
+**A-18 — Un movimiento no se edita.** Ni siquiera recién creado: se anula con motivo y se registra de nuevo
+(D-09). El `uuid_cliente` evita el duplicado por doble envío y será la clave de la cola offline.
+
 ## Heredadas de Edumia que siguen vigentes
 
 - **D-02 (revisado)** — El valor de una tasa se puede corregir; recalcula lo no congelado.

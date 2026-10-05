@@ -575,8 +575,8 @@ h1, h2, h3, .brand-name { font-family: "Manrope", "Inter", system-ui, sans-serif
 
 /* Cifras tabulares en toda columna o tarjeta de montos. */
 .monto, .table td.text-end, .stat-value { font-variant-numeric: tabular-nums; }
-.monto-ingreso { color: var(--arca-success); }
-.monto-egreso { color: var(--arca-danger); }
+.monto-ingreso, .table td.monto-ingreso { color: var(--arca-success); }
+.monto-egreso, .table td.monto-egreso { color: var(--arca-danger); }
 
 .arca-nav .nav-link.active { box-shadow: inset 3px 0 0 var(--arca-brass-500); }
 .arca-org-actual {

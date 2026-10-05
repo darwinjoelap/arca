@@ -6,7 +6,8 @@ from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
 
-from cambio.services import SinTasaError, obtener_tasa
+from finanzas.models import Movimiento
+from finanzas.services import resumen_saldos, tasa_vigente, totales_periodo
 from organizaciones.models import Ejercicio, Membresia
 
 from .auditoria import registrar
@@ -31,8 +32,9 @@ def salud(request):
 
 @login_required
 def inicio(request):
-    """Panel principal. Por ahora muestra el contexto de la organización; los
-    saldos y accesos de ingreso/egreso entran con el libro de caja (Fase 3)."""
+    """Panel principal: fondos disponibles (en Bs. o USD), lo que entró y
+    salió en el mes y los últimos movimientos. Los saldos solo los ve quien
+    puede ver el libro completo."""
     organizacion = request.organizacion
     if organizacion is None:
         tiene_varias = Membresia.objects.filter(
@@ -44,17 +46,31 @@ def inicio(request):
         # cualquier otro, un aviso de que su acceso está desactivado.
         return render(request, "core/sin_organizacion.html")
 
-    try:
-        tasa, tasa_exacta = obtener_tasa(timezone.localdate())
-    except SinTasaError:
-        tasa, tasa_exacta = None, False
+    tasa, tasa_exacta = tasa_vigente()
+    hoy = timezone.localdate()
+    membresia = request.membresia
+    ve_saldos = membresia.tiene_permiso("puede_ver_movimientos")  # director y administradores incluidos
 
     contexto = {
         "ejercicio_activo": Ejercicio.objects.filter(organizacion=organizacion, activo=True).first(),
         "tasa": tasa,
         "tasa_exacta": tasa_exacta,
         "total_miembros": Membresia.objects.filter(organizacion=organizacion, activa=True).count(),
+        "ve_saldos": ve_saldos,
+        "moneda_inicial": organizacion.moneda_base,
     }
+    if ve_saldos:
+        contexto["saldos"] = resumen_saldos(organizacion, tasa)
+        contexto["mes"] = totales_periodo(organizacion, hoy.replace(day=1), hoy)
+        contexto["ultimos"] = (
+            Movimiento.objects.filter(organizacion=organizacion)
+            .exclude(estado=Movimiento.Estado.ANULADO)
+            .select_related("concepto", "concepto__padre", "cuenta", "miembro", "miembro__user")[:8]
+        )
+        if membresia.puede_administrar:
+            contexto["por_aprobar"] = Movimiento.objects.filter(
+                organizacion=organizacion, estado=Movimiento.Estado.REGISTRADO
+            ).count()
     return render(request, "core/dashboard.html", contexto)
 
 

@@ -57,11 +57,28 @@
           <i class="bi bi-speedometer2"></i> Panel principal
         </a>
 
-        {# Fase 3 en adelante: Libro de caja, Presupuestos, Mi cuenta, Inventario y Reportes se agregan aquí. #}
+        {% if entra_al_libro %}
+        <div class="arca-nav-heading">Libro de caja</div>
+        {% if puede_ingresos %}
+        <a class="nav-link {% if vista == 'finanzas:ingreso_registrar' %}active{% endif %}" href="{% url 'finanzas:ingreso_registrar' %}">
+          <i class="bi bi-arrow-down-circle-fill"></i> Registrar ingreso
+        </a>
+        {% endif %}
+        {% if puede_egresos %}
+        <a class="nav-link {% if vista == 'finanzas:egreso_registrar' %}active{% endif %}" href="{% url 'finanzas:egreso_registrar' %}">
+          <i class="bi bi-arrow-up-circle-fill"></i> Registrar egreso
+        </a>
+        {% endif %}
+        <a class="nav-link {% if 'finanzas:movimiento' in vista %}active{% endif %}" href="{% url 'finanzas:movimiento_lista' %}">
+          <i class="bi bi-journal-text"></i> Movimientos
+        </a>
+        {% endif %}
+
+        {# Fases siguientes: Presupuestos, Mi cuenta, Inventario y Reportes se agregan aquí. #}
 
         {% if puede_administrar %}
         <div class="arca-nav-heading">Administración</div>
-        <a class="nav-link {% if 'organizaciones:' in vista and vista != 'organizaciones:seleccionar' %}active{% endif %}" href="{% url 'organizaciones:configuracion' %}">
+        <a class="nav-link {% if 'organizaciones:' in vista and vista != 'organizaciones:seleccionar' or 'finanzas:caja' in vista or 'finanzas:cuenta' in vista or 'finanzas:concepto' in vista %}active{% endif %}" href="{% url 'organizaciones:configuracion' %}">
           <i class="bi bi-sliders"></i> Configuración
         </a>
         {% endif %}

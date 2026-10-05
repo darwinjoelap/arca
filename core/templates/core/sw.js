@@ -4,7 +4,7 @@
 // La cola offline (IndexedDB + Background Sync, heredada de la Fase 7 de
 // Edumia) se conecta en la Fase 3, junto con los formularios de captura.
 
-const CACHE_NAME = "arca-shell-v1";
+const CACHE_NAME = "arca-shell-v2";
 const OFFLINE_URL = "{% url 'core:sin_conexion' %}";
 const ARCHIVOS_SHELL = [
   "{% static 'vendor/bootstrap/bootstrap.min.css' %}",

@@ -49,6 +49,16 @@ class RegistroAuditoria(models.Model):
         CREAR_EJERCICIO = "crear_ejercicio", "Creación de ejercicio"
         ACTIVAR_EJERCICIO = "activar_ejercicio", "Activación de ejercicio"
         CERRAR_EJERCICIO = "cerrar_ejercicio", "Cierre de ejercicio"
+        CREAR_CAJA = "crear_caja", "Creación de caja"
+        EDITAR_CAJA = "editar_caja", "Edición de caja"
+        CREAR_CUENTA = "crear_cuenta", "Creación de cuenta"
+        EDITAR_CUENTA = "editar_cuenta", "Edición de cuenta"
+        AJUSTAR_SALDO_CUENTA = "ajustar_saldo_cuenta", "Ajuste de saldo inicial de cuenta"
+        CREAR_CONCEPTO = "crear_concepto", "Creación de concepto"
+        EDITAR_CONCEPTO = "editar_concepto", "Edición de concepto"
+        REGISTRAR_MOVIMIENTO = "registrar_movimiento", "Registro de ingreso o egreso"
+        APROBAR_MOVIMIENTO = "aprobar_movimiento", "Aprobación de egreso"
+        ANULAR_MOVIMIENTO = "anular_movimiento", "Anulación de movimiento"
 
     organizacion = models.ForeignKey(
         "organizaciones.Organizacion", null=True, blank=True,

@@ -49,16 +49,16 @@ class TasaCambio(models.Model):
         return f"{self.fecha} · {self.get_fuente_display()}: {self.valor}"
 
     def _transacciones_recalculables(self):
-        """Conjuntos de transacciones que se recalculan si `valor` cambia.
+        """Conjuntos de transacciones que se recalculan si `valor` cambia:
+        solo las que todavía no están congeladas (D-09). Hoy, los movimientos
+        del libro que esperan aprobación; la cuenta personal se suma en su fase."""
+        from finanzas.models import Movimiento
 
-        Vacío hasta la Fase 3: ahí `finanzas.Movimiento` (y luego
-        `personal.MovimientoPersonal`) se enganchan aquí, devolviendo solo los
-        que no estén aprobados ni anulados."""
-        return []
+        return [self.movimientos.filter(estado=Movimiento.Estado.REGISTRADO)]
 
     def tiene_transacciones(self):
-        """True si alguna transacción quedó congelada con esta tasa. Fase 3."""
-        return False
+        """True si algún movimiento quedó registrado con esta tasa."""
+        return self.movimientos.exists()
 
     def save(self, *args, **kwargs):
         valor_cambio = self.pk and self.valor != self._valor_original

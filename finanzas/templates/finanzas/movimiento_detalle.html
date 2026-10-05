@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load arca %}
+{% block titulo %}{{ m.get_tipo_display }} #{{ m.numero_vale }} — Arca{% endblock %}
+{% block titulo_topbar %}{{ m.get_tipo_display }} #{{ m.numero_vale }}{% endblock %}
+{% block contenido %}
+<div class="card card-arca" style="max-width: 620px;">
+  <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+      <div>
+        <p class="text-muted small text-uppercase fw-semibold mb-1">{{ m.get_tipo_display }} · Vale n.º {{ m.numero_vale }}</p>
+        <h1 class="h4 mb-1">{{ m.titulo }}</h1>
+        {% if m.concepto and m.descripcion %}<p class="text-muted mb-0">{{ m.descripcion }}</p>{% endif %}
+      </div>
+      {% if m.estado == 'confirmado' %}<span class="badge text-bg-success">Confirmado</span>
+      {% elif m.estado == 'registrado' %}<span class="badge text-bg-warning">Por aprobar</span>
+      {% else %}<span class="badge text-bg-secondary">Anulado</span>{% endif %}
+    </div>
+
+    <p class="display-6 monto mb-1 {% if m.estado == 'anulado' %}text-muted text-decoration-line-through{% elif m.es_ingreso %}monto-ingreso{% else %}monto-egreso{% endif %}">
+      {% if m.es_ingreso %}+{% else %}−{% endif %} {{ m.moneda|simbolo }} {{ m.monto|monto }}
+    </p>
+    <p class="text-muted small mb-4">
+      Equivale a {% if m.moneda == 'USD' %}Bs. {{ m.monto_ves|monto }}{% else %}$ {{ m.monto_usd|monto }}{% endif %}
+      con la tasa de Bs. {{ m.tasa_aplicada|monto }} ({{ m.tasa.get_fuente_display }}, {{ m.tasa.fecha|date:"d/m/Y" }}).
+    </p>
+
+    <dl class="row mb-0 small">
+      <dt class="col-5 text-muted fw-normal">Fecha</dt><dd class="col-7">{{ m.fecha|date:"d/m/Y" }}</dd>
+      <dt class="col-5 text-muted fw-normal">Caja · Cuenta</dt><dd class="col-7">{{ m.caja.nombre }} · {{ m.cuenta.nombre }}</dd>
+      <dt class="col-5 text-muted fw-normal">Ejercicio</dt><dd class="col-7">{{ m.ejercicio.nombre }}</dd>
+      {% if m.nombre_persona %}<dt class="col-5 text-muted fw-normal">{% if m.es_ingreso %}Aportó{% else %}Recibió{% endif %}</dt><dd class="col-7">{{ m.nombre_persona }}</dd>{% endif %}
+      {% if m.referencia %}<dt class="col-5 text-muted fw-normal">Referencia</dt><dd class="col-7">{{ m.referencia }}</dd>{% endif %}
+      <dt class="col-5 text-muted fw-normal">Registrado por</dt><dd class="col-7">{{ m.registrado_por.nombre_para_mostrar }} · {{ m.creado_en|date:"d/m/Y H:i" }}</dd>
+      {% if m.aprobado_por %}<dt class="col-5 text-muted fw-normal">Aprobado por</dt><dd class="col-7">{{ m.aprobado_por.nombre_para_mostrar }}</dd>{% endif %}
+      {% if m.estado == 'anulado' %}
+      <dt class="col-5 text-muted fw-normal">Anulado por</dt><dd class="col-7">{{ m.anulado_por.nombre_para_mostrar }} · {{ m.fecha_anulacion|date:"d/m/Y H:i" }}</dd>
+      <dt class="col-5 text-muted fw-normal">Motivo</dt><dd class="col-7">{{ m.motivo_anulacion }}</dd>
+      {% endif %}
+    </dl>
+  </div>
+  <div class="card-footer bg-transparent d-flex flex-wrap gap-2 p-3">
+    <a href="{% url 'finanzas:movimiento_lista' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Movimientos</a>
+    {% if puede_administrar_libro %}
+      {% if m.estado == 'registrado' %}
+      <form method="post" action="{% url 'finanzas:movimiento_aprobar' m.pk %}">{% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-success">Aprobar</button>
+      </form>
+      {% endif %}
+      {% if m.estado != 'anulado' %}
+      <a href="{% url 'finanzas:movimiento_anular' m.pk %}" class="btn btn-sm btn-outline-danger ms-auto">Anular</a>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% if m.estado != 'anulado' %}
+<p class="text-muted small mt-3" style="max-width: 620px;">
+  Un movimiento no se edita. Si tiene un error, se anula con su motivo y se registra de nuevo: así el libro conserva su historia.
+</p>
+{% endif %}
+{% endblock %}

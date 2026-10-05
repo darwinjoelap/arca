@@ -1,68 +1,175 @@
 {% extends "base.html" %}
+{% load arca %}
 {% block titulo %}Panel — Arca{% endblock %}
 {% block titulo_topbar %}Panel principal{% endblock %}
 {% block contenido %}
-<div class="arca-hero mb-4">
-  <p class="text-muted small text-uppercase fw-semibold mb-1">{{ membresia_activa.rol_visible }}</p>
-  <h1 class="h3 mb-1">{{ organizacion_activa.nombre }}</h1>
-  <p class="text-muted mb-0">Hola, {{ membresia_activa.nombre }}.</p>
-</div>
-
-<div class="row g-3 mb-4">
-  <div class="col-md-4">
-    <div class="stat-tile">
-      <div class="stat-icon stat-icon-navy"><i class="bi bi-calendar3"></i></div>
-      <div>
-        <div class="stat-label">Ejercicio activo</div>
-        {% if ejercicio_activo %}
-          <div class="stat-value" style="font-size:1.4rem;">{{ ejercicio_activo.nombre }}</div>
-          <div class="text-muted small">{{ ejercicio_activo.fecha_inicio|date:"d/m/Y" }} – {{ ejercicio_activo.fecha_fin|date:"d/m/Y" }}</div>
-        {% else %}
-          <div class="fw-semibold">Ninguno</div>
-          {% if puede_administrar %}<a class="small" href="{% url 'organizaciones:ejercicio_lista' %}">Crear o activar uno</a>{% endif %}
-        {% endif %}
-      </div>
-    </div>
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+  <div>
+    <p class="text-muted small text-uppercase fw-semibold mb-1">{{ membresia_activa.rol_visible }} · {{ organizacion_activa.nombre }}</p>
+    <h1 class="h3 mb-0">Hola, {{ membresia_activa.nombre }}</h1>
   </div>
-  <div class="col-md-4">
-    <div class="stat-tile">
-      <div class="stat-icon stat-icon-teal"><i class="bi bi-currency-exchange"></i></div>
-      <div>
-        <div class="stat-label">Tasa de cambio</div>
-        {% if tasa %}
-          <div class="stat-value" style="font-size:1.4rem;">Bs. {{ tasa.valor|floatformat:2 }}</div>
-          <div class="text-muted small">
-            {{ tasa.get_fuente_display }} · {{ tasa.fecha|date:"d/m/Y" }}
-            {% if not tasa_exacta %}<span class="badge text-bg-warning">No es de hoy</span>{% endif %}
-          </div>
-        {% else %}
-          <div class="fw-semibold">Sin tasa cargada</div>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-  {% if puede_administrar %}
-  <div class="col-md-4">
-    <a class="stat-tile text-decoration-none" href="{% url 'organizaciones:miembro_lista' %}">
-      <div class="stat-icon stat-icon-blue"><i class="bi bi-people-fill"></i></div>
-      <div>
-        <div class="stat-label">Miembros activos</div>
-        <div class="stat-value">{{ total_miembros }}</div>
-      </div>
-    </a>
+  {% if ve_saldos and saldos.convertible %}
+  <div class="btn-group" role="group" aria-label="Moneda en la que se muestran los montos">
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-ver-moneda="usd">Ver en USD</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-ver-moneda="ves">Ver en Bs.</button>
   </div>
   {% endif %}
 </div>
 
-<div class="card card-arca">
-  <div class="card-body p-4">
-    <h2 class="h6 mb-2">En construcción</h2>
-    <p class="text-muted mb-0">
-      Los saldos en Bs. y USD, el registro de ingresos y egresos, los presupuestos, la cuenta personal
-      y el inventario se van habilitando por fases.
-      {% if puede_administrar %}Mientras tanto puedes dejar lista la organización en
-      <a href="{% url 'organizaciones:configuracion' %}">Configuración</a>: tipos de miembro, miembros y ejercicio.{% endif %}
-    </p>
+{% if por_aprobar %}
+<div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2">
+  <span><i class="bi bi-hourglass-split"></i> {{ por_aprobar }} egreso{{ por_aprobar|pluralize }} por aprobar.</span>
+  <a href="{% url 'finanzas:movimiento_lista' %}?estado=registrado" class="btn btn-sm btn-outline-secondary">Revisar</a>
+</div>
+{% endif %}
+
+{% if ve_saldos %}
+<div class="row g-3 mb-3">
+  <div class="col-lg-5">
+    <div class="balance-card h-100">
+      <div class="balance-label">Fondos disponibles</div>
+      {% if saldos.convertible %}
+        <div class="balance-amount monto"><span data-usd="$ {{ saldos.usd|monto }}" data-ves="Bs. {{ saldos.ves|monto }}"></span></div>
+        <div class="small opacity-75">
+          Convertido con la tasa de Bs. {{ tasa.valor|monto }} ({{ tasa.get_fuente_display }}, {{ tasa.fecha|date:"d/m/Y" }}){% if not tasa_exacta %} — no es de hoy{% endif %}
+        </div>
+      {% else %}
+        <div class="balance-amount monto">$ {{ saldos.usd|monto }}</div>
+        <div class="balance-amount monto" style="font-size:1.4rem;">Bs. {{ saldos.ves|monto }}</div>
+        <div class="small opacity-75">Sin tasa de cambio cargada: no se pueden sumar las dos monedas.</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-6 col-lg">
+    <div class="stat-tile">
+      <div class="stat-icon" style="background: var(--arca-success);"><i class="bi bi-arrow-down"></i></div>
+      <div>
+        <div class="stat-label">Ingresos del mes</div>
+        <div class="stat-value monto monto-ingreso" style="font-size:1.35rem;"><span data-usd="$ {{ mes.ingreso.usd|monto }}" data-ves="Bs. {{ mes.ingreso.ves|monto }}"></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg">
+    <div class="stat-tile">
+      <div class="stat-icon" style="background: var(--arca-danger);"><i class="bi bi-arrow-up"></i></div>
+      <div>
+        <div class="stat-label">Egresos del mes</div>
+        <div class="stat-value monto monto-egreso" style="font-size:1.35rem;"><span data-usd="$ {{ mes.egreso.usd|monto }}" data-ves="Bs. {{ mes.egreso.ves|monto }}"></span></div>
+      </div>
+    </div>
   </div>
 </div>
+{% endif %}
+
+{% if puede_ingresos or puede_egresos %}
+<div class="row g-3 mb-4">
+  {% if puede_ingresos %}
+  <div class="col-sm-6">
+    <a class="quick-action" href="{% url 'finanzas:ingreso_registrar' %}">
+      <span class="quick-action-icon" style="background: var(--arca-success); color:#fff;"><i class="bi bi-plus-lg"></i></span>
+      <span class="fw-semibold">Registrar ingreso</span>
+    </a>
+  </div>
+  {% endif %}
+  {% if puede_egresos %}
+  <div class="col-sm-6">
+    <a class="quick-action" href="{% url 'finanzas:egreso_registrar' %}">
+      <span class="quick-action-icon" style="background: var(--arca-danger); color:#fff;"><i class="bi bi-dash-lg"></i></span>
+      <span class="fw-semibold">Registrar egreso</span>
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if ve_saldos %}
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card card-arca h-100">
+      <div class="card-header bg-transparent fw-bold">Saldo por cuenta</div>
+      {% if saldos.cajas %}
+      <ul class="list-group list-group-flush">
+        {% for bloque in saldos.cajas %}
+        <li class="list-group-item d-flex justify-content-between align-items-center" style="background: var(--arca-bg);">
+          <span class="fw-semibold small text-uppercase">{{ bloque.caja.nombre }}</span>
+          {% if saldos.convertible %}<span class="monto fw-semibold small"><span data-usd="$ {{ bloque.usd|monto }}" data-ves="Bs. {{ bloque.ves|monto }}"></span></span>{% endif %}
+        </li>
+        {% for fila in bloque.cuentas %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span>{{ fila.cuenta.nombre }} <span class="text-muted small">{{ fila.cuenta.moneda }}</span></span>
+          <span class="monto {% if fila.saldo < 0 %}monto-egreso{% endif %}">{{ fila.cuenta.moneda|simbolo }} {{ fila.saldo|monto }}</span>
+        </li>
+        {% endfor %}
+        {% endfor %}
+      </ul>
+      <div class="card-body py-2 small text-muted">Cada cuenta se muestra en su propia moneda; ese saldo es exacto.</div>
+      {% else %}
+      <div class="card-body text-muted small">
+        Todavía no hay cuentas.
+        {% if puede_administrar %}<a href="{% url 'finanzas:caja_lista' %}">Crea una caja y su primera cuenta</a> para empezar.{% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card card-arca h-100">
+      <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+        <span class="fw-bold">Últimos movimientos</span>
+        <a href="{% url 'finanzas:movimiento_lista' %}" class="small">Ver todos</a>
+      </div>
+      {% if ultimos %}
+      <ul class="list-group list-group-flush">
+        {% for m in ultimos %}
+        <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+          <a href="{% url 'finanzas:movimiento_detalle' m.pk %}" class="text-decoration-none text-reset text-truncate">
+            <span class="fw-semibold">{{ m.titulo }}</span>
+            {% if m.estado == 'registrado' %}<span class="badge text-bg-warning">Por aprobar</span>{% endif %}
+            <div class="small text-muted">{{ m.fecha|date:"d/m/Y" }} · {{ m.cuenta.nombre }}{% if m.nombre_persona %} · {{ m.nombre_persona }}{% endif %}</div>
+          </a>
+          <span class="monto text-nowrap {% if m.es_ingreso %}monto-ingreso{% else %}monto-egreso{% endif %}">{% if m.es_ingreso %}+{% else %}−{% endif %} {{ m.moneda|simbolo }} {{ m.monto|monto }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="empty-state"><i class="bi bi-journal-text d-block mb-2"></i>Todavía no hay movimientos.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<p class="text-muted small mt-4 mb-0">
+  {% if ejercicio_activo %}Ejercicio activo: {{ ejercicio_activo.nombre }} ({{ ejercicio_activo.fecha_inicio|date:"d/m/Y" }} – {{ ejercicio_activo.fecha_fin|date:"d/m/Y" }}).
+  {% else %}<i class="bi bi-exclamation-triangle"></i> No hay un ejercicio activo{% if puede_administrar %}: <a href="{% url 'organizaciones:ejercicio_lista' %}">crea o activa uno</a> para poder registrar movimientos{% endif %}.{% endif %}
+  {% if not ve_saldos and tasa %} Tasa: Bs. {{ tasa.valor|monto }} ({{ tasa.fecha|date:"d/m/Y" }}).{% endif %}
+</p>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  // «Ver en USD / Ver en Bs.»: cada cifra trae sus dos valores ya calculados.
+  var CLAVE = "arca-moneda";
+  var moneda = "{{ moneda_inicial|lower }}";
+  try { moneda = localStorage.getItem(CLAVE) || moneda; } catch (e) {}
+  if (moneda !== "usd" && moneda !== "ves") moneda = "usd";
+
+  function pintar() {
+    document.querySelectorAll("[data-usd]").forEach(function (el) { el.textContent = el.dataset[moneda]; });
+    document.querySelectorAll("[data-ver-moneda]").forEach(function (b) {
+      var activo = b.dataset.verMoneda === moneda;
+      b.classList.toggle("active", activo);
+      b.setAttribute("aria-pressed", activo);
+    });
+  }
+  document.querySelectorAll("[data-ver-moneda]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      moneda = b.dataset.verMoneda;
+      try { localStorage.setItem(CLAVE, moneda); } catch (e) {}
+      pintar();
+    });
+  });
+  pintar();
+})();
+</script>
 {% endblock %}
