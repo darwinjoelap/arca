@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load arca inventario %}
+{% block titulo %}{{ a.nombre }} — Arca{% endblock %}
+{% block titulo_topbar %}Inventario{% endblock %}
+{% block contenido %}
+<a href="{% url 'inventario:inicio' %}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> Inventario</a>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mt-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">{{ a.nombre }} {% if not a.activo %}<span class="badge text-bg-secondary">Inactivo</span>{% endif %}</h1>
+    <p class="text-muted mb-0">{{ a.get_clase_display }} · {{ a.categoria.nombre|default:"Sin categoría" }}{% if a.codigo %} · Código {{ a.codigo }}{% endif %}</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'inventario:entrada' %}?articulo={{ a.pk }}" class="btn btn-arca-primary"><i class="bi bi-box-arrow-in-down"></i> Entrada</a>
+    <a href="{% url 'inventario:salida' %}?articulo={{ a.pk }}" class="btn btn-arca-primary"><i class="bi bi-box-arrow-up"></i> Salida</a>
+    <a href="{% url 'inventario:traslado' %}?articulo={{ a.pk }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left-right"></i> Mover</a>
+    <a href="{% url 'inventario:articulo_editar' a.pk %}" class="btn btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+    <form method="post" action="{% url 'inventario:articulo_eliminar' a.pk %}" onsubmit="return confirm('¿Eliminar «{{ a.nombre|escapejs }}»? Solo se puede si no tiene movimientos.');">{% csrf_token %}<button class="btn btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button></form>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4"><div class="indicador"><div class="indicador-etiqueta">Existencia total</div>
+    <div class="indicador-valor {% if bajo_minimo %}monto-egreso{% endif %}">{{ total|cantidad }} <span class="fs-6 fw-normal text-muted">{{ a.unidad }}</span></div>
+    <div class="indicador-detalle">{% if bajo_minimo %}<i class="bi bi-exclamation-triangle-fill"></i> En el mínimo ({{ a.minimo|cantidad }}) o por debajo: toca reponer.{% elif a.minimo is not None %}Mínimo: {{ a.minimo|cantidad }} {{ a.unidad }}.{% else %}En todas las ubicaciones.{% endif %}</div></div></div>
+  <div class="col-md-4"><div class="indicador"><div class="indicador-etiqueta">Valor</div>
+    <div class="indicador-valor">{% if valor is not None %}{{ a.moneda|simbolo }} {{ valor|monto }}{% else %}—{% endif %}</div>
+    <div class="indicador-detalle">{% if a.valor_unitario is not None %}{{ a.moneda|simbolo }} {{ a.valor_unitario|monto }} por {{ a.unidad }}.{% else %}Sin valor por unidad cargado.{% endif %}</div></div></div>
+  <div class="col-md-4"><div class="indicador"><div class="indicador-etiqueta">{% if a.es_consumible %}A cargo de{% else %}Estado y responsable{% endif %}</div>
+    <div class="indicador-valor" style="font-size:1.15rem;">{% if not a.es_consumible %}{{ a.get_estado_display }} · {% endif %}{{ a.responsable.nombre|default:"Nadie en particular" }}</div>
+    <div class="indicador-detalle">{{ a.nota|default:"Sin nota." }}</div></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-4"><div class="card card-arca h-100">
+    <div class="card-header bg-transparent fw-bold">Dónde está</div>
+    {% if donde %}<div class="lista-cajas">{% for nombre, cant in donde %}<div class="cuenta-fila"><span><i class="bi bi-geo-alt text-muted"></i> {{ nombre }}</span><span class="monto fw-semibold">{{ cant|cantidad }} <span class="text-muted small fw-normal">{{ a.unidad }}</span></span></div>{% endfor %}</div>
+    {% else %}<div class="empty-state"><i class="bi bi-geo-alt d-block mb-2"></i>No hay existencia. Registra una entrada.</div>{% endif %}
+  </div></div>
+  <div class="col-lg-8"><div class="card card-arca h-100">
+    <div class="card-header bg-transparent fw-bold">Historial</div>
+    {% include "inventario/_tabla_movimientos.html" with ocultar_articulo=True %}
+  </div></div>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titulo %}Movimientos de inventario — Arca{% endblock %}
+{% block titulo_topbar %}Inventario{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-3">Movimientos de inventario</h1>
+{% include "inventario/_submenu.html" with seccion="movimientos" %}
+<form method="get" class="d-flex flex-wrap gap-2 mb-3">
+  <select name="tipo" class="form-select form-select-sm" style="max-width: 180px;" aria-label="Tipo"><option value="">Todos</option><option value="entrada" {% if tipo == 'entrada' %}selected{% endif %}>Entradas</option><option value="salida" {% if tipo == 'salida' %}selected{% endif %}>Salidas</option><option value="traslado" {% if tipo == 'traslado' %}selected{% endif %}>Traslados</option></select>
+  <input type="search" name="q" value="{{ q }}" class="form-control form-control-sm" style="max-width: 280px;" placeholder="Artículo o nota" aria-label="Buscar">
+  <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-funnel"></i> Filtrar</button>
+</form>
+<div class="card card-arca">{% include "inventario/_tabla_movimientos.html" %}</div>
+<p class="small text-muted mt-2">Se muestran los 200 más recientes.</p>
+{% endblock %}

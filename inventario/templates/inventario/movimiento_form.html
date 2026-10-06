@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block titulo %}{{ titulo }} — Arca{% endblock %}
+{% block titulo_topbar %}Inventario{% endblock %}
+{% block contenido %}
+<a href="{% url 'inventario:inicio' %}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> Inventario</a>
+<h1 class="h3 mt-2 mb-4">{{ titulo }}</h1>
+{% if sin_ubicaciones %}
+<div class="alert alert-warning" style="max-width: 560px;">Hace falta al menos una ubicación. <a href="{% url 'inventario:catalogo_crear' 'ubicacion' %}">Crear una</a>.</div>
+{% elif sin_articulos %}
+<div class="alert alert-warning" style="max-width: 560px;">Todavía no hay artículos. <a href="{% url 'inventario:articulo_crear' %}">Crear el primero</a>.</div>
+{% else %}
+<div class="card card-arca" style="max-width: 560px;"><div class="card-body p-4">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "organizaciones/_form_campos.html" %}
+    <p class="small text-muted d-none" id="hay-aqui" role="status" aria-live="polite"></p>
+    <div class="d-flex flex-wrap gap-2">
+      <button type="submit" class="btn btn-arca-primary">Guardar</button>
+      <button type="submit" name="otro" value="1" class="btn btn-outline-secondary">Guardar y registrar otro</button>
+      <a href="{% url 'inventario:inicio' %}" class="btn btn-link text-muted">Cancelar</a>
+    </div>
+  </form>
+</div></div>
+{% endif %}
+{% endblock %}
+{% block extra_scripts %}
+{{ hay|json_script:"inv-hay" }}{{ unidades|json_script:"inv-unidades" }}
+<script>
+(function () {
+  // Dice cuánto hay del artículo en la ubicación de origen (o en total, en una entrada).
+  var articulo = document.getElementById("id_articulo"), origen = document.getElementById("id_origen"), aviso = document.getElementById("hay-aqui");
+  if (!articulo || !aviso) return;
+  var hay = JSON.parse(document.getElementById("inv-hay").textContent), unidades = JSON.parse(document.getElementById("inv-unidades").textContent);
+  var f = new Intl.NumberFormat("es-VE", { maximumFractionDigits: 2 });
+  function pintar() {
+    var del = hay[articulo.value] || {}, unidad = unidades[articulo.value] || "";
+    if (!articulo.value) { aviso.classList.add("d-none"); return; }
+    var texto;
+    if (origen) {
+      if (!origen.value) { aviso.classList.add("d-none"); return; }
+      texto = "En esa ubicación hay " + f.format(del[origen.value] || 0) + " " + unidad + ".";
+    } else {
+      var total = 0; Object.keys(del).forEach(function (k) { total += del[k]; });
+      texto = "Ahora hay " + f.format(total) + " " + unidad + " en total.";
+    }
+    aviso.textContent = texto; aviso.classList.remove("d-none");
+  }
+  articulo.addEventListener("change", pintar); if (origen) origen.addEventListener("change", pintar);
+  pintar();
+})();
+</script>
+{% endblock %}

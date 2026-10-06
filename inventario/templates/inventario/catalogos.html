@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titulo %}Ubicaciones y categorías — Arca{% endblock %}
+{% block titulo_topbar %}Inventario{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-3">Ubicaciones y categorías</h1>
+{% include "inventario/_submenu.html" with seccion="catalogos" %}
+<div class="row g-3">
+  <div class="col-lg-7"><div class="card card-arca h-100">
+    <div class="card-header bg-transparent d-flex justify-content-between align-items-center"><span class="fw-bold">Ubicaciones</span><a href="{% url 'inventario:catalogo_crear' 'ubicacion' %}" class="btn btn-sm btn-arca-primary"><i class="bi bi-plus-lg"></i> Nueva</a></div>
+    {% if ubicaciones %}<div class="table-responsive"><table class="table align-middle mb-0"><tbody>
+      {% for u in ubicaciones %}<tr>
+        <td><a href="{% url 'inventario:inicio' %}?ubicacion={{ u.pk }}" class="fw-semibold text-decoration-none text-body">{{ u.nombre }}</a>{% if not u.activa %} <span class="badge text-bg-secondary">Inactiva</span>{% endif %}{% if u.descripcion %}<div class="small text-muted">{{ u.descripcion }}</div>{% endif %}</td>
+        <td class="small text-muted text-nowrap">{{ u.n_articulos }} artículo{{ u.n_articulos|pluralize }}</td>
+        <td class="text-end text-nowrap"><a href="{% url 'inventario:catalogo_editar' 'ubicacion' u.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+          <form method="post" action="{% url 'inventario:catalogo_eliminar' 'ubicacion' u.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar «{{ u.nombre|escapejs }}»?');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button></form></td>
+      </tr>{% endfor %}</tbody></table></div>
+    {% else %}<div class="empty-state"><i class="bi bi-geo-alt d-block mb-2"></i>Los lugares donde se guardan las cosas: depósito, cocina, salón…</div>{% endif %}
+  </div></div>
+  <div class="col-lg-5"><div class="card card-arca h-100">
+    <div class="card-header bg-transparent d-flex justify-content-between align-items-center"><span class="fw-bold">Categorías</span><a href="{% url 'inventario:catalogo_crear' 'categoria' %}" class="btn btn-sm btn-arca-primary"><i class="bi bi-plus-lg"></i> Nueva</a></div>
+    {% if categorias %}<div class="table-responsive"><table class="table align-middle mb-0"><tbody>
+      {% for c in categorias %}<tr>
+        <td><a href="{% url 'inventario:inicio' %}?categoria={{ c.pk }}" class="fw-semibold text-decoration-none text-body">{{ c.nombre }}</a></td>
+        <td class="text-end text-nowrap"><a href="{% url 'inventario:catalogo_editar' 'categoria' c.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+          <form method="post" action="{% url 'inventario:catalogo_eliminar' 'categoria' c.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar «{{ c.nombre|escapejs }}»?');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button></form></td>
+      </tr>{% endfor %}</tbody></table></div>
+    {% else %}<div class="empty-state"><i class="bi bi-tags d-block mb-2"></i>Opcionales, para agrupar: mobiliario, cocina, limpieza…</div>{% endif %}
+  </div></div>
+</div>
+{% endblock %}

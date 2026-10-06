@@ -779,3 +779,6 @@ button.caja-fila:hover .caja-fila-flecha { transform: translateX(3px); color: va
   .stat-tile .stat-value { font-size: 1.15rem; }
   .balance-amount { font-size: 2rem; }
 }
+
+a.arca-chip, a.arca-chip:hover { text-decoration: none; }
+a.arca-chip.active:hover { color: #fff; }

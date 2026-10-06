@@ -78,9 +78,18 @@ Pendiente de verificar en tu máquina: las 102 pruebas contra PostgreSQL, y el f
 - [x] Enlace propio por organización (/enlace/) con usuarios propios; la dirección principal es de la plataforma
 - [x] Panel principal con una tarjeta por caja (disponible, ingresos y egresos del mes) y filtro por caja en Movimientos
 - [x] Panel con pestañas por caja (Todas · cada caja), transiciones y estilos de interacción unificados
-- [x] 176 pruebas en total
+- [x] 176 pruebas hasta aquí
 
-Pendiente de verificar en tu máquina: `migrate` y las 176 pruebas contra PostgreSQL.
+## Hecho — Fase 7 (inventario)
+
+- [x] Catálogo de artículos: bienes y consumibles, con categoría, unidad, código, valor, responsable y estado
+- [x] Ubicaciones y categorías definidas por la organización
+- [x] Entradas, salidas y cambios de ubicación, con motivo e historial; se anulan con motivo
+- [x] Existencia por ubicación y total; aviso de consumibles por reponer; valor de lo que hay en $ y Bs.
+- [x] Permiso «Gestionar inventario» por tipo de miembro; todo queda en la bitácora
+- [x] 188 pruebas en total
+
+Pendiente de verificar en tu máquina: `migrate` y las 188 pruebas contra PostgreSQL.
 
 ## Lo que NO está todavía
 
@@ -93,7 +102,7 @@ Pendiente de verificar en tu máquina: `migrate` y las 176 pruebas contra Postgr
 - El aviso de presupuesto no aparece sin conexión, ni cuenta los egresos que esperan aprobación.
 - Presupuesto anual con montos distintos por mes; flujo de «se solicita con antelación».
 - Reportes de traslados, diferencia en cambio y saldos a una fecha pasada. Gráficos dentro de los PDF.
-- Inventario (Fase 7).
+- Inventario: sin reporte exportable (Excel/PDF), sin registro sin conexión, sin fotos, sin conteo físico guiado y sin enlace con el egreso de la compra. Un artículo por cantidad no distingue unidades individuales (40 sillas son una fila, no 40 fichas).
 - Tasa BCV automática, fuentes locales, pantalla de instalación en iPhone (Fase 2).
 - Traspasar la dirección de una organización: solo desde `/admin/`.
 - Recuperar la contraseña por correo: ya no se ofrece; la restablece el director (o la plataforma, la del director).
@@ -103,7 +112,7 @@ Pendiente de verificar en tu máquina: `migrate` y las 176 pruebas contra Postgr
 
 ## Siguiente — por decidir
 
-Fase 2 (tasa BCV automática, fuentes locales, iPhone), Fase 7 (inventario) o despliegue en Railway.
+Fase 2 (tasa BCV automática, fuentes locales, iPhone), despliegue en Railway o Fase 8 (arqueo, anticipos, importador).
 
 ## Pendiente — Fase 2 (moneda e identidad)
 
@@ -114,4 +123,4 @@ Fase 2 (tasa BCV automática, fuentes locales, iPhone), Fase 7 (inventario) o de
 
 ## Luego
 
-Fase 7 inventario · Fase 8 cierre (arqueo, importador de Excel, alta de organizaciones).
+Fase 8 cierre (arqueo, importador de Excel, alta de organizaciones).

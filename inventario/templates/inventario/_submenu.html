@@ -1,0 +1,5 @@
+<div class="arca-chips mb-3" role="navigation" aria-label="Secciones del inventario">
+  <a class="arca-chip {% if seccion == 'articulos' %}active{% endif %}" href="{% url 'inventario:inicio' %}"><i class="bi bi-box-seam"></i> Artículos</a>
+  <a class="arca-chip {% if seccion == 'movimientos' %}active{% endif %}" href="{% url 'inventario:movimientos' %}"><i class="bi bi-arrow-left-right"></i> Movimientos</a>
+  <a class="arca-chip {% if seccion == 'catalogos' %}active{% endif %}" href="{% url 'inventario:catalogos' %}"><i class="bi bi-geo-alt"></i> Ubicaciones y categorías</a>
+</div>

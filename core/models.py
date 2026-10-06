@@ -130,6 +130,10 @@ class RegistroAuditoria(models.Model):
         CREAR_CUOTA = "crear_cuota", "Creación de cuota"
         EDITAR_CUOTA = "editar_cuota", "Edición de cuota"
         ASIGNAR = "asignar", "Asignación a un miembro"
+        CREAR_ARTICULO = "crear_articulo", "Alta de artículo de inventario"
+        EDITAR_ARTICULO = "editar_articulo", "Edición de artículo de inventario"
+        MOVER_INVENTARIO = "mover_inventario", "Movimiento de inventario"
+        ANULAR_INVENTARIO = "anular_inventario", "Anulación de movimiento de inventario"
         EDITAR_SUSCRIPCION = "editar_suscripcion", "Cambio de suscripción (plataforma)"
         VER_CUENTA_PERSONAL = "ver_cuenta_personal", "Consulta de la cuenta personal de un miembro"
 

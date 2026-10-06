@@ -103,7 +103,12 @@
         {% endif %}
         {% endif %}
 
-        {# Fase 7: Inventario se agrega aquí. #}
+        {% if gestiona_inventario %}
+        <div class="arca-nav-heading">Inventario</div>
+        <a class="nav-link {% if 'inventario:' in vista %}active{% endif %}" href="{% url 'inventario:inicio' %}">
+          <i class="bi bi-box-seam"></i> Inventario
+        </a>
+        {% endif %}
 
         {% if puede_administrar %}
         <div class="arca-nav-heading">Miembros</div>

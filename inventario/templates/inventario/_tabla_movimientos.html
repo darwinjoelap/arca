@@ -1,0 +1,22 @@
+{% load inventario %}
+{% if movimientos %}
+<div class="table-responsive"><table class="table align-middle mb-0">
+  <thead><tr><th>Fecha</th>{% if not ocultar_articulo %}<th>Artículo</th>{% endif %}<th>Movimiento</th><th class="text-end">Cantidad</th><th>Ubicación</th><th></th></tr></thead>
+  <tbody>
+  {% for m in movimientos %}
+    <tr class="{% if m.anulado %}text-muted{% endif %}">
+      <td class="text-nowrap">{{ m.fecha|date:"d/m/Y" }}</td>
+      {% if not ocultar_articulo %}<td><a href="{% url 'inventario:articulo_detalle' m.articulo_id %}" class="text-decoration-none text-body fw-semibold">{{ m.articulo.nombre }}</a></td>{% endif %}
+      <td>{% if m.tipo == 'entrada' %}<i class="bi bi-arrow-down monto-ingreso"></i>{% elif m.tipo == 'salida' %}<i class="bi bi-arrow-up monto-egreso"></i>{% else %}<i class="bi bi-arrow-left-right"></i>{% endif %}
+        {{ m.get_motivo_display }}{% if m.anulado %} <span class="badge text-bg-secondary">Anulado</span>{% endif %}
+        {% if m.nota or m.anulado %}<div class="small text-muted">{% if m.anulado %}Anulado: {{ m.motivo_anulacion }}{% else %}{{ m.nota }}{% endif %}</div>{% endif %}</td>
+      <td class="text-end monto {% if m.anulado %}text-decoration-line-through{% endif %}">{% if m.tipo == 'entrada' %}+{% elif m.tipo == 'salida' %}−{% endif %}{{ m.cantidad|cantidad }}</td>
+      <td class="small">{% if m.tipo == 'traslado' %}{{ m.origen }} → {{ m.destino }}{% else %}{{ m.origen|default:m.destino }}{% endif %}<div class="text-muted">{{ m.registrado_por.nombre_para_mostrar }}</div></td>
+      <td class="text-end">{% if not m.anulado %}<a href="{% url 'inventario:movimiento_anular' m.pk %}" class="btn btn-sm btn-outline-danger" title="Anular" aria-label="Anular movimiento"><i class="bi bi-x-lg"></i></a>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}
+<div class="empty-state"><i class="bi bi-clock-history d-block mb-2"></i>Todavía no hay movimientos.</div>
+{% endif %}

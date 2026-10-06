@@ -152,6 +152,18 @@ cuenta no cruza a otra organización: quien pertenezca a dos tiene dos cuentas. 
 (cookie) para que la app instalada y «cerrar sesión» vuelvan a su login. Los datos siguen en una sola base,
 aislados por la columna `organizacion` (A-01): no hay esquema ni base por organización.
 
+**A-39 — El inventario no toca el dinero.** Bienes y consumibles en un mismo catálogo. El valor por unidad es
+informativo (cuánto vale lo que hay); una compra se registra aparte como egreso en el libro. No hay enlace
+entre una entrada de inventario y un vale.
+
+**A-40 — Las existencias no se guardan, se suman.** Son el resultado de los movimientos vigentes (entrada,
+salida, traslado) por artículo y ubicación. Un movimiento no se edita: se anula con motivo. No se puede sacar
+más de lo que hay en la ubicación de origen, ni anular una entrada si deja una ubicación en negativo; el
+desfase con la realidad se corrige con un ajuste por conteo.
+
+**A-41 — Mínimo solo en consumibles, estado solo en bienes.** El aviso «por reponer» salta cuando la existencia
+total llega al mínimo o baja de él. El responsable es por artículo, no por ubicación.
+
 ## Heredadas de Edumia que siguen vigentes
 
 - **D-02 (revisado)** — El valor de una tasa se puede corregir; recalcula lo no congelado.

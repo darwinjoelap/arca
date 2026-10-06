@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block titulo %}{% if articulo %}Editar artículo{% else %}Nuevo artículo{% endif %} — Arca{% endblock %}
+{% block titulo_topbar %}Inventario{% endblock %}
+{% block contenido %}
+<a href="{% if articulo %}{% url 'inventario:articulo_detalle' articulo.pk %}{% else %}{% url 'inventario:inicio' %}{% endif %}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> {% if articulo %}{{ articulo.nombre }}{% else %}Inventario{% endif %}</a>
+<h1 class="h3 mt-2 mb-4">{% if articulo %}Editar «{{ articulo.nombre }}»{% else %}Nuevo artículo{% endif %}</h1>
+<div class="card card-arca" style="max-width: 720px;"><div class="card-body p-4">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+    <div class="row g-3">
+      {% for field in form %}
+      <div class="{% if field.name in 'nombre nota' %}col-12{% else %}col-sm-6{% endif %}" data-campo="{{ field.name }}">
+        {% if field.field.widget.input_type == "checkbox" %}
+          <div class="form-check mt-sm-4">{{ field }} <label class="form-check-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label></div>
+        {% else %}
+          <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label|capfirst }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+        {% endif %}
+        {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors|join:" " }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% if not articulo and not hay_ubicaciones %}<p class="small text-muted mt-3 mb-0"><i class="bi bi-info-circle"></i> Para anotar la cantidad que hay, primero <a href="{% url 'inventario:catalogo_crear' 'ubicacion' %}">crea una ubicación</a>.</p>{% endif %}
+    <div class="d-flex flex-wrap gap-2 mt-4">
+      <button type="submit" class="btn btn-arca-primary">Guardar</button>
+      {% if not articulo %}<button type="submit" name="otro" value="1" class="btn btn-outline-secondary">Guardar y crear otro</button>{% endif %}
+      <a href="{% url 'inventario:inicio' %}" class="btn btn-link text-muted">Cancelar</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+(function () {
+  // El mínimo es de consumibles; el estado, de bienes.
+  var clase = document.getElementById("id_clase");
+  if (!clase) return;
+  function ver(campo, visible) { var el = document.querySelector('[data-campo="' + campo + '"]'); if (el) el.style.display = visible ? "" : "none"; }
+  function actualizar() { var c = clase.value === "consumible"; ver("minimo", c); ver("estado", !c); }
+  clase.addEventListener("change", actualizar);
+  actualizar();
+})();
+</script>
+{% endblock %}

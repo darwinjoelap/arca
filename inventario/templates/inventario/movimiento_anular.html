@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load inventario %}
+{% block titulo %}Anular movimiento — Arca{% endblock %}
+{% block titulo_topbar %}Inventario{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-4">Anular movimiento</h1>
+<div class="card card-arca" style="max-width: 520px;"><div class="card-body p-4">
+  <p><strong>{{ m.get_tipo_display }}</strong> de {{ m.cantidad|cantidad }} {{ m.articulo.unidad }} de «{{ m.articulo.nombre }}» · {{ m.get_motivo_display }} · {{ m.fecha|date:"d/m/Y" }}</p>
+  <p class="text-muted small">El movimiento no se borra: queda tachado en el historial con su motivo, y la existencia vuelve a como estaba.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "organizaciones/_form_campos.html" %}
+    <button type="submit" class="btn btn-danger">Anular</button>
+    <a href="{% url 'inventario:articulo_detalle' m.articulo_id %}" class="btn btn-outline-secondary">Cancelar</a>
+  </form>
+</div></div>
+{% endblock %}

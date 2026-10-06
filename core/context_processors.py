@@ -18,4 +18,5 @@ def organizacion(request):
         "ve_reportes": puede("puede_ver_reportes"),
         "tiene_cuenta_personal": puede("tiene_cuenta_personal"),
         "puede_ver_presupuesto": puede("puede_ver_presupuesto"),
+        "gestiona_inventario": puede("puede_gestionar_inventario"),
     }

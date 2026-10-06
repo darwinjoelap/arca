@@ -23,6 +23,7 @@ urlpatterns = [
     path("cambio/", include("cambio.urls")),
     path("libro/", include("finanzas.urls")),
     path("personal/", include("personal.urls")),
+    path("inventario/", include("inventario.urls")),
     path("presupuestos/", include("presupuestos.urls")),
     path("reportes/", include("reportes.urls")),
     path("sync/", include("sync.urls")),

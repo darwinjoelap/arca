@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load arca inventario %}
+{% block titulo %}Inventario — Arca{% endblock %}
+{% block titulo_topbar %}Inventario{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">Inventario</h1>
+    <p class="text-muted mb-0">Lo que la organización tiene: bienes que se conservan y consumibles que se gastan.</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'inventario:entrada' %}" class="btn btn-arca-primary"><i class="bi bi-box-arrow-in-down"></i> Entrada</a>
+    <a href="{% url 'inventario:salida' %}" class="btn btn-arca-primary"><i class="bi bi-box-arrow-up"></i> Salida</a>
+    <a href="{% url 'inventario:traslado' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left-right"></i> Mover</a>
+    <a href="{% url 'inventario:articulo_crear' %}" class="btn btn-outline-secondary"><i class="bi bi-plus-lg"></i> Artículo</a>
+  </div>
+</div>
+{% include "inventario/_submenu.html" with seccion="articulos" %}
+
+{% if not hay_ubicaciones %}
+<div class="alert alert-warning">Antes de cargar existencias hace falta al menos una ubicación (depósito, cocina, salón…). <a href="{% url 'inventario:catalogo_crear' 'ubicacion' %}">Crear la primera</a>.</div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="indicador"><div class="indicador-etiqueta">Artículos</div><div class="indicador-valor">{{ totales.articulos }}</div><div class="indicador-detalle">activos en el catálogo</div></div></div>
+  <div class="col-6 col-lg-3"><a class="indicador d-block text-decoration-none" href="?solo=minimo"><div class="indicador-etiqueta">Por reponer</div><div class="indicador-valor {% if totales.bajo_minimo %}monto-egreso{% endif %}">{% if totales.bajo_minimo %}<i class="bi bi-exclamation-triangle-fill fs-5"></i> {% endif %}{{ totales.bajo_minimo }}</div><div class="indicador-detalle">consumibles en su mínimo o menos</div></a></div>
+  <div class="col-12 col-lg-6"><div class="indicador"><div class="indicador-etiqueta">Valor de lo que hay</div>
+    {% if totales.convertible %}<div class="indicador-valor">$ {{ totales.usd|monto }} <span class="fs-6 fw-normal text-muted">· Bs. {{ totales.ves|monto }}</span></div>
+    {% else %}<div class="indicador-valor">$ {{ totales.usd|monto }} + Bs. {{ totales.ves|monto }}</div>{% endif %}
+    <div class="indicador-detalle">Según el valor por unidad de cada artículo{% if tasa %}, a la tasa de Bs. {{ tasa.valor|monto }}{% endif %}.{% if totales.sin_valor %} {{ totales.sin_valor }} con existencia no tienen valor cargado.{% endif %} No es dinero del libro de caja.</div>
+  </div></div>
+</div>
+
+<form method="get" class="card card-arca mb-3"><div class="card-body py-3"><div class="row g-2 align-items-end">
+  <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0" for="f-clase">Clase</label>
+    <select name="clase" id="f-clase" class="form-select form-select-sm"><option value="">Todas</option><option value="bien" {% if f.clase == 'bien' %}selected{% endif %}>Bienes</option><option value="consumible" {% if f.clase == 'consumible' %}selected{% endif %}>Consumibles</option></select></div>
+  <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0" for="f-cat">Categoría</label>
+    <select name="categoria" id="f-cat" class="form-select form-select-sm"><option value="">Todas</option>{% for c in categorias %}<option value="{{ c.pk }}" {% if f.categoria == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}</select></div>
+  <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0" for="f-ubi">Ubicación</label>
+    <select name="ubicacion" id="f-ubi" class="form-select form-select-sm"><option value="">Todas</option>{% for u in ubicaciones %}<option value="{{ u.pk }}" {% if f.ubicacion == u.pk|stringformat:"s" %}selected{% endif %}>{{ u.nombre }}</option>{% endfor %}</select></div>
+  <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0" for="f-solo">Mostrar</label>
+    <select name="solo" id="f-solo" class="form-select form-select-sm"><option value="">Activos</option><option value="minimo" {% if f.solo == 'minimo' %}selected{% endif %}>Por reponer</option><option value="inactivos" {% if f.solo == 'inactivos' %}selected{% endif %}>Inactivos</option></select></div>
+  <div class="col-8 col-md-3"><label class="form-label small fw-semibold mb-0" for="f-q">Buscar</label><input type="search" name="q" id="f-q" value="{{ f.q }}" class="form-control form-control-sm" placeholder="Nombre o código"></div>
+  <div class="col-4 col-md-1"><button class="btn btn-sm btn-outline-secondary w-100"><i class="bi bi-funnel"></i></button></div>
+</div></div></form>
+
+<div class="card card-arca"><div class="table-responsive">
+  <table class="table table-hover align-middle mb-0">
+    <thead><tr><th>Artículo</th><th>Clase</th><th class="text-end">{% if f.ubicacion %}Hay aquí{% else %}Existencia{% endif %}</th><th>Responsable</th><th class="text-end">Valor</th><th></th></tr></thead>
+    <tbody>
+    {% for a in articulos %}
+      <tr>
+        <td><a href="{% url 'inventario:articulo_detalle' a.pk %}" class="fw-semibold text-decoration-none text-body">{{ a.nombre }}</a>
+          <div class="small text-muted">{{ a.categoria.nombre|default:"Sin categoría" }}{% if a.codigo %} · {{ a.codigo }}{% endif %}</div></td>
+        <td>{{ a.get_clase_display }}{% if not a.es_consumible and a.estado != 'bueno' %} <span class="badge text-bg-warning">{{ a.get_estado_display }}</span>{% endif %}</td>
+        <td class="text-end monto"><span class="fw-semibold {% if a.bajo_minimo %}monto-egreso{% endif %}">{{ a.existencia|cantidad }}</span> <span class="text-muted small">{{ a.unidad }}</span>
+          {% if a.bajo_minimo %}<div class="small monto-egreso"><i class="bi bi-exclamation-triangle-fill"></i> mínimo {{ a.minimo|cantidad }}</div>{% endif %}</td>
+        <td class="small">{{ a.responsable.nombre|default:"—" }}</td>
+        <td class="text-end monto small">{% if a.valor_usd is not None and totales.convertible %}$ {{ a.valor_usd|monto }}{% elif a.valor_usd is not None %}$ {{ a.valor_usd|monto }}{% elif a.valor_ves is not None %}Bs. {{ a.valor_ves|monto }}{% else %}—{% endif %}</td>
+        <td class="text-end text-nowrap">
+          <a href="{% url 'inventario:entrada' %}?articulo={{ a.pk }}" class="btn btn-sm btn-outline-secondary" title="Entrada" aria-label="Entrada de {{ a.nombre }}"><i class="bi bi-plus-lg"></i></a>
+          <a href="{% url 'inventario:salida' %}?articulo={{ a.pk }}" class="btn btn-sm btn-outline-secondary" title="Salida" aria-label="Salida de {{ a.nombre }}"><i class="bi bi-dash-lg"></i></a>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6"><div class="empty-state"><i class="bi bi-box-seam d-block mb-2"></i>{% if f.q or f.clase or f.categoria or f.ubicacion or f.solo %}Nada coincide con el filtro. <a href="{% url 'inventario:inicio' %}">Quitar filtros</a>{% else %}Todavía no hay artículos. <a href="{% url 'inventario:articulo_crear' %}">Crea el primero</a>.{% endif %}</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}
