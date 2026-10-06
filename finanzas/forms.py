@@ -232,6 +232,7 @@ class FiltroMovimientosForm(forms.Form):
 
     tipo = forms.ChoiceField(choices=[("", "Todos")] + list(Movimiento.Tipo.choices), required=False)
     estado = forms.ChoiceField(choices=[("", "Todos")] + list(Movimiento.Estado.choices), required=False)
+    caja = forms.ModelChoiceField(queryset=Caja.objects.none(), required=False, empty_label="Todas")
     cuenta = forms.ModelChoiceField(queryset=Cuenta.objects.none(), required=False, empty_label="Todas")
     desde = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"))
     hasta = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"))
@@ -239,6 +240,7 @@ class FiltroMovimientosForm(forms.Form):
 
     def __init__(self, *args, organizacion, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["caja"].queryset = Caja.objects.filter(organizacion=organizacion)
         self.fields["cuenta"].queryset = Cuenta.objects.filter(organizacion=organizacion).select_related("caja")
         self.fields["cuenta"].label_from_instance = lambda c: f"{c.caja.nombre} · {c.nombre}"
         for nombre, field in self.fields.items():
@@ -254,6 +256,8 @@ class FiltroMovimientosForm(forms.Form):
             qs = qs.filter(tipo=d["tipo"])
         if d.get("estado"):
             qs = qs.filter(estado=d["estado"])
+        if d.get("caja"):
+            qs = qs.filter(caja=d["caja"])
         if d.get("cuenta"):
             qs = qs.filter(cuenta=d["cuenta"])
         if d.get("desde"):

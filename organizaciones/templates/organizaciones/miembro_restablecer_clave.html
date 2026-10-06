@@ -6,10 +6,10 @@
 <div class="card card-arca" style="max-width: 480px;">
   <div class="card-body p-4">
     <p class="text-muted small">Usuario: <code>{{ miembro.user.username }}</code></p>
-    <form method="post" novalidate>
+    <p>Arca genera una contraseña temporal nueva y te la muestra <strong>una sola vez</strong>. La anterior deja de servir y a la persona se le pedirá cambiarla al entrar.</p>
+    <form method="post">
       {% csrf_token %}
-      {% include "organizaciones/_form_campos.html" %}
-      <button type="submit" class="btn btn-arca-primary">Restablecer</button>
+      <button type="submit" class="btn btn-arca-primary">Generar contraseña temporal</button>
       <a href="{% url 'organizaciones:miembro_lista' %}" class="btn btn-outline-secondary">Cancelar</a>
     </form>
   </div>

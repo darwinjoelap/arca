@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block titulo %}{% if o %}{{ o.nombre }}{% else %}Nueva organización{% endif %} — Arca{% endblock %}
+{% block titulo_topbar %}Plataforma{% endblock %}
+{% block contenido %}
+<a href="{% url 'plataforma:lista' %}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> Organizaciones</a>
+<div class="d-flex align-items-center flex-wrap gap-2 mt-2 mb-3">
+  <h1 class="h3 mb-0">{% if o %}{{ o.nombre }}{% else %}Nueva organización{% endif %}</h1>
+  {% if o %}{% if o.esta_vigente %}<span class="badge text-bg-success">Activa</span>{% elif not o.activa %}<span class="badge text-bg-danger">Suspendida</span>{% else %}<span class="badge text-bg-warning">Vencida</span>{% endif %}{% endif %}
+</div>
+{% if enlace %}<p class="small">Enlace de entrada: <a href="{{ enlace }}" target="_blank" rel="noopener">{{ enlace }}</a></p>{% endif %}
+<div class="row g-3">
+  <div class="col-lg-8">
+    <form method="post" novalidate class="card card-arca"><div class="card-body p-4">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+      <h2 class="h6 text-uppercase text-muted">Datos</h2>
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">{% with field=form.nombre %}{% include "plataforma/_campo.html" %}{% endwith %}</div><div class="col-md-6">{% with field=form.slug %}{% include "plataforma/_campo.html" %}{% endwith %}</div><div class="col-md-6">{% with field=form.rif %}{% include "plataforma/_campo.html" %}{% endwith %}</div><div class="col-md-6">{% with field=form.telefono %}{% include "plataforma/_campo.html" %}{% endwith %}</div><div class="col-md-6">{% with field=form.email %}{% include "plataforma/_campo.html" %}{% endwith %}</div><div class="col-md-6">{% with field=form.moneda_base %}{% include "plataforma/_campo.html" %}{% endwith %}</div>
+      </div>
+      <h2 class="h6 text-uppercase text-muted">Suscripción</h2>
+      <div class="row g-3 mb-4">
+        <div class="col-md-4">{% with field=form.plan %}{% include "plataforma/_campo.html" %}{% endwith %}</div><div class="col-md-4">{% with field=form.activa_hasta %}{% include "plataforma/_campo.html" %}{% endwith %}</div><div class="col-md-4">{% with field=form.limite_usuarios %}{% include "plataforma/_campo.html" %}{% endwith %}</div>
+        {% if form.activa %}<div class="col-12">{% with field=form.activa %}{% include "plataforma/_campo.html" %}{% endwith %}</div>{% endif %}
+        <div class="col-12">{% with field=form.director_ve_cuentas_personales %}{% include "plataforma/_campo.html" %}{% endwith %}</div><div class="col-12">{% with field=form.notas %}{% include "plataforma/_campo.html" %}{% endwith %}</div>
+      </div>
+      {% if form.usuario_director %}
+      <h2 class="h6 text-uppercase text-muted">Director (dueño)</h2>
+      <div class="row g-3 mb-2">
+        <div class="col-md-6">{% with field=form.usuario_director %}{% include "plataforma/_campo.html" %}{% endwith %}</div><div class="col-md-6">{% with field=form.nombre_director %}{% include "plataforma/_campo.html" %}{% endwith %}</div>
+      </div>
+      <p class="small text-muted">Se crea con una contraseña temporal que Arca genera y muestra una sola vez. El director entra, la cambia y desde Configuración › Miembros crea a los demás.</p>
+      {% endif %}
+      <button type="submit" class="btn btn-arca-primary">{% if o %}Guardar{% else %}Crear organización{% endif %}</button>
+      <a href="{% url 'plataforma:lista' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div></form>
+  </div>
+  {% if o %}
+  <div class="col-lg-4">
+    <div class="card card-arca mb-3"><div class="card-body">
+      <h2 class="h6 text-uppercase text-muted">Director</h2>
+      {% if director %}
+        <div class="fw-semibold">{{ director.nombre }}</div>
+        <div class="small text-muted mb-2">Usuario: <code>{{ director.user.username }}</code></div>
+        <form method="post" action="{% url 'plataforma:restablecer_clave_director' o.pk %}"
+              onsubmit="return confirm('Se genera una contraseña temporal nueva y la actual deja de servir. ¿Continuar?');">
+          {% csrf_token %}
+          <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-key"></i> Restablecer su contraseña</button>
+        </form>
+      {% else %}<p class="small text-muted mb-0">Sin director. Asígnalo desde <a href="/admin/organizaciones/organizacion/{{ o.pk }}/change/">el admin</a>.</p>{% endif %}
+    </div></div>
+    <div class="card card-arca">
+      <div class="card-header bg-transparent fw-bold">Equipo · {{ n_acceso }}{% if o.limite_usuarios %} de {{ o.limite_usuarios }}{% endif %} con acceso</div>
+      <ul class="list-group list-group-flush">
+      {% for m in miembros %}
+        <li class="list-group-item small d-flex justify-content-between gap-2 {% if not m.activa %}text-muted{% endif %}">
+          <span>{{ m.nombre }}<br><span class="text-muted">{{ m.usuario_texto }}</span></span>
+          <span class="text-end">{{ m.rol_visible }}{% if not m.activa %} · inactivo{% endif %}</span>
+        </li>
+      {% empty %}<li class="list-group-item small text-muted">Sin miembros.</li>{% endfor %}
+      </ul>
+    </div>
+    <p class="small text-muted mt-2">Suspender o dejar vencer la fecha corta el acceso de todo el equipo sin borrar nada. Desde aquí no se ven los movimientos ni los saldos de la organización.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

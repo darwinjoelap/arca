@@ -29,7 +29,7 @@ class PaginasBasicasTests(TestCase):
 class BitacoraDeLoginTests(TestCase):
     def test_login_se_anota_en_la_organizacion_del_usuario(self):
         organizacion, _, _ = crear_organizacion(nombre="Casa A", usuario_director="dir_a", clave=CLAVE)
-        self.client.post(reverse("login"), {"username": "dir_a", "password": CLAVE})
+        self.client.post(f"/{organizacion.slug}/", {"username": "dir_a", "password": CLAVE})
         registro = RegistroAuditoria.objects.get(accion="login")
         self.assertEqual(registro.organizacion, organizacion)
 

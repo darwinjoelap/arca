@@ -63,8 +63,9 @@ class LibroMixin:
         cls.residente = miembro("residente")
 
     def entrar(self, username):
+        # force_login: el login real va por el enlace de cada organización (ver EntradaTests).
         self.client.logout()
-        self.assertTrue(self.client.login(username=username, password=CLAVE))
+        self.client.force_login(Usuario.objects.get(username=username))
 
     def mov(self, tipo="egreso", monto="10", cuenta=None, membresia=None, concepto="auto", org=None, **extra):
         cuenta = cuenta or self.usd
@@ -487,3 +488,23 @@ class TrasladosTests(LibroMixin, TestCase):
         })
         self.assertEqual(r.status_code, 200)
         self.assertEqual(Traslado.objects.filter(organizacion=self.org).count(), 0)
+
+
+class PanelPorCajaTests(LibroMixin, TestCase):
+    def test_con_una_caja_no_hay_desglose_y_con_dos_cada_una_muestra_lo_suyo(self):
+        self.mov(tipo="ingreso", monto="100")
+        self.entrar("dir_a")
+        self.assertNotIn("por_caja", self.client.get(reverse("inicio")).context)
+        obra = Caja.objects.create(organizacion=self.org, nombre="Obra social")
+        cuenta_obra = Cuenta.objects.create(organizacion=self.org, caja=obra, nombre="Efectivo obra", moneda="USD")
+        self.mov(tipo="ingreso", monto="40", cuenta=cuenta_obra)
+        self.mov(tipo="egreso", monto="15", cuenta=cuenta_obra)
+        r = self.client.get(reverse("inicio"))
+        por_caja = {b["caja"].nombre: b for b in r.context["por_caja"]}
+        self.assertEqual(por_caja["Obra social"]["usd"], D("25"))
+        self.assertEqual((por_caja["Obra social"]["mes"]["ingreso"]["usd"], por_caja["Obra social"]["mes"]["egreso"]["usd"]), (D("40"), D("15")))
+        self.assertEqual(r.context["saldos"]["usd"], sum(b["usd"] for b in por_caja.values()))
+        self.assertContains(r, "todas las cajas")
+        # El enlace de la tarjeta filtra el libro por esa caja.
+        lista = self.client.get(reverse("finanzas:movimiento_lista"), {"caja": obra.pk})
+        self.assertEqual({m.caja_id for m in lista.context["object_list"]}, {obra.pk})

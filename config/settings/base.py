@@ -108,6 +108,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Usuario propio desde la primera migración: cambiarlo después es muy caro.
 
 AUTH_USER_MODEL = "core.Usuario"
+AUTHENTICATION_BACKENDS = ["core.backends.UsuarioPorOrganizacionBackend"]
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -176,3 +177,4 @@ LOGGING = {
         },
     },
 }
+SILENCED_SYSTEM_CHECKS = ["auth.W004"]  # el username es único por organización; lo resuelve core.backends

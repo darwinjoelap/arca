@@ -20,7 +20,7 @@ CLAVE_SESION = "organizacion_id"
 # /sync/ contesta siempre en JSON y revisa la sesión por su cuenta: una
 # redirección aquí haría creer al teléfono que el envío se guardó.
 _PREFIJOS_LIBRES = (
-    "/admin/", "/cuentas/", "/cambio/", "/sync/", "/static/", "/salud/", "/sw.js", "/sin-conexion/", "/favicon.ico",
+    "/admin/", "/cuentas/", "/cambio/", "/plataforma/", "/sync/", "/static/", "/salud/", "/sw.js", "/sin-conexion/", "/favicon.ico",
 )
 
 
@@ -53,10 +53,11 @@ class OrganizacionActivaMiddleware:
 
     @staticmethod
     def _resolver(request, usuario):
-        from organizaciones.models import Membresia
+        from organizaciones.models import Membresia, Organizacion
 
+        # Suspendida o con la suscripción vencida: se corta el acceso de todos.
         vigentes = Membresia.objects.filter(
-            user=usuario, activa=True, organizacion__activa=True
+            Organizacion.q_vigente("organizacion__"), user=usuario, activa=True
         ).select_related("organizacion", "tipo")
 
         organizacion_id = request.session.get(CLAVE_SESION)

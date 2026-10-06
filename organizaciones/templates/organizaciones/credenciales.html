@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block titulo %}{{ titulo }} — Arca{% endblock %}
+{% block titulo_topbar %}{{ titulo }}{% endblock %}
+{% block contenido %}
+<a href="{{ volver }}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> {{ volver_texto }}</a>
+<div class="card card-arca mt-2" style="max-width: 560px;">
+  <div class="card-body p-4">
+    <h1 class="h4 mb-2">{{ titulo }}: {{ nombre }}</h1>
+    <p class="text-muted small">Entrégale estos datos por un medio privado. <strong>La contraseña no se volverá a mostrar</strong>; al entrar, Arca le pedirá cambiarla.</p>
+    <dl class="row mb-3">
+      {% if organizacion_nombre %}<dt class="col-4">Organización</dt><dd class="col-8">{{ organizacion_nombre }}</dd>{% endif %}
+      <dt class="col-4">Enlace</dt><dd class="col-8"><code>{{ enlace }}</code></dd>
+      <dt class="col-4">Usuario</dt><dd class="col-8"><code>{{ usuario }}</code></dd>
+      <dt class="col-4">Contraseña</dt><dd class="col-8"><code class="fs-5" id="clave-temporal">{{ clave }}</code></dd>
+    </dl>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-secondary" id="copiar-credenciales"
+              data-texto="Arca: {{ enlace }}&#10;Usuario: {{ usuario }}&#10;Contraseña temporal: {{ clave }}"><i class="bi bi-clipboard"></i> Copiar todo</button>
+      <a href="{{ volver }}" class="btn btn-arca-primary">Listo</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+(function () {
+  var boton = document.getElementById("copiar-credenciales");
+  if (!boton || !navigator.clipboard) return;
+  boton.addEventListener("click", function () {
+    navigator.clipboard.writeText(boton.dataset.texto).then(function () { boton.textContent = "Copiado"; });
+  });
+})();
+</script>
+{% endblock %}

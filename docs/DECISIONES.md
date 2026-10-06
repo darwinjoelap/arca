@@ -133,6 +133,25 @@ queda de la partida del mes y advierte si se pasa; se puede guardar igual y qued
 rigen los presupuestos aprobados y las partidas con monto. Cuenta lo confirmado del mes, en la moneda del
 presupuesto. Lo ve quien puede registrar egresos. Sin conexión el aviso no aparece.
 
+**A-35 — Suscripción por organización, desde /plataforma/.** Estructura tomada de Ordo: plan, «activa hasta»,
+límite de usuarios, notas internas y suspensión. Suspendida o vencida corta el acceso de todo el equipo en la
+siguiente petición, sin borrar nada. El límite cuenta solo membresías activas con usuario; los miembros sin
+acceso no ocupan cupo. Cada cambio queda en la bitácora de esa organización.
+
+**A-36 — La clave temporal la genera el sistema.** Nadie la escribe: ni el superadmin al crear al director ni
+el director al crear o restablecer a un miembro. Formato `Arca-` + 10 caracteres sin los que se confunden. Se
+muestra una sola vez, en una respuesta sin caché, y obliga a cambiarla al entrar.
+
+**A-37 — Sin «entrar como soporte».** A diferencia de Ordo, el superadmin no entra a una organización: ve el
+equipo y la suscripción, nunca movimientos ni saldos. Sí puede restablecer la clave del director.
+
+**A-38 — Cada organización tiene su enlace y sus propios usuarios.** Como en Ordo: se entra por `/<enlace>/`
+y el usuario es único dentro de la organización (`organizacion_cuenta` + `username`), así que «maria» puede
+existir en dos. Las cuentas de plataforma no tienen organización y entran por la dirección principal. Una
+cuenta no cruza a otra organización: quien pertenezca a dos tiene dos cuentas. El equipo recuerda su enlace
+(cookie) para que la app instalada y «cerrar sesión» vuelvan a su login. Los datos siguen en una sola base,
+aislados por la columna `organizacion` (A-01): no hay esquema ni base por organización.
+
 ## Heredadas de Edumia que siguen vigentes
 
 - **D-02 (revisado)** — El valor de una tasa se puede corregir; recalcula lo no congelado.

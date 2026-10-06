@@ -3,10 +3,10 @@
 {% block extra_scripts %}
 <script>
 (function () {
-  // Usuario y contraseña solo hacen falta si la persona va a entrar al sistema.
+  // El usuario solo hace falta si la persona va a entrar al sistema.
   var casilla = document.getElementById("id_con_acceso");
   if (!casilla) return;
-  var campos = ["id_username", "id_clave"].map(function (id) { return document.getElementById(id); }).filter(Boolean);
+  var campos = ["id_username"].map(function (id) { return document.getElementById(id); }).filter(Boolean);
   function actualizar() {
     campos.forEach(function (campo) { campo.closest(".mb-3").style.display = casilla.checked ? "" : "none"; });
   }

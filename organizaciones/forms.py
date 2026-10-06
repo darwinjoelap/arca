@@ -1,8 +1,9 @@
 from django import forms
-from django.contrib.auth import get_user_model, password_validation
+from django.contrib.auth import get_user_model
 from django.db.models import Q
 
 from .models import NOMBRES_PERMISOS, Ejercicio, Membresia, Organizacion, TipoMiembro
+from .services import asignar_clave_temporal, validar_enlace, validar_limite_usuarios
 
 Usuario = get_user_model()
 
@@ -122,21 +123,18 @@ class _MiembroBase(_EstiloBootstrapMixin, forms.Form):
 
 
 class _AccesoMixin(forms.Form):
-    """Usuario y contraseña temporal para entrar al sistema."""
+    """Usuario para entrar al sistema. La contraseña no se escribe: la genera
+    el sistema (`clave_temporal`) y se muestra una sola vez tras guardar."""
 
     username = forms.CharField(
         label="Usuario", max_length=150, required=False,
-        help_text="Con este nombre entra al sistema. Sin espacios.",
+        help_text="Con este nombre entra por el enlace de la organización. Sin espacios. La contraseña temporal la genera "
+        "Arca y te la muestra una sola vez al guardar.",
     )
-    clave = forms.CharField(
-        label="Contraseña temporal", required=False, widget=forms.PasswordInput(render_value=True),
-        help_text="Entrégasela directamente a la persona: no se envía por correo. "
-        "El sistema le pedirá cambiarla la primera vez que entre.",
-    )
+    clave_generada = None
 
-    def _validar_acceso(self, datos):
+    def _validar_acceso(self, datos, organizacion, excluir=None):
         username = (datos.get("username") or "").strip()
-        clave = datos.get("clave") or ""
         if not username:
             self.add_error("username", "Escribe el nombre de usuario.")
         else:
@@ -145,23 +143,20 @@ class _AccesoMixin(forms.Form):
             except forms.ValidationError as error:
                 self.add_error("username", error)
             else:
-                if Usuario.objects.filter(username__iexact=username).exists():
-                    # Mismo mensaje exista donde exista: no se revela si pertenece a otra organización.
-                    self.add_error("username", "Ese nombre de usuario no está disponible. Prueba con otro.")
-        if not clave:
-            self.add_error("clave", "Escribe una contraseña temporal.")
-        else:
-            try:
-                password_validation.validate_password(clave)
-            except forms.ValidationError as error:
-                self.add_error("clave", error)
-        datos["username"] = username
+                # Único dentro de la organización: «maria» puede existir en otra.
+                if Usuario.objects.filter(organizacion_cuenta=organizacion, username=username.lower()).exists():
+                    self.add_error("username", "Ya hay alguien con ese usuario en la organización. Si está "
+                                   "inactivo, reactívalo; si no, prueba con otro.")
+        try:
+            validar_limite_usuarios(organizacion, excluir=excluir)
+        except forms.ValidationError as error:
+            self.add_error(None, error)
+        datos["username"] = username.lower()
 
-    @staticmethod
-    def _crear_usuario(datos, nombre, telefono=""):
-        usuario = Usuario(username=datos["username"], first_name=nombre[:150], telefono=telefono, debe_cambiar_clave=True)
-        usuario.set_password(datos["clave"])
-        usuario.save()
+    def _crear_usuario(self, datos, nombre, organizacion, telefono=""):
+        usuario = Usuario(username=datos["username"], first_name=nombre[:150], telefono=telefono,
+                          organizacion_cuenta=organizacion)
+        self.clave_generada = asignar_clave_temporal(usuario)
         return usuario
 
 
@@ -173,12 +168,12 @@ class MiembroCrearForm(_AccesoMixin, _MiembroBase):
     )
     telefono = forms.CharField(label="Teléfono", max_length=20, required=False)
 
-    field_order = ["nombre_visible", "tipo", "es_administrador", "telefono", "con_acceso", "username", "clave"]
+    field_order = ["nombre_visible", "tipo", "es_administrador", "telefono", "con_acceso", "username"]
 
     def clean(self):
         datos = super().clean()
         if datos.get("con_acceso"):
-            self._validar_acceso(datos)
+            self._validar_acceso(datos, self.organizacion)
         elif datos.get("es_administrador"):
             self.add_error("con_acceso", "Un administrador necesita poder entrar al sistema.")
         return datos
@@ -187,7 +182,7 @@ class MiembroCrearForm(_AccesoMixin, _MiembroBase):
         datos = self.cleaned_data
         usuario = None
         if datos.get("con_acceso"):
-            usuario = self._crear_usuario(datos, datos["nombre_visible"], datos.get("telefono", ""))
+            usuario = self._crear_usuario(datos, datos["nombre_visible"], self.organizacion, datos.get("telefono", ""))
         membresia = Membresia(
             organizacion=self.organizacion, user=usuario, tipo=datos.get("tipo"),
             es_administrador=datos.get("es_administrador", False),
@@ -201,17 +196,20 @@ class MiembroCrearForm(_AccesoMixin, _MiembroBase):
 class DarAccesoForm(_EstiloBootstrapMixin, _AccesoMixin):
     """Crea el usuario de un miembro que hasta ahora no entraba al sistema."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, organizacion, membresia, **kwargs):
         super().__init__(*args, **kwargs)
+        self.organizacion, self.membresia = organizacion, membresia
         self._aplicar_estilo()
 
     def clean(self):
         datos = super().clean()
-        self._validar_acceso(datos)
+        # Si la membresía está inactiva no ocupa cupo todavía.
+        self._validar_acceso(datos, self.organizacion, excluir=None if self.membresia.activa else self.membresia.pk)
         return datos
 
-    def save(self, membresia):
-        membresia.user = self._crear_usuario(self.cleaned_data, membresia.nombre)
+    def save(self):
+        membresia = self.membresia
+        membresia.user = self._crear_usuario(self.cleaned_data, membresia.nombre, self.organizacion)
         membresia.full_clean()
         membresia.save(update_fields=["user"])
         return membresia
@@ -253,23 +251,50 @@ class MiembroEditarForm(_MiembroBase):
         return m
 
 
-class RestablecerClaveForm(_EstiloBootstrapMixin, forms.Form):
-    clave = forms.CharField(
-        label="Nueva contraseña temporal", widget=forms.PasswordInput(render_value=True),
-        help_text="Entrégasela directamente a la persona. Se le pedirá cambiarla al entrar.",
-    )
+# --- Panel de plataforma (solo superadmin) ---------------------------------
+
+
+class _OrganizacionPlataformaBase(_EstiloBootstrapMixin, forms.ModelForm):
+    class Meta:
+        model = Organizacion
+        fields = ["nombre", "slug", "rif", "telefono", "email", "moneda_base", "plan", "activa_hasta", "limite_usuarios",
+                  "director_ve_cuentas_personales", "notas"]
+        widgets = {
+            "activa_hasta": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "notas": forms.Textarea(attrs={"rows": 3}),
+        }
+        labels = {"nombre": "Nombre de la organización", "moneda_base": "Moneda base", "slug": "Enlace"}
+        help_texts = {"slug": "La dirección por la que entra su gente: /enlace/. Vacío al crear: se arma del nombre."}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["slug"].required = bool(self.instance.pk)
+        self.fields["slug"].validators = []     # lo valida clean_slug, con mensajes propios
         self._aplicar_estilo()
 
-    def clean_clave(self):
-        clave = self.cleaned_data["clave"]
-        password_validation.validate_password(clave)
-        return clave
+    def clean_slug(self):
+        slug = (self.cleaned_data.get("slug") or "").strip().lower()
+        if not slug and not self.instance.pk:
+            return ""
+        return validar_enlace(slug, excluir_pk=self.instance.pk)
 
-    def save(self, usuario):
-        usuario.set_password(self.cleaned_data["clave"])
-        usuario.debe_cambiar_clave = True
-        usuario.save(update_fields=["password", "debe_cambiar_clave"])
-        return usuario
+    def clean_limite_usuarios(self):
+        limite = self.cleaned_data.get("limite_usuarios")
+        if limite is not None and limite < 1:
+            raise forms.ValidationError("Debe permitir al menos un usuario (el director). Vacío = sin límite.")
+        return limite
+
+
+class NuevaOrganizacionForm(_OrganizacionPlataformaBase):
+    usuario_director = forms.CharField(
+        label="Usuario del director", max_length=150, validators=[Usuario.username_validator],
+        help_text="Es una cuenta propia de esta organización: puede repetirse en otra.",
+    )
+    nombre_director = forms.CharField(label="Nombre del director", max_length=120, required=False)
+
+
+class EditarOrganizacionForm(_OrganizacionPlataformaBase):
+    class Meta(_OrganizacionPlataformaBase.Meta):
+        fields = [*_OrganizacionPlataformaBase.Meta.fields, "activa"]
+        labels = {**_OrganizacionPlataformaBase.Meta.labels, "activa": "Acceso habilitado"}
+        help_texts = {**_OrganizacionPlataformaBase.Meta.help_texts, "activa": "Apagado = suspendida: nadie de la organización puede entrar. No borra nada."}

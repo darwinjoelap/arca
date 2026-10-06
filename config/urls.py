@@ -16,8 +16,10 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     # Antes del include de auth: esta vista apaga `debe_cambiar_clave`.
     path("cuentas/password_change/", core_views.CambiarClaveView.as_view(), name="password_change"),
+    path("cuentas/login/", core_views.EntrarPrincipal.as_view(), name="login"),
     path("cuentas/", include("django.contrib.auth.urls")),
     path("organizacion/", include("organizaciones.urls")),
+    path("plataforma/", include("organizaciones.urls_plataforma")),
     path("cambio/", include("cambio.urls")),
     path("libro/", include("finanzas.urls")),
     path("personal/", include("personal.urls")),
@@ -26,4 +28,7 @@ urlpatterns = [
     path("sync/", include("sync.urls")),
     path("", include("core.urls")),
     path("", core_views.inicio, name="inicio"),
+    # Enlace propio de cada organización. Va AL FINAL para no tapar ninguna ruta de Arca
+    # (y por eso los primeros segmentos de arriba están en organizaciones.services.RESERVADOS).
+    path("<slug:slug>/", core_views.entrada_organizacion, name="entrada_organizacion"),
 ]

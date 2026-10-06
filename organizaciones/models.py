@@ -10,6 +10,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 
 # Los permisos que una organización puede encender en un tipo de miembro.
 # Es la única lista: formularios, plantillas y `Membresia.tiene_permiso` leen de aquí.
@@ -29,6 +30,11 @@ class Organizacion(models.Model):
     class Moneda(models.TextChoices):
         VES = "VES", "Bolívares"
         USD = "USD", "Dólares"
+
+    class Plan(models.TextChoices):
+        PRUEBA = "prueba", "Prueba"
+        BASICO = "basico", "Básico"
+        PRO = "pro", "Pro"
 
     nombre = models.CharField(max_length=200)
     slug = models.SlugField(max_length=60, unique=True)
@@ -54,6 +60,16 @@ class Organizacion(models.Model):
     activa = models.BooleanField(
         default=True, help_text="Apagada, nadie de la organización puede entrar.",
     )
+    # --- Suscripción: lo maneja solo el superadmin, desde /plataforma/ ---
+    plan = models.CharField(max_length=10, choices=Plan.choices, default=Plan.PRUEBA)
+    activa_hasta = models.DateField(
+        "activa hasta", null=True, blank=True, help_text="Vacío = sin vencimiento. Pasada la fecha, nadie entra.",
+    )
+    limite_usuarios = models.PositiveSmallIntegerField(
+        "límite de usuarios con acceso", null=True, blank=True,
+        help_text="Vacío = sin límite. Los miembros sin acceso al sistema no cuentan.",
+    )
+    notas = models.TextField("notas internas", blank=True, help_text="Solo las ve la plataforma.")
     creada_en = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -63,6 +79,36 @@ class Organizacion(models.Model):
 
     def __str__(self):
         return self.nombre
+
+    @staticmethod
+    def q_vigente(prefijo=""):
+        """Filtro de organizaciones que dejan entrar hoy: no suspendidas ni vencidas.
+        `prefijo` para usarlo desde otro modelo: q_vigente("organizacion__")."""
+        return Q(**{f"{prefijo}activa": True}) & (
+            Q(**{f"{prefijo}activa_hasta__isnull": True}) | Q(**{f"{prefijo}activa_hasta__gte": timezone.localdate()})
+        )
+
+    @property
+    def dias_para_vencer(self):
+        if not self.activa_hasta:
+            return None
+        return (self.activa_hasta - timezone.localdate()).days
+
+    @property
+    def vencida(self):
+        return self.activa_hasta is not None and self.activa_hasta < timezone.localdate()
+
+    @property
+    def esta_vigente(self):
+        return self.activa and not self.vencida
+
+    @property
+    def estado_texto(self):
+        return "Suspendida" if not self.activa else "Vencida" if self.vencida else "Activa"
+
+    def usuarios_con_acceso(self):
+        """Membresías activas que pueden entrar: es lo que cuenta para el límite del plan."""
+        return self.membresias.filter(activa=True, user__isnull=False).count()
 
     @property
     def director(self):
@@ -215,6 +261,16 @@ class Membresia(ModeloDeOrganizacion):
         # aunque el guardado no venga de un formulario.
         if self.tipo_id and self.tipo.organizacion_id != self.organizacion_id:
             raise ValidationError("El tipo de miembro es de otra organización.")
+        # Cada organización tiene sus propias cuentas: una cuenta no cruza a otra.
+        if self.user_id:
+            cuenta = self.user
+            if cuenta.is_superuser:
+                raise ValidationError("Una cuenta de plataforma no puede ser miembro de una organización.")
+            if cuenta.organizacion_cuenta_id is None:
+                cuenta.organizacion_cuenta_id = self.organizacion_id     # cuenta suelta: queda como propia
+                cuenta.save(update_fields=["organizacion_cuenta"])
+            elif cuenta.organizacion_cuenta_id != self.organizacion_id:
+                raise ValidationError("Ese usuario es de otra organización.")
         super().save(*args, **kwargs)
 
 

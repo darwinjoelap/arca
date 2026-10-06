@@ -125,11 +125,14 @@
 
         {% if user.is_superuser %}
         <div class="arca-nav-heading">Plataforma</div>
+        <a class="nav-link {% if 'plataforma:' in vista %}active{% endif %}" href="{% url 'plataforma:lista' %}">
+          <i class="bi bi-buildings"></i> Organizaciones
+        </a>
         <a class="nav-link {% if 'cambio:' in vista %}active{% endif %}" href="{% url 'cambio:tasa_lista' %}">
           <i class="bi bi-currency-exchange"></i> Tasa de cambio
         </a>
         <a class="nav-link" href="/admin/">
-          <i class="bi bi-gear-fill"></i> Panel de plataforma
+          <i class="bi bi-gear-fill"></i> Admin técnico
         </a>
         {% endif %}
         {% endwith %}

@@ -7,7 +7,7 @@ Regla de aislamiento: todo objeto se busca SIEMPRE filtrando por
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -28,11 +28,10 @@ from .forms import (
     MiembroCrearForm,
     MiembroEditarForm,
     OrganizacionForm,
-    RestablecerClaveForm,
     TipoMiembroForm,
 )
-from .models import PERMISOS, Ejercicio, Membresia, TipoMiembro
-from .services import usuario_es_exclusivo
+from .models import PERMISOS, Ejercicio, Membresia, Organizacion, TipoMiembro
+from .services import asignar_clave_temporal, usuario_es_exclusivo, validar_limite_usuarios
 
 Accion = RegistroAuditoria.Accion
 
@@ -45,10 +44,12 @@ def seleccionar(request):
     """Para quien pertenece a más de una organización. La elección se guarda
     en la sesión; el middleware la vuelve a validar en cada petición."""
     membresias = (
-        Membresia.objects.filter(user=request.user, activa=True, organizacion__activa=True)
+        Membresia.objects.filter(Organizacion.q_vigente("organizacion__"), user=request.user, activa=True)
         .select_related("organizacion", "tipo")
         .order_by("organizacion__nombre")
     )
+    if not membresias.exists():
+        return redirect("inicio")   # ninguna vigente: allí se explica por qué
     if request.method == "POST":
         elegida = membresias.filter(organizacion_id=request.POST.get("organizacion")).first()
         if elegida is None:
@@ -192,6 +193,19 @@ def _miembro_editable(request, pk):
     return membresia
 
 
+def _credenciales(request, membresia, clave, titulo):
+    """Pantalla que muestra la clave temporal UNA sola vez. No se redirige a
+    propósito: la clave no se guarda en ningún lado en claro, así que solo
+    existe en esta respuesta."""
+    respuesta = render(request, "organizaciones/credenciales.html", {
+        "titulo": titulo, "nombre": membresia.nombre, "usuario": membresia.user.username, "clave": clave,
+        "enlace": request.build_absolute_uri(f"/{request.organizacion.slug}/"), "volver": reverse_lazy("organizaciones:miembro_lista"),
+        "volver_texto": "Miembros",
+    })
+    respuesta["Cache-Control"] = "no-store"
+    return respuesta
+
+
 @requiere_permiso()
 def miembro_crear(request):
     form = MiembroCrearForm(request.POST or None, organizacion=request.organizacion, actor=request.membresia)
@@ -201,13 +215,8 @@ def miembro_crear(request):
         registrar(request, Accion.CREAR_MIEMBRO, modelo="Membresia", objeto_id=membresia.pk,
                   descripcion=f"{membresia.nombre} ({membresia.usuario_texto}) — {membresia.rol_visible}")
         if membresia.tiene_acceso:
-            messages.success(
-                request,
-                f"«{membresia.nombre}» agregado con el usuario «{membresia.user.username}». Entrégale la "
-                "contraseña temporal directamente; se le pedirá cambiarla al entrar.",
-            )
-        else:
-            messages.success(request, f"«{membresia.nombre}» agregado como miembro sin acceso al sistema.")
+            return _credenciales(request, membresia, form.clave_generada, "Acceso creado")
+        messages.success(request, f"«{membresia.nombre}» agregado como miembro sin acceso al sistema.")
         return redirect("organizaciones:miembro_lista")
     return render(request, "organizaciones/miembro_form.html", {"form": form, "miembro": None})
 
@@ -238,20 +247,14 @@ def miembro_restablecer_clave(request, pk):
         # No se dice por qué en detalle: no se revela a qué más pertenece la persona.
         raise PermissionDenied(
             "La contraseña de este usuario no se puede restablecer desde la organización. "
-            "Puede usar «¿Olvidaste tu contraseña?» o pedir ayuda al soporte de Arca."
+            "Pide ayuda al soporte de Arca."
         )
-    form = RestablecerClaveForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
-        form.save(membresia.user)
+    if request.method == "POST":
+        clave = asignar_clave_temporal(membresia.user)
         registrar(request, Accion.RESTABLECER_CLAVE, modelo="Usuario", objeto_id=membresia.user_id,
                   descripcion=membresia.user.username)
-        messages.success(
-            request,
-            f"Contraseña de «{membresia.user.username}» restablecida. Entrégasela directamente; "
-            "se le pedirá cambiarla al entrar.",
-        )
-        return redirect("organizaciones:miembro_lista")
-    return render(request, "organizaciones/miembro_restablecer_clave.html", {"form": form, "miembro": membresia})
+        return _credenciales(request, membresia, clave, "Contraseña temporal")
+    return render(request, "organizaciones/miembro_restablecer_clave.html", {"miembro": membresia})
 
 
 @requiere_permiso()
@@ -261,18 +264,13 @@ def miembro_dar_acceso(request, pk):
     if membresia.tiene_acceso:
         messages.info(request, "Este miembro ya tiene acceso al sistema.")
         return redirect("organizaciones:miembro_lista")
-    form = DarAccesoForm(request.POST or None)
+    form = DarAccesoForm(request.POST or None, organizacion=request.organizacion, membresia=membresia)
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
-            form.save(membresia)
+            form.save()
         registrar(request, Accion.DAR_ACCESO, modelo="Membresia", objeto_id=membresia.pk,
                   descripcion=f"{membresia.nombre}: usuario {membresia.user.username}")
-        messages.success(
-            request,
-            f"«{membresia.nombre}» ya puede entrar con el usuario «{membresia.user.username}». "
-            "Entrégale la contraseña temporal directamente.",
-        )
-        return redirect("organizaciones:miembro_lista")
+        return _credenciales(request, membresia, form.clave_generada, "Acceso creado")
     return render(request, "organizaciones/miembro_dar_acceso.html", {"form": form, "miembro": membresia})
 
 
@@ -284,6 +282,12 @@ def miembro_toggle_activa(request, pk):
     membresia = _miembro_editable(request, pk)
     if membresia.pk == request.membresia.pk:
         raise PermissionDenied("No puedes desactivarte a ti mismo.")
+    if not membresia.activa and membresia.tiene_acceso:
+        try:
+            validar_limite_usuarios(request.organizacion, excluir=membresia.pk)
+        except ValidationError as error:
+            messages.error(request, " ".join(error.messages))
+            return redirect("organizaciones:miembro_lista")
     membresia.activa = not membresia.activa
     membresia.save(update_fields=["activa"])
     registrar(

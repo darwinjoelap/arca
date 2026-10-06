@@ -55,7 +55,7 @@ class ApiMovimientoTests(LibroMixin, TestCase):
     def test_clave_temporal_tambien_es_401_en_json(self):
         self.tesorero.user.debe_cambiar_clave = True
         self.tesorero.user.save()
-        self.client.login(username="tesorero", password=CLAVE)
+        self.client.force_login(self.tesorero.user)
         r = self.enviar(self.carga())
         self.assertEqual((r.status_code, r.json()["codigo"]), (401, "sin_sesion"))
 

@@ -26,10 +26,11 @@
     <div class="row g-2 align-items-end">
       <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0">Tipo</label>{{ filtro.tipo }}</div>
       <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0">Estado</label>{{ filtro.estado }}</div>
-      <div class="col-12 col-md-3"><label class="form-label small fw-semibold mb-0">Cuenta</label>{{ filtro.cuenta }}</div>
+      <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0">Caja</label>{{ filtro.caja }}</div>
+      <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0">Cuenta</label>{{ filtro.cuenta }}</div>
       <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0">Desde</label>{{ filtro.desde }}</div>
       <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0">Hasta</label>{{ filtro.hasta }}</div>
-      <div class="col-12 col-md-9"><label class="form-label small fw-semibold mb-0">Buscar</label>{{ filtro.q }}</div>
+      <div class="col-12 col-md-8"><label class="form-label small fw-semibold mb-0">Buscar</label>{{ filtro.q }}</div>
       <div class="col-12 col-md-3 d-flex gap-2">
         <button type="submit" class="btn btn-outline-secondary btn-sm flex-grow-1"><i class="bi bi-funnel"></i> Filtrar</button>
         <a href="{% url 'finanzas:movimiento_lista' %}" class="btn btn-link btn-sm text-muted">Limpiar</a>

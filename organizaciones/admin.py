@@ -43,6 +43,9 @@ class OrganizacionAdmin(admin.ModelAdmin):
             "description": "Lo decide el superadmin, no la organización. El miembro ve en su cuenta "
             "un aviso que dice si el director puede ver sus montos.",
         }),
+        ("Suscripción (se maneja mejor desde /plataforma/)", {
+            "fields": ["plan", "activa_hasta", "limite_usuarios", "notas"],
+        }),
         ("Datos (los puede editar el director)", {
             "fields": ["rif", "direccion", "telefono", "email", "moneda_base", "requiere_aprobacion_egresos"],
         }),

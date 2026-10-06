@@ -72,9 +72,13 @@ Pendiente de verificar en tu máquina: las 102 pruebas contra PostgreSQL, y el f
 - [x] «Mi cuenta»: ingresos y gastos propios, conceptos propios, saldo, gráfico mensual y en qué se gasta
 - [x] El director ve las cuentas personales solo si el soporte activa el interruptor; cada consulta queda en la bitácora
 - [x] Aviso de presupuesto al registrar un egreso: cuánto queda de la partida del mes y si se pasa (A-34)
-- [x] 159 pruebas en total
+- [x] Conceptos nuevos desde el presupuesto: se escriben en la última fila y pasan al catálogo de Conceptos
+- [x] Panel de plataforma (/plataforma/): alta de organizaciones, plan, vencimiento, límite de usuarios, suspensión
+- [x] Claves temporales generadas por el sistema y mostradas una sola vez (superadmin y director)
+- [x] Enlace propio por organización (/enlace/) con usuarios propios; la dirección principal es de la plataforma
+- [x] 175 pruebas en total
 
-Pendiente de verificar en tu máquina: `migrate` y las 159 pruebas contra PostgreSQL.
+Pendiente de verificar en tu máquina: `migrate` y las 175 pruebas contra PostgreSQL.
 
 ## Lo que NO está todavía
 
@@ -89,7 +93,10 @@ Pendiente de verificar en tu máquina: `migrate` y las 159 pruebas contra Postgr
 - Reportes de traslados, diferencia en cambio y saldos a una fecha pasada. Gráficos dentro de los PDF.
 - Inventario (Fase 7).
 - Tasa BCV automática, fuentes locales, pantalla de instalación en iPhone (Fase 2).
-- Agregar a una organización un usuario que ya existe en otra: solo desde `/admin/`.
+- Traspasar la dirección de una organización: solo desde `/admin/`.
+- Recuperar la contraseña por correo: ya no se ofrece; la restablece el director (o la plataforma, la del director).
+- La pantalla de entrada lleva el nombre de la organización, pero no su logo ni sus colores.
+- Suscripción: no hay cobro, historial de pagos ni aviso automático de vencimiento; el plan es una etiqueta y lo único que limita es la fecha y el número de usuarios.
 - Respaldo automático de la base y despliegue en Railway.
 
 ## Siguiente — por decidir

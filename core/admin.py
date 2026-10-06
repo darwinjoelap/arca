@@ -21,9 +21,10 @@ admin.site.index_title = "Panel de plataforma"
 
 @admin.register(Usuario)
 class UsuarioAdmin(DjangoUserAdmin):
-    list_display = ["username", "first_name", "last_name", "is_active", "is_superuser", "debe_cambiar_clave"]
+    list_display = ["username", "organizacion_cuenta", "first_name", "is_active", "is_superuser", "debe_cambiar_clave"]
+    list_filter = ["organizacion_cuenta", "is_superuser", "is_active"]
     fieldsets = DjangoUserAdmin.fieldsets + (
-        ("Arca", {"fields": ["telefono", "debe_cambiar_clave"]}),
+        ("Arca", {"fields": ["organizacion_cuenta", "telefono", "debe_cambiar_clave"]}),
     )
 
 

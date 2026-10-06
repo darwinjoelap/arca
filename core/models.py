@@ -1,13 +1,60 @@
 from django.conf import settings
+from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
+from django.db.models import Q
+
+
+def normalizar_usuario(username):
+    return (username or "").strip().lower()
+
+
+class UsuarioManager(BaseUserManager):
+    use_in_migrations = True
+
+    def get_by_natural_key(self, username):
+        """Solo cuentas de plataforma (sin organización): lo usan createsuperuser y el admin."""
+        return self.get(username=normalizar_usuario(username), organizacion_cuenta__isnull=True)
+
+    def _crear(self, username, password, **extra):
+        username = normalizar_usuario(username)
+        if not username:
+            raise ValueError("El nombre de usuario es obligatorio.")
+        extra["email"] = self.normalize_email(extra.get("email") or "")
+        usuario = self.model(username=username, **extra)
+        usuario.set_password(password)
+        usuario.save(using=self._db)
+        return usuario
+
+    def create_user(self, username, email=None, password=None, **extra):
+        extra.setdefault("is_staff", False)
+        extra.setdefault("is_superuser", False)
+        return self._crear(username, password, email=email, **extra)
+
+    def create_superuser(self, username, email=None, password=None, **extra):
+        extra["is_staff"] = extra["is_superuser"] = True
+        extra["organizacion_cuenta"] = None
+        return self._crear(username, password, email=email, **extra)
 
 
 class Usuario(AbstractUser):
-    """Usuario de la plataforma. Es global: una misma persona puede tener una
-    `Membresia` en varias organizaciones (app `organizaciones`), y es la
-    membresía —no el usuario— la que dice qué puede hacer en cada una."""
+    """Cada organización tiene sus propios usuarios (como en Ordo).
 
+    - `organizacion_cuenta` + `username` es único: «maria» puede existir en
+      dos organizaciones. Se entra por el enlace de la organización (/<slug>/).
+    - Las cuentas de plataforma (superadmin de Arca) no tienen organización y
+      entran por la dirección principal.
+    - Qué puede hacer cada quien no vive aquí: vive en su `Membresia`."""
+
+    username = models.CharField(
+        "usuario", max_length=150, validators=[UnicodeUsernameValidator()],
+        help_text="Letras, números y . _ - @ (sin espacios). Se guarda en minúsculas.",
+    )
+    organizacion_cuenta = models.ForeignKey(
+        "organizaciones.Organizacion", null=True, blank=True, on_delete=models.PROTECT, related_name="usuarios_propios",
+        verbose_name="organización de la cuenta", help_text="Vacío = cuenta de plataforma (soporte de Arca).",
+    )
     telefono = models.CharField("teléfono", max_length=20, blank=True)
     debe_cambiar_clave = models.BooleanField(
         default=False,
@@ -15,9 +62,21 @@ class Usuario(AbstractUser):
         "se apaga cuando la cambia. Mientras esté encendido no puede usar el sistema.",
     )
 
+    objects = UsuarioManager()
+
     class Meta:
         verbose_name = "usuario"
         verbose_name_plural = "usuarios"
+        constraints = [
+            models.UniqueConstraint(fields=["organizacion_cuenta", "username"], name="usuario_unico_por_organizacion"),
+            models.UniqueConstraint(
+                fields=["username"], condition=Q(organizacion_cuenta__isnull=True), name="usuario_plataforma_unico",
+            ),
+        ]
+
+    def save(self, *args, **kwargs):
+        self.username = normalizar_usuario(self.username)
+        super().save(*args, **kwargs)
 
     def nombre_para_mostrar(self):
         return self.get_full_name() or self.get_username()
@@ -71,6 +130,7 @@ class RegistroAuditoria(models.Model):
         CREAR_CUOTA = "crear_cuota", "Creación de cuota"
         EDITAR_CUOTA = "editar_cuota", "Edición de cuota"
         ASIGNAR = "asignar", "Asignación a un miembro"
+        EDITAR_SUSCRIPCION = "editar_suscripcion", "Cambio de suscripción (plataforma)"
         VER_CUENTA_PERSONAL = "ver_cuenta_personal", "Consulta de la cuenta personal de un miembro"
 
     organizacion = models.ForeignKey(

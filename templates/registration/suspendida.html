@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titulo %}Acceso suspendido — Arca{% endblock %}
+{% block contenido %}
+<div class="card card-arca p-4 text-center">
+  <img src="{% static 'img/logo.png' %}" alt="Arca" style="width:96px;height:auto;margin:0 auto;">
+  <h1 class="h4 mt-3">{{ organizacion_marca.nombre }}</h1>
+  <p class="text-muted mb-0">El acceso de esta organización a Arca está suspendido temporalmente. Tus datos siguen guardados. Habla con tu director o con el soporte de Arca.</p>
+</div>
+{% endblock %}

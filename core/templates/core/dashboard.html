@@ -27,7 +27,7 @@
 <div class="row g-3 mb-3">
   <div class="col-lg-5">
     <div class="balance-card h-100">
-      <div class="balance-label">Fondos disponibles</div>
+      <div class="balance-label">Fondos disponibles{% if por_caja %} · todas las cajas{% endif %}</div>
       {% if saldos.convertible %}
         <div class="balance-amount monto"><span data-usd="$ {{ saldos.usd|monto }}" data-ves="Bs. {{ saldos.ves|monto }}"></span></div>
         <div class="small opacity-75">
@@ -59,6 +59,35 @@
     </div>
   </div>
 </div>
+
+{% if por_caja %}
+<h2 class="h6 text-uppercase text-muted mb-2">Por caja</h2>
+<div class="row g-3 mb-3">
+  {% for bloque in por_caja %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card card-arca h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div class="fw-bold">{{ bloque.caja.nombre }}</div>
+          <a href="{% url 'finanzas:movimiento_lista' %}?caja={{ bloque.caja.pk }}" class="small text-nowrap">Ver movimientos</a>
+        </div>
+        <div class="text-muted small">Disponible</div>
+        {% if saldos.convertible %}
+        <div class="monto fw-bold {% if bloque.usd < 0 %}monto-egreso{% endif %}" style="font-size:1.5rem;"><span data-usd="$ {{ bloque.usd|monto }}" data-ves="Bs. {{ bloque.ves|monto }}"></span></div>
+        {% else %}
+        <div class="monto fw-bold">$ {{ bloque.usd|monto }} · Bs. {{ bloque.ves|monto }}</div>
+        {% endif %}
+        <div class="small text-muted mb-2">{% for fila in bloque.cuentas %}{{ fila.cuenta.nombre }}: <span class="monto">{{ fila.cuenta.moneda|simbolo }} {{ fila.saldo|monto }}</span>{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+        <div class="d-flex justify-content-between small border-top pt-2">
+          <span><i class="bi bi-arrow-down"></i> Ingresos del mes <span class="monto monto-ingreso fw-semibold d-block"><span data-usd="$ {{ bloque.mes.ingreso.usd|monto }}" data-ves="Bs. {{ bloque.mes.ingreso.ves|monto }}"></span></span></span>
+          <span class="text-end"><i class="bi bi-arrow-up"></i> Egresos del mes <span class="monto monto-egreso fw-semibold d-block"><span data-usd="$ {{ bloque.mes.egreso.usd|monto }}" data-ves="Bs. {{ bloque.mes.egreso.ves|monto }}"></span></span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 {% endif %}
 
 {% if puede_ingresos or puede_egresos %}
