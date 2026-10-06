@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block titulo %}Reportes de inventario — Arca{% endblock %}
+{% block titulo_topbar %}Inventario{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-1">Reportes de inventario</h1>
+<p class="text-muted mb-3">Se ven en pantalla y se emiten en Excel o PDF, con líneas de firma.</p>
+{% if gestiona %}{% include "inventario/_submenu.html" with seccion="reportes" %}{% endif %}
+<div class="row g-3">
+  {% for r in catalogo %}
+  <div class="col-md-6">
+    <a class="quick-action h-100" href="{% url 'inventario:reporte' r.clave %}">
+      <span class="quick-action-icon"><i class="bi {{ r.icono }}"></i></span>
+      <span><span class="fw-semibold d-block">{{ r.titulo }}</span><span class="text-muted small">{{ r.descripcion }}</span></span>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

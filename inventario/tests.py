@@ -176,3 +176,52 @@ class VistasInventarioTests(InventarioMixin, TestCase):
         self.client.post(reverse("inventario:catalogo_crear", args=["categoria"]), {"nombre": "Cocina"})
         self.assertTrue(CategoriaArticulo.objects.filter(organizacion=self.org_a, nombre="Cocina").exists())
         self.assertEqual(self.client.get(reverse("inventario:catalogo_crear", args=["otra"])).status_code, 404)
+
+
+class ReportesInventarioTests(InventarioMixin, TestCase):
+    def setUp(self):
+        self.mover("entrada", "20", destino=self.deposito)
+        self.mover("traslado", "4", origen=self.deposito, destino=self.cocina)
+        self.mover("salida", "1", origen=self.cocina)
+        self.mover("entrada", "3", articulo=self.silla, destino=self.cocina, motivo="donacion")
+
+    def test_inventario_valorizado(self):
+        from . import reportes as rep
+        r = rep.existencias(self.org_a, date(2026, 3, 1))
+        arroz = next(f for f in r.filas if f.celdas[0] == "Arroz")
+        self.assertEqual((arroz.celdas[3], arroz.celdas[6]), (D("19"), D("38")))
+        self.assertEqual(r.filas[-1].celdas[-1], D("38"))                 # la silla no tiene valor: no suma
+        self.assertTrue(any("1 artículo(s)" in n for n in r.notas))
+        en_cocina = rep.existencias(self.org_a, date(2026, 3, 1), ubicacion=self.cocina)
+        self.assertEqual({f.celdas[0]: f.celdas[3] for f in en_cocina.filas if f.sangria}, {"Arroz": D("3"), "Silla plástica": D("3")})
+        self.assertNotIn("Proyector B", [f.celdas[0] for f in r.filas])
+
+    def test_por_ubicacion_por_reponer_y_movimientos(self):
+        from . import reportes as rep
+        grupos = [f.celdas[0] for f in rep.por_ubicacion(self.org_a, date(2026, 3, 1)).filas if f.clase == "grupo"]
+        self.assertEqual(grupos, ["Cocina", "Depósito"])
+        self.assertTrue(rep.por_reponer(self.org_a, date(2026, 3, 1)).vacio)
+        self.mover("salida", "15", origen=self.deposito)                  # quedan 4, mínimo 5
+        fila = rep.por_reponer(self.org_a, date(2026, 3, 1)).filas[0]
+        self.assertEqual((fila.celdas[0], fila.celdas[3], fila.celdas[5]), ("Arroz", D("4"), D("1")))
+        hoy = date.today()
+        anulado = MovimientoInventario.objects.filter(tipo="salida").first()
+        services.anular(MovimientoInventario.objects.get(tipo="salida", cantidad=D("15")), usuario=self.usuario, motivo="x")
+        mov = rep.movimientos(self.org_a, hoy, hoy, self.arroz)
+        self.assertEqual(mov.filas[-1].celdas[-1], 3)                      # sin el anulado ni la silla
+
+    def test_pantalla_excel_pdf_y_permiso(self):
+        self.entrar("ana")
+        self.assertEqual(self.client.get(reverse("inventario:reportes")).status_code, 403)
+        TipoMiembro.objects.filter(pk=self.tipo_a.pk).update(puede_ver_reportes=True)   # sin gestionar inventario
+        self.assertEqual(self.client.get(reverse("inventario:reportes")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("inventario:inicio")).status_code, 403)
+        for clave in ("existencias", "ubicaciones", "reponer", "movimientos"):
+            url = reverse("inventario:reporte", args=[clave])
+            self.assertEqual(self.client.get(url).status_code, 200, clave)
+            self.assertEqual(self.client.get(url, {"formato": "xlsx"}).content[:2], b"PK", clave)
+            self.assertEqual(self.client.get(url, {"formato": "pdf"}).content[:4], b"%PDF", clave)
+        self.assertEqual(RegistroAuditoria.objects.filter(accion="emitir_reporte", organizacion=self.org_a).count(), 8)
+        self.assertEqual(self.client.get(reverse("inventario:reporte", args=["otro"])).status_code, 404)
+        r = self.client.get(reverse("inventario:reporte", args=["existencias"]), {"ubicacion": self.ubi_b.pk})
+        self.assertContains(r, "Todas las ubicaciones")                    # una ubicación ajena se ignora

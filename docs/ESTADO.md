@@ -87,9 +87,10 @@ Pendiente de verificar en tu máquina: las 102 pruebas contra PostgreSQL, y el f
 - [x] Entradas, salidas y cambios de ubicación, con motivo e historial; se anulan con motivo
 - [x] Existencia por ubicación y total; aviso de consumibles por reponer; valor de lo que hay en $ y Bs.
 - [x] Permiso «Gestionar inventario» por tipo de miembro; todo queda en la bitácora
-- [x] 188 pruebas en total
+- [x] Reportes de inventario en pantalla, Excel y PDF: valorizado, por ubicación (hoja de conteo), por reponer y movimientos
+- [x] 191 pruebas en total
 
-Pendiente de verificar en tu máquina: `migrate` y las 188 pruebas contra PostgreSQL.
+Pendiente de verificar en tu máquina: `migrate` y las 191 pruebas contra PostgreSQL.
 
 ## Lo que NO está todavía
 
@@ -102,7 +103,7 @@ Pendiente de verificar en tu máquina: `migrate` y las 188 pruebas contra Postgr
 - El aviso de presupuesto no aparece sin conexión, ni cuenta los egresos que esperan aprobación.
 - Presupuesto anual con montos distintos por mes; flujo de «se solicita con antelación».
 - Reportes de traslados, diferencia en cambio y saldos a una fecha pasada. Gráficos dentro de los PDF.
-- Inventario: sin reporte exportable (Excel/PDF), sin registro sin conexión, sin fotos, sin conteo físico guiado y sin enlace con el egreso de la compra. Un artículo por cantidad no distingue unidades individuales (40 sillas son una fila, no 40 fichas).
+- Inventario: sin registro sin conexión, sin fotos, sin conteo físico guiado y sin enlace con el egreso de la compra. Un artículo por cantidad no distingue unidades individuales (40 sillas son una fila, no 40 fichas).
 - Tasa BCV automática, fuentes locales, pantalla de instalación en iPhone (Fase 2).
 - Traspasar la dirección de una organización: solo desde `/admin/`.
 - Recuperar la contraseña por correo: ya no se ofrece; la restablece el director (o la plataforma, la del director).

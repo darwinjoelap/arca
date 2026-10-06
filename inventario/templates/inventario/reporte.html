@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load arca %}
+{% block titulo %}{{ reporte.titulo }} — Arca{% endblock %}
+{% block titulo_topbar %}Inventario{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 no-imprimir">
+  <a href="{% url 'inventario:reportes' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Reportes de inventario</a>
+  <div class="d-flex gap-2">
+    <a href="?{{ consulta }}{% if consulta %}&{% endif %}formato=xlsx" class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark-spreadsheet"></i> Excel</a>
+    <a href="?{{ consulta }}{% if consulta %}&{% endif %}formato=pdf" target="_blank" rel="noopener" class="btn btn-sm btn-arca-primary"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+  </div>
+</div>
+
+{% if usa %}
+<form method="get" class="card card-arca mb-3 no-imprimir"><div class="card-body py-3"><div class="row g-2 align-items-end">
+  {% if "periodo" in usa %}
+  <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0" for="r-desde">Desde</label><input type="date" name="desde" id="r-desde" value="{{ v.desde|date:'Y-m-d' }}" class="form-control form-control-sm"></div>
+  <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0" for="r-hasta">Hasta</label><input type="date" name="hasta" id="r-hasta" value="{{ v.hasta|date:'Y-m-d' }}" class="form-control form-control-sm"></div>
+  {% endif %}
+  {% if "articulo" in usa %}
+  <div class="col-12 col-md-4"><label class="form-label small fw-semibold mb-0" for="r-art">Artículo</label>
+    <select name="articulo" id="r-art" class="form-select form-select-sm"><option value="">Todos</option>{% for a in articulos %}<option value="{{ a.pk }}" {% if v.articulo.pk == a.pk %}selected{% endif %}>{{ a.nombre }}</option>{% endfor %}</select></div>
+  {% endif %}
+  {% if "clase" in usa %}
+  <div class="col-6 col-md-3"><label class="form-label small fw-semibold mb-0" for="r-clase">Clase</label>
+    <select name="clase" id="r-clase" class="form-select form-select-sm"><option value="">Bienes y consumibles</option><option value="bien" {% if v.clase == 'bien' %}selected{% endif %}>Solo bienes</option><option value="consumible" {% if v.clase == 'consumible' %}selected{% endif %}>Solo consumibles</option></select></div>
+  {% endif %}
+  {% if "ubicacion" in usa %}
+  <div class="col-6 col-md-3"><label class="form-label small fw-semibold mb-0" for="r-ubi">Ubicación</label>
+    <select name="ubicacion" id="r-ubi" class="form-select form-select-sm"><option value="">Todas</option>{% for u in ubicaciones %}<option value="{{ u.pk }}" {% if v.ubicacion.pk == u.pk %}selected{% endif %}>{{ u.nombre }}</option>{% endfor %}</select></div>
+  {% endif %}
+  {% if "moneda" in usa %}
+  <div class="col-6 col-md-2"><label class="form-label small fw-semibold mb-0" for="r-mon">Valores en</label>
+    <select name="moneda" id="r-mon" class="form-select form-select-sm"><option value="USD" {% if v.moneda == 'USD' %}selected{% endif %}>Dólares ($)</option><option value="VES" {% if v.moneda == 'VES' %}selected{% endif %}>Bolívares (Bs.)</option></select></div>
+  {% endif %}
+  <div class="col-6 col-md-2"><button class="btn btn-sm btn-outline-secondary w-100"><i class="bi bi-funnel"></i> Aplicar</button></div>
+</div></div></form>
+{% endif %}
+
+<div class="card card-arca"><div class="card-body p-4">
+  <div class="reporte-encabezado">
+    <p class="text-muted small text-uppercase fw-semibold mb-1">{{ organizacion_activa.nombre }}</p>
+    <h1 class="h4 mb-1">{{ reporte.titulo }}</h1>
+    <p class="text-muted small mb-0">{{ reporte.subtitulo }}</p>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm tabla-reporte mb-3">
+      <thead><tr>{% for col in reporte.columnas %}<th class="{% if col.numerica %}num{% endif %}">{{ col.titulo }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for fila, celdas in reporte.filas_para_plantilla %}
+        <tr class="fila-{{ fila.clase }}">
+          {% for valor, tono, col in celdas %}
+            <td class="{% if col.numerica %}num{% endif %}{% if forloop.first and fila.sangria %} sangria-{{ fila.sangria }}{% endif %}{% if tono %} tono-{{ tono }}{% endif %}">{% if valor is None %}{% elif col.tipo == "monto" %}{{ valor|monto }}{% elif col.tipo == "fecha" %}{{ valor|date:"d/m/Y" }}{% else %}{{ valor }}{% endif %}{% if tono == "mal" %}<span class="visually-hidden"> (en el mínimo o por debajo)</span>{% endif %}</td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if reporte.vacio %}<p class="text-muted">No hay nada que mostrar con estos filtros.</p>{% endif %}
+  <div class="reporte-notas">{% for nota in reporte.notas %}<p>{{ nota }}</p>{% endfor %}</div>
+</div></div>
+{% endblock %}

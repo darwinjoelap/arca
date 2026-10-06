@@ -3,7 +3,8 @@
 `request.organizacion`: un pk de otra organización responde 404."""
 
 from django.contrib import messages
-from django.core.exceptions import ValidationError
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.http import Http404
@@ -11,7 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from core.auditoria import registrar
-from core.mixins import requiere_permiso
+from core.mixins import requiere_permiso, tiene_permiso
 from core.models import RegistroAuditoria
 from core.utils import eliminar_protegido
 from finanzas.services import tasa_vigente
@@ -241,3 +242,62 @@ def catalogo_eliminar(request, cual, pk):
         raise Http404
     modelo = CATALOGOS[cual][0]
     return eliminar_protegido(request, get_object_or_404(modelo, pk=pk, organizacion=request.organizacion), "inventario:catalogos")
+
+
+# --- Reportes ---------------------------------------------------------------
+
+
+@login_required
+def reportes(request, clave=None):
+    """Reportes del inventario en pantalla, Excel o PDF. Los ve quien gestiona
+    el inventario o quien tiene «Ver reportes»."""
+    from datetime import date
+
+    from django.utils import timezone
+
+    from reportes.views import _archivo, _consulta_sin_formato
+
+    from . import reportes as rep
+
+    if not (tiene_permiso(request, GESTIONAR) or tiene_permiso(request, "puede_ver_reportes")):
+        raise PermissionDenied("No tienes permiso para ver los reportes del inventario.")
+    if clave is None:
+        return render(request, "inventario/reportes.html", {
+            "catalogo": [{"clave": k, "titulo": t, "descripcion": d, "icono": i} for k, (t, d, i, _) in rep.CATALOGO.items()],
+            "gestiona": tiene_permiso(request, GESTIONAR),
+        })
+    if clave not in rep.CATALOGO:
+        raise Http404
+    organizacion, hoy = request.organizacion, timezone.localdate()
+    tasa, _ = tasa_vigente()
+    g = request.GET
+
+    def fecha(nombre, defecto):
+        try:
+            return date.fromisoformat(g.get(nombre, ""))
+        except ValueError:
+            return defecto
+
+    v = {
+        "clase": g.get("clase", "") if g.get("clase", "") in Articulo.Clase.values else "",
+        "moneda": g.get("moneda") if g.get("moneda") in ("USD", "VES") else organizacion.moneda_base,
+        "ubicacion": Ubicacion.objects.filter(organizacion=organizacion, pk=g["ubicacion"]).first() if g.get("ubicacion", "").isdigit() else None,
+        "articulo": Articulo.objects.filter(organizacion=organizacion, pk=g["articulo"]).first() if g.get("articulo", "").isdigit() else None,
+        "desde": fecha("desde", hoy.replace(day=1)), "hasta": fecha("hasta", hoy),
+    }
+    if clave == "existencias":
+        resultado = rep.existencias(organizacion, hoy, v["clase"], v["ubicacion"], v["moneda"], tasa)
+    elif clave == "ubicaciones":
+        resultado = rep.por_ubicacion(organizacion, hoy, v["clase"], v["ubicacion"], v["moneda"], tasa)
+    elif clave == "reponer":
+        resultado = rep.por_reponer(organizacion, hoy)
+    else:
+        resultado = rep.movimientos(organizacion, v["desde"], v["hasta"], v["articulo"])
+    if g.get("formato"):
+        return _archivo(request, resultado, g["formato"])
+    return render(request, "inventario/reporte.html", {
+        "reporte": resultado, "clave": clave, "usa": rep.CATALOGO[clave][3], "v": v,
+        "consulta": _consulta_sin_formato(request),
+        "ubicaciones": Ubicacion.objects.filter(organizacion=organizacion),
+        "articulos": Articulo.objects.filter(organizacion=organizacion),
+    })

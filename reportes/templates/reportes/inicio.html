@@ -25,6 +25,16 @@
 </div>
 {% endfor %}
 
+<h2 class="h6 text-uppercase text-muted fw-bold mb-2">Inventario</h2>
+<div class="row g-3 mb-4">
+  <div class="col-md-6 col-xl-4">
+    <a class="quick-action h-100" href="{% url 'inventario:reportes' %}">
+      <span class="quick-action-icon"><i class="bi bi-box-seam"></i></span>
+      <span><span class="fw-semibold d-block">Reportes de inventario</span><span class="text-muted small">Inventario valorizado, por ubicación, por reponer y movimientos.</span></span>
+    </a>
+  </div>
+</div>
+
 <h2 class="h6 text-uppercase text-muted fw-bold mb-2">Presupuesto</h2>
 {% if presupuestos %}
 <div class="row g-3">
