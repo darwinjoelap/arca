@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load arca l10n %}
+{% block titulo %}Rendir anticipo — Arca{% endblock %}
+{% block titulo_topbar %}Anticipos{% endblock %}
+{% block contenido %}
+<a href="{% url 'finanzas:anticipo_detalle' a.pk %}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> Anticipo</a>
+<h1 class="h3 mt-2 mb-1">Rendir el anticipo de {{ a.responsable }}</h1>
+<p class="text-muted mb-4">{{ a.motivo }} · entregado {{ a.moneda|simbolo }} {{ a.monto|monto }} el {{ a.fecha|date:"d/m/Y" }} desde {{ a.cuenta.nombre }}.</p>
+<div class="card card-arca" style="max-width: 860px;"><div class="card-body p-4">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+    <div class="mb-3" style="max-width: 220px;">
+      <label class="form-label fw-semibold" for="{{ form.fecha.id_for_label }}">{{ form.fecha.label }}</label>{{ form.fecha }}
+      {% if form.fecha.errors %}<div class="text-danger small mt-1">{{ form.fecha.errors|join:" " }}</div>{% endif %}
+    </div>
+    <p class="fw-semibold mb-1">En qué se gastó <span class="text-muted fw-normal small">(en {{ a.moneda }}, la moneda de la cuenta; deja en blanco las filas que sobren)</span></p>
+    <div class="table-responsive"><table class="table align-middle mb-2">
+      <thead><tr><th style="width: 32%;">Concepto</th><th>Detalle</th><th class="text-end" style="width: 22%;">Monto</th></tr></thead>
+      <tbody>{% for concepto, descripcion, monto in form.filas %}<tr>
+        <td>{{ concepto }}{% if concepto.errors %}<div class="text-danger small">{{ concepto.errors|join:" " }}</div>{% endif %}</td>
+        <td>{{ descripcion }}{% if descripcion.errors %}<div class="text-danger small">{{ descripcion.errors|join:" " }}</div>{% endif %}</td>
+        <td>{{ monto }}{% if monto.errors %}<div class="text-danger small">{{ monto.errors|join:" " }}</div>{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    <div class="alert alert-info" id="resumen-rendicion" role="status" aria-live="polite"></div>
+    <p class="small text-muted">Al guardar, el egreso provisional del anticipo se anula y en su lugar quedan estos gastos, cada uno con su concepto. Si no gastó nada, guarda sin llenar filas.</p>
+    <button type="submit" class="btn btn-arca-primary">Guardar rendición</button>
+    <a href="{% url 'finanzas:anticipo_detalle' a.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+  </form>
+</div></div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+(function () {
+  var entregado = {{ a.monto|unlocalize }}, simbolo = "{{ a.moneda|simbolo }} ", caja = document.getElementById("resumen-rendicion");
+  var f = new Intl.NumberFormat("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function pintar() {
+    var total = 0;
+    document.querySelectorAll("input.monto-linea").forEach(function (i) { var v = parseFloat(i.value); if (v > 0) total += v; });
+    var resto = Math.round((entregado - total) * 100) / 100;
+    caja.textContent = "Gastó " + simbolo + f.format(total) + " de " + simbolo + f.format(entregado) + ". " +
+      (resto > 0 ? "Devuelve " + simbolo + f.format(resto) + " a la cuenta." : resto < 0 ? "Gastó de más: hay que reponerle " + simbolo + f.format(-resto) + " de la cuenta." : "No sobra ni falta.");
+  }
+  document.querySelectorAll("input.monto-linea").forEach(function (i) { i.addEventListener("input", pintar); });
+  pintar();
+})();
+</script>
+{% endblock %}

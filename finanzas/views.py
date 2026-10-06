@@ -209,6 +209,11 @@ def movimiento_anular(request, pk):
     if movimiento.estado == Movimiento.Estado.ANULADO:
         messages.info(request, "Ese movimiento ya está anulado.")
         return redirect("finanzas:movimiento_detalle", pk=pk)
+    anticipo = getattr(movimiento, "anticipo_entregado", None)
+    if anticipo is not None:
+        # Anularlo aquí dejaría el anticipo «por rendir» sin su dinero.
+        messages.info(request, "Este egreso es la entrega de un anticipo: se rinde o se anula desde el anticipo.")
+        return redirect("finanzas:anticipo_detalle", pk=anticipo.pk)
     form = AnularForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         try:

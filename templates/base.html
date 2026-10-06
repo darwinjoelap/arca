@@ -86,6 +86,12 @@
         <a class="nav-link {% if 'finanzas:traslado' in vista %}active{% endif %}" href="{% url 'finanzas:traslado_lista' %}">
           <i class="bi bi-arrow-left-right"></i> Traslados
         </a>
+        <a class="nav-link {% if 'finanzas:anticipo' in vista %}active{% endif %}" href="{% url 'finanzas:anticipo_lista' %}">
+          <i class="bi bi-hourglass-split"></i> Anticipos
+        </a>
+        <a class="nav-link {% if 'finanzas:arqueo' in vista %}active{% endif %}" href="{% url 'finanzas:arqueo_lista' %}">
+          <i class="bi bi-calculator"></i> Arqueos
+        </a>
         {% endif %}
         {% endif %}
 

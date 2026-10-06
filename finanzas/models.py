@@ -459,3 +459,105 @@ class CuotaMiembro(ModeloDeOrganizacion):
         if self.membresia.organizacion_id != self.organizacion_id or self.concepto.organizacion_id != self.organizacion_id:
             raise ValidationError("La cuota mezcla datos de dos organizaciones.")
         super().save(*args, **kwargs)
+
+
+class Arqueo(ModeloDeOrganizacion):
+    """Conteo físico de una cuenta contra lo que dice el sistema.
+
+    Guarda las dos cifras tal como estaban ese día (el saldo del sistema se
+    congela aquí: si después se registra o anula algo, el arqueo no cambia).
+    La diferencia se puede llevar al libro con un movimiento de ajuste."""
+
+    cuenta = models.ForeignKey(Cuenta, on_delete=models.PROTECT, related_name="arqueos")
+    fecha = models.DateField(default=timezone.localdate)
+    saldo_sistema = models.DecimalField("saldo según el sistema", max_digits=18, decimal_places=4)
+    contado = models.DecimalField("contado", max_digits=18, decimal_places=4)
+    nota = models.CharField(max_length=200, blank=True)
+    realizado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="arqueos")
+    ajuste = models.OneToOneField(
+        "Movimiento", null=True, blank=True, on_delete=models.PROTECT, related_name="arqueo_ajustado",
+    )
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "arqueo"
+        verbose_name_plural = "arqueos"
+        ordering = ["-fecha", "-pk"]
+
+    def __str__(self):
+        return f"Arqueo de {self.cuenta} del {self.fecha:%d/%m/%Y}"
+
+    @property
+    def diferencia(self):
+        """Positiva: sobra dinero. Negativa: falta."""
+        return self.contado - self.saldo_sistema
+
+    @property
+    def cuadra(self):
+        return self.diferencia == 0
+
+    def save(self, *args, **kwargs):
+        if self.cuenta.organizacion_id != self.organizacion_id:
+            raise ValidationError("La cuenta es de otra organización.")
+        super().save(*args, **kwargs)
+
+
+class Anticipo(ModeloDeOrganizacion):
+    """Dinero entregado a alguien para que gaste y luego rinda cuentas.
+
+    Al entregarlo sale de la cuenta con un egreso provisional («anticipo por
+    rendir»). Al rendir, ese egreso se anula y en su lugar quedan los gastos
+    reales, cada uno con su concepto: lo que sobró vuelve a la cuenta porque
+    los gastos suman menos que lo entregado (decisión A-43)."""
+
+    class Estado(models.TextChoices):
+        PENDIENTE = "pendiente", "Por rendir"
+        RENDIDO = "rendido", "Rendido"
+        ANULADO = "anulado", "Anulado"
+
+    cuenta = models.ForeignKey(Cuenta, on_delete=models.PROTECT, related_name="anticipos")
+    fecha = models.DateField(default=timezone.localdate)
+    monto = models.DecimalField(max_digits=18, decimal_places=4)
+    miembro = models.ForeignKey(
+        "organizaciones.Membresia", null=True, blank=True, on_delete=models.PROTECT, related_name="anticipos",
+    )
+    tercero = models.CharField("otra persona", max_length=120, blank=True)
+    motivo = models.CharField("para qué", max_length=200)
+    estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.PENDIENTE)
+    entrega = models.OneToOneField("Movimiento", on_delete=models.PROTECT, related_name="anticipo_entregado")
+    gastos = models.ManyToManyField("Movimiento", blank=True, related_name="anticipos_rendidos")
+    fecha_rendicion = models.DateField("fecha de rendición", null=True, blank=True)
+    gastado = models.DecimalField(max_digits=18, decimal_places=4, null=True, blank=True)
+    entregado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="anticipos_entregados")
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "anticipo"
+        verbose_name_plural = "anticipos"
+        ordering = ["-fecha", "-pk"]
+        constraints = [
+            models.CheckConstraint(condition=Q(monto__gt=0), name="anticipo_monto_positivo"),
+            models.CheckConstraint(condition=Q(miembro__isnull=False) | ~Q(tercero=""), name="anticipo_con_responsable"),
+        ]
+
+    def __str__(self):
+        return f"Anticipo a {self.responsable}: {self.motivo}"
+
+    @property
+    def responsable(self):
+        return self.miembro.nombre if self.miembro_id else self.tercero
+
+    @property
+    def moneda(self):
+        return self.cuenta.moneda
+
+    @property
+    def devuelto(self):
+        """Lo que volvió a la cuenta (positivo) o lo que hubo que reponerle (negativo)."""
+        return None if self.gastado is None else self.monto - self.gastado
+
+    def save(self, *args, **kwargs):
+        if self.cuenta.organizacion_id != self.organizacion_id or (
+                self.miembro_id and self.miembro.organizacion_id != self.organizacion_id):
+            raise ValidationError("El anticipo mezcla datos de dos organizaciones.")
+        super().save(*args, **kwargs)

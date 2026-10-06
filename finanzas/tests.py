@@ -15,7 +15,7 @@ from core.models import RegistroAuditoria
 from organizaciones.models import Ejercicio, Membresia, Organizacion, TipoMiembro
 from organizaciones.services import crear_organizacion
 
-from .models import Caja, Concepto, Cuenta, Movimiento, Traslado
+from .models import Anticipo, Arqueo, Caja, Concepto, Cuenta, Movimiento, Traslado
 from .services import registrar_movimiento, registrar_traslado, resumen_saldos, saldo_cuenta, totales_periodo
 
 Usuario = get_user_model()
@@ -512,3 +512,125 @@ class PanelPorCajaTests(LibroMixin, TestCase):
         # El enlace de la tarjeta filtra el libro por esa caja.
         lista = self.client.get(reverse("finanzas:movimiento_lista"), {"caja": obra.pk})
         self.assertEqual({m.caja_id for m in lista.context["object_list"]}, {obra.pk})
+
+
+class ArqueoTests(LibroMixin, TestCase):
+    def test_cuadra_sobrante_y_faltante_con_ajuste(self):
+        self.mov(tipo="ingreso", monto="30")                      # saldo: 50 + 30 = 80
+        self.entrar("dir_a")
+        url = reverse("finanzas:arqueo_nuevo")
+        r = self.client.post(url, {"cuenta": self.usd.pk, "fecha": str(self.hoy), "contado": "80"}, follow=True)
+        self.assertContains(r, "No hay nada que ajustar")
+        cuadra = Arqueo.objects.get()
+        self.assertTrue(cuadra.cuadra)
+        self.client.post(reverse("finanzas:arqueo_ajustar", args=[cuadra.pk]))
+        self.assertIsNone(Arqueo.objects.get(pk=cuadra.pk).ajuste)
+
+        self.client.post(url, {"cuenta": self.usd.pk, "fecha": str(self.hoy), "contado": "73.50", "nota": "faltó un billete"})
+        faltante = Arqueo.objects.order_by("-pk").first()
+        self.assertEqual((faltante.saldo_sistema, faltante.diferencia), (D("80"), D("-6.50")))
+        self.client.post(reverse("finanzas:arqueo_ajustar", args=[faltante.pk]))
+        faltante.refresh_from_db()
+        self.assertEqual((faltante.ajuste.tipo, faltante.ajuste.monto, faltante.ajuste.estado), ("egreso", D("6.50"), "confirmado"))
+        self.assertEqual(saldo_cuenta(self.usd), D("73.50"))        # el sistema quedó igual a lo contado
+        self.client.post(reverse("finanzas:arqueo_ajustar", args=[faltante.pk]))   # dos veces no duplica
+        self.assertEqual(Movimiento.objects.filter(descripcion__startswith="Faltante").count(), 1)
+        self.assertEqual(faltante.saldo_sistema, D("80"))            # el arqueo guarda la foto de ese día
+
+        self.client.post(url, {"cuenta": self.usd.pk, "fecha": str(self.hoy), "contado": "75"})
+        sobrante = Arqueo.objects.order_by("-pk").first()
+        self.client.post(reverse("finanzas:arqueo_ajustar", args=[sobrante.pk]))
+        self.assertEqual(Arqueo.objects.get(pk=sobrante.pk).ajuste.tipo, "ingreso")
+        self.assertEqual(saldo_cuenta(self.usd), D("75"))
+        self.assertEqual(RegistroAuditoria.objects.filter(accion="registrar_arqueo").count(), 3)
+        self.assertEqual(RegistroAuditoria.objects.filter(accion="ajustar_arqueo").count(), 2)
+
+    def test_solo_administra_y_no_cruza_organizaciones(self):
+        self.entrar("tesorero")
+        for nombre in ("finanzas:arqueo_lista", "finanzas:arqueo_nuevo", "finanzas:anticipo_lista", "finanzas:anticipo_nuevo"):
+            self.assertEqual(self.client.get(reverse(nombre)).status_code, 403, nombre)
+        self.entrar("dir_a")
+        r = self.client.post(reverse("finanzas:arqueo_nuevo"), {"cuenta": self.cuenta_b.pk, "fecha": str(self.hoy), "contado": "1"})
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(Arqueo.objects.exists())
+        ajeno = services_arqueo(self.org_b, self.cuenta_b, self.director_b.user, self.hoy)
+        self.assertEqual(self.client.get(reverse("finanzas:arqueo_detalle", args=[ajeno.pk])).status_code, 404)
+        self.assertEqual(self.client.post(reverse("finanzas:arqueo_ajustar", args=[ajeno.pk])).status_code, 404)
+        r = self.client.post(reverse("finanzas:arqueo_nuevo"), {"cuenta": self.usd.pk, "fecha": "2999-01-01", "contado": "1"})
+        self.assertContains(r, "fecha futura")
+
+
+def services_arqueo(org, cuenta, usuario, fecha):
+    from .services import registrar_arqueo
+    return registrar_arqueo(organizacion=org, cuenta=cuenta, contado=D("5"), fecha=fecha, nota="", usuario=usuario)
+
+
+class AnticipoTests(LibroMixin, TestCase):
+    def entregar(self, monto="40", **extra):
+        datos = {"cuenta": self.usd.pk, "fecha": str(self.hoy), "monto": monto, "miembro": self.comprador.pk, "motivo": "Mercado"}
+        datos.update(extra)
+        return self.client.post(reverse("finanzas:anticipo_nuevo"), datos)
+
+    def test_entregar_rendir_y_devolver(self):
+        self.entrar("dir_a")
+        self.entregar()
+        a = Anticipo.objects.get()
+        self.assertEqual((a.estado, a.entrega.estado, a.entrega.concepto_id), ("pendiente", "confirmado", None))
+        self.assertEqual(saldo_cuenta(self.usd), D("10"))             # 50 - 40: el dinero ya salió
+        luz = Concepto.objects.create(organizacion=self.org, tipo="egreso", nombre="Luz")
+        r = self.client.post(reverse("finanzas:anticipo_rendir", args=[a.pk]), {
+            "fecha": str(self.hoy), "concepto_0": self.c_egreso.pk, "monto_0": "25", "concepto_2": luz.pk, "monto_2": "7.50",
+            "descripcion_2": "Recibo de octubre"})
+        self.assertRedirects(r, reverse("finanzas:anticipo_detalle", args=[a.pk]))
+        a.refresh_from_db()
+        self.assertEqual((a.estado, a.gastado, a.devuelto, a.entrega.estado), ("rendido", D("32.50"), D("7.50"), "anulado"))
+        gastos = list(a.gastos.order_by("pk"))
+        self.assertEqual([(g.concepto, g.monto, g.miembro, g.estado) for g in gastos],
+                         [(self.c_egreso, D("25"), self.comprador, "confirmado"), (luz, D("7.50"), self.comprador, "confirmado")])
+        self.assertEqual(saldo_cuenta(self.usd), D("17.50"))          # 50 - 32,50: lo que sobró volvió
+        self.assertContains(self.client.get(reverse("finanzas:anticipo_detalle", args=[a.pk])), "volvió a la cuenta")
+        # Rendido, no se rinde ni se anula otra vez.
+        self.client.post(reverse("finanzas:anticipo_rendir", args=[a.pk]), {"fecha": str(self.hoy), "monto_0": "1", "descripcion_0": "x"})
+        self.client.post(reverse("finanzas:anticipo_anular", args=[a.pk]), {"motivo": "x"})
+        self.assertEqual((Anticipo.objects.get().estado, a.gastos.count()), ("rendido", 2))
+        for accion in ("entregar_anticipo", "rendir_anticipo"):
+            self.assertTrue(RegistroAuditoria.objects.filter(accion=accion, organizacion=self.org).exists(), accion)
+
+    def test_gasto_de_mas_sin_gasto_y_validaciones(self):
+        self.entrar("dir_a")
+        self.assertContains(self.entregar(monto="500"), "no tiene saldo suficiente")
+        self.assertContains(self.entregar(miembro=""), "Indica a quién")
+        self.assertFalse(Anticipo.objects.exists())
+        self.entregar(monto="20", miembro="", tercero="Sr. Pérez")
+        a = Anticipo.objects.get()
+        self.assertEqual(a.responsable, "Sr. Pérez")
+        url = reverse("finanzas:anticipo_rendir", args=[a.pk])
+        self.assertContains(self.client.post(url, {"fecha": str(self.hoy), "monto_0": "5"}), "Elige un concepto o escribe el detalle")
+        self.assertContains(self.client.post(url, {"fecha": str(self.hoy), "descripcion_0": "Taxi"}), "Falta el monto")
+        self.assertEqual(Anticipo.objects.get().estado, "pendiente")
+        self.client.post(url, {"fecha": str(self.hoy), "descripcion_0": "Taxi", "monto_0": "26"})
+        a.refresh_from_db()
+        self.assertEqual((a.gastado, a.devuelto), (D("26"), D("-6")))   # gastó de más: se le repone
+        self.assertEqual(saldo_cuenta(self.usd), D("24"))
+        self.entregar(monto="10")
+        b = Anticipo.objects.order_by("-pk").first()
+        self.client.post(reverse("finanzas:anticipo_rendir", args=[b.pk]), {"fecha": str(self.hoy)})   # no gastó nada
+        b.refresh_from_db()
+        self.assertEqual((b.estado, b.gastado, b.gastos.count()), ("rendido", D("0"), 0))
+        self.assertEqual(saldo_cuenta(self.usd), D("24"))
+
+    def test_anular_y_proteccion_del_egreso_provisional(self):
+        self.entrar("dir_a")
+        self.entregar()
+        a = Anticipo.objects.get()
+        r = self.client.post(reverse("finanzas:movimiento_anular", args=[a.entrega.pk]), {"motivo": "desde el libro"})
+        self.assertRedirects(r, reverse("finanzas:anticipo_detalle", args=[a.pk]))
+        self.assertEqual(Movimiento.objects.get(pk=a.entrega.pk).estado, "confirmado")
+        self.client.post(reverse("finanzas:anticipo_anular", args=[a.pk]), {"motivo": "no viajó"})
+        a.refresh_from_db()
+        self.assertEqual((a.estado, a.entrega.estado), ("anulado", "anulado"))
+        self.assertEqual(saldo_cuenta(self.usd), D("50"))
+        self.assertEqual(self.client.get(reverse("finanzas:anticipo_lista"), {"estado": "anulado"}).context["anticipos"][0], a)
+        ajeno_url = reverse("finanzas:anticipo_detalle", args=[a.pk])
+        self.entrar("dir_b")
+        self.assertEqual(self.client.get(ajeno_url).status_code, 404)

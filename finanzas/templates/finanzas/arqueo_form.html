@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block titulo %}Nuevo arqueo — Arca{% endblock %}
+{% block titulo_topbar %}Arqueos{% endblock %}
+{% block contenido %}
+<a href="{% url 'finanzas:arqueo_lista' %}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> Arqueos</a>
+<h1 class="h3 mt-2 mb-4">Nuevo arqueo</h1>
+<div class="card card-arca" style="max-width: 560px;"><div class="card-body p-4">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "organizaciones/_form_campos.html" %}
+    <div class="alert alert-info d-none" id="comparacion" role="status" aria-live="polite"></div>
+    <p class="small text-muted">Se guarda el saldo que el sistema tenía a esa fecha y lo que contaste. Si no coinciden, después puedes registrar la diferencia con un clic.</p>
+    <button type="submit" class="btn btn-arca-primary">Guardar arqueo</button>
+    <a href="{% url 'finanzas:arqueo_lista' %}" class="btn btn-outline-secondary">Cancelar</a>
+  </form>
+</div></div>
+{% endblock %}
+{% block extra_scripts %}
+{{ saldos|json_script:"saldos-cuentas" }}
+<script>
+(function () {
+  // Compara en vivo lo contado con el saldo de hoy (el definitivo se calcula a la fecha al guardar).
+  var cuenta = document.getElementById("id_cuenta"), contado = document.getElementById("id_contado"), caja = document.getElementById("comparacion");
+  if (!cuenta || !caja) return;
+  var saldos = JSON.parse(document.getElementById("saldos-cuentas").textContent);
+  var f = new Intl.NumberFormat("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function pintar() {
+    var s = saldos[cuenta.value];
+    if (!s) { caja.classList.add("d-none"); return; }
+    var simbolo = s.moneda === "USD" ? "$ " : "Bs. ", texto = "El sistema dice hoy: " + simbolo + f.format(s.saldo) + ".";
+    var v = parseFloat(contado.value);
+    if (!isNaN(v)) {
+      var d = Math.round((v - s.saldo) * 100) / 100;
+      texto += d === 0 ? " Cuadra." : d > 0 ? " Sobran " + simbolo + f.format(d) + "." : " Faltan " + simbolo + f.format(-d) + ".";
+    }
+    caja.textContent = texto; caja.classList.remove("d-none");
+  }
+  cuenta.addEventListener("change", pintar); contado.addEventListener("input", pintar); pintar();
+})();
+</script>
+{% endblock %}

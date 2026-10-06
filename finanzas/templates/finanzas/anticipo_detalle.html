@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load arca %}
+{% block titulo %}Anticipo — Arca{% endblock %}
+{% block titulo_topbar %}Anticipos{% endblock %}
+{% block contenido %}
+<a href="{% url 'finanzas:anticipo_lista' %}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> Anticipos</a>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mt-2 mb-3">
+  <div><h1 class="h3 mb-1">Anticipo a {{ a.responsable }}
+    {% if a.estado == 'pendiente' %}<span class="badge text-bg-warning">Por rendir</span>{% elif a.estado == 'rendido' %}<span class="badge text-bg-success">Rendido</span>{% else %}<span class="badge text-bg-secondary">Anulado</span>{% endif %}</h1>
+    <p class="text-muted mb-0">{{ a.motivo }} · {{ a.cuenta.caja.nombre }} · {{ a.cuenta.nombre }} · entregado el {{ a.fecha|date:"d/m/Y" }} por {{ a.entregado_por.nombre_para_mostrar }}</p></div>
+  {% if a.estado == 'pendiente' %}<div class="d-flex gap-2">
+    <a href="{% url 'finanzas:anticipo_rendir' a.pk %}" class="btn btn-arca-primary"><i class="bi bi-check2-square"></i> Rendir</a>
+    <a href="{% url 'finanzas:anticipo_anular' a.pk %}" class="btn btn-outline-danger">Anular</a></div>{% endif %}
+</div>
+<div class="row g-3 mb-3" style="max-width: 860px;">
+  <div class="col-sm-4"><div class="indicador"><div class="indicador-etiqueta">Entregado</div><div class="indicador-valor">{{ a.moneda|simbolo }} {{ a.monto|monto }}</div>
+    <div class="indicador-detalle"><a href="{% url 'finanzas:movimiento_detalle' a.entrega.pk %}">Egreso #{{ a.entrega.numero_vale }}</a>{% if a.entrega.estado == 'anulado' %} (reemplazado){% endif %}</div></div></div>
+  <div class="col-sm-4"><div class="indicador"><div class="indicador-etiqueta">Gastado</div><div class="indicador-valor">{% if a.gastado is not None %}{{ a.moneda|simbolo }} {{ a.gastado|monto }}{% else %}—{% endif %}</div>
+    <div class="indicador-detalle">{% if a.fecha_rendicion %}rendido el {{ a.fecha_rendicion|date:"d/m/Y" }}{% else %}aún sin rendir{% endif %}</div></div></div>
+  <div class="col-sm-4"><div class="indicador"><div class="indicador-etiqueta">{% if a.devuelto is not None and a.devuelto < 0 %}Se le repuso{% else %}Devolvió{% endif %}</div>
+    <div class="indicador-valor">{% if a.devuelto is None %}—{% else %}{{ a.moneda|simbolo }} {{ a.devuelto|monto|cut:"-" }}{% endif %}</div>
+    <div class="indicador-detalle">{% if a.devuelto is None %}se sabrá al rendir{% elif a.devuelto < 0 %}gastó más de lo entregado{% elif a.devuelto == 0 %}gastó exactamente lo entregado{% else %}volvió a la cuenta{% endif %}</div></div></div>
+</div>
+{% if a.estado == 'rendido' %}
+<div class="card card-arca" style="max-width: 860px;">
+  <div class="card-header bg-transparent fw-bold">Gastos rendidos</div>
+  {% if gastos %}<div class="table-responsive"><table class="table align-middle mb-0"><tbody>
+    {% for g in gastos %}<tr><td><a href="{% url 'finanzas:movimiento_detalle' g.pk %}" class="text-decoration-none text-body fw-semibold">{{ g.titulo }}</a>{% if g.concepto_id and g.descripcion %}<div class="small text-muted">{{ g.descripcion }}</div>{% endif %}</td>
+      <td class="small text-muted">Egreso #{{ g.numero_vale }}{% if g.estado == 'registrado' %} · por aprobar{% elif g.estado == 'anulado' %} · anulado{% endif %}</td>
+      <td class="text-end monto monto-egreso">{{ g.moneda|simbolo }} {{ g.monto|monto }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}<div class="card-body text-muted">No gastó nada: devolvió todo el anticipo.</div>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

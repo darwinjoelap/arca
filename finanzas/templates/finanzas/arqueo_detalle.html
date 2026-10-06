@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load arca %}
+{% block titulo %}Arqueo — Arca{% endblock %}
+{% block titulo_topbar %}Arqueos{% endblock %}
+{% block contenido %}
+<a href="{% url 'finanzas:arqueo_lista' %}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> Arqueos</a>
+<h1 class="h3 mt-2 mb-1">Arqueo de {{ a.cuenta.nombre }}</h1>
+<p class="text-muted mb-3">{{ a.cuenta.caja.nombre }} · {{ a.fecha|date:"d/m/Y" }} · por {{ a.realizado_por.nombre_para_mostrar }}{% if a.nota %} · {{ a.nota }}{% endif %}</p>
+<div class="row g-3 mb-3" style="max-width: 860px;">
+  <div class="col-sm-4"><div class="indicador"><div class="indicador-etiqueta">Según el sistema</div><div class="indicador-valor">{{ a.cuenta.moneda|simbolo }} {{ a.saldo_sistema|monto }}</div><div class="indicador-detalle">saldo a esa fecha</div></div></div>
+  <div class="col-sm-4"><div class="indicador"><div class="indicador-etiqueta">Contado</div><div class="indicador-valor">{{ a.cuenta.moneda|simbolo }} {{ a.contado|monto }}</div><div class="indicador-detalle">lo que había de verdad</div></div></div>
+  <div class="col-sm-4"><div class="indicador"><div class="indicador-etiqueta">Diferencia</div>
+    <div class="indicador-valor {% if a.diferencia < 0 %}monto-egreso{% elif a.diferencia > 0 %}monto-ingreso{% endif %}">{% if a.diferencia > 0 %}+{% endif %}{{ a.diferencia|monto }}</div>
+    <div class="indicador-detalle">{% if a.cuadra %}<i class="bi bi-check-circle-fill"></i> Cuadra{% elif a.diferencia > 0 %}Sobra dinero{% else %}Falta dinero{% endif %}</div></div></div>
+</div>
+<div class="card card-arca" style="max-width: 860px;"><div class="card-body">
+  {% if a.cuadra %}
+    <p class="mb-0"><i class="bi bi-check-circle-fill monto-ingreso"></i> No hay nada que ajustar.</p>
+  {% elif a.ajuste_id %}
+    <p class="mb-0">La diferencia quedó registrada como <a href="{% url 'finanzas:movimiento_detalle' a.ajuste.pk %}">{{ a.ajuste.get_tipo_display|lower }} #{{ a.ajuste.numero_vale }}</a>{% if a.ajuste.estado == 'anulado' %} <span class="badge text-bg-secondary">anulado después</span>{% endif %}.</p>
+  {% else %}
+    <p>{% if a.diferencia > 0 %}Sobran {{ a.cuenta.moneda|simbolo }} {{ a.diferencia|monto }}: se puede registrar como <strong>ingreso</strong>.{% else %}Faltan {{ a.cuenta.moneda|simbolo }} {{ a.diferencia|monto|cut:"-" }}: se puede registrar como <strong>egreso</strong>.{% endif %}
+      Con eso el saldo de la cuenta queda igual a lo contado. Antes de ajustar, revisa si falta registrar algún movimiento: ese es el motivo más común.</p>
+    <form method="post" action="{% url 'finanzas:arqueo_ajustar' a.pk %}" onsubmit="return confirm('Se registra un movimiento por la diferencia. ¿Continuar?');">{% csrf_token %}
+      <button class="btn btn-arca-primary"><i class="bi bi-arrow-repeat"></i> Registrar el ajuste</button>
+      <a href="{% url 'finanzas:movimiento_lista' %}?cuenta={{ a.cuenta_id }}" class="btn btn-outline-secondary">Revisar movimientos de la cuenta</a>
+    </form>
+  {% endif %}
+</div></div>
+{% endblock %}

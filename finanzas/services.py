@@ -264,3 +264,90 @@ def estado_cuotas(organizacion, ejercicio, hasta=None, membresia=None):
             "pendiente": esperado - pagado, "ultimo_pago": pagos["ultimo"],
         })
     return resultado
+
+
+# --- Arqueo y anticipos (Fase 8) ---------------------------------------------
+
+
+@transaction.atomic
+def registrar_arqueo(*, organizacion, cuenta, contado, fecha, nota, usuario):
+    from .models import Arqueo
+
+    return Arqueo.objects.create(
+        organizacion=organizacion, cuenta=cuenta, fecha=fecha, contado=contado, nota=nota,
+        saldo_sistema=saldo_cuenta(cuenta, fecha), realizado_por=usuario,
+    )
+
+
+@transaction.atomic
+def ajustar_arqueo(arqueo, *, membresia):
+    """Lleva la diferencia al libro: sobrante como ingreso, faltante como egreso."""
+    if arqueo.ajuste_id:
+        raise ValidationError("Este arqueo ya tiene su ajuste registrado.")
+    if arqueo.cuadra:
+        raise ValidationError("El arqueo cuadra: no hay nada que ajustar.")
+    sobra = arqueo.diferencia > 0
+    movimiento, _ = registrar_movimiento(Movimiento(
+        organizacion=arqueo.organizacion, tipo=Movimiento.Tipo.INGRESO if sobra else Movimiento.Tipo.EGRESO,
+        fecha=arqueo.fecha, cuenta=arqueo.cuenta, monto=abs(arqueo.diferencia),
+        descripcion=f"{'Sobrante' if sobra else 'Faltante'} de arqueo del {arqueo.fecha:%d/%m/%Y}",
+    ), membresia=membresia)
+    arqueo.ajuste = movimiento
+    arqueo.save(update_fields=["ajuste"])
+    return movimiento
+
+
+@transaction.atomic
+def entregar_anticipo(*, organizacion, cuenta, monto, fecha, motivo, miembro, tercero, membresia):
+    from .models import Anticipo
+
+    if monto > saldo_cuenta(cuenta):
+        raise ValidationError({"monto": "La cuenta no tiene saldo suficiente para entregar ese anticipo."})
+    entrega, _ = registrar_movimiento(Movimiento(
+        organizacion=organizacion, tipo=Movimiento.Tipo.EGRESO, fecha=fecha, cuenta=cuenta, monto=monto,
+        descripcion=f"Anticipo por rendir: {motivo}"[:200], miembro=miembro, tercero=tercero,
+    ), membresia=membresia)
+    return Anticipo.objects.create(
+        organizacion=organizacion, cuenta=cuenta, fecha=fecha, monto=monto, motivo=motivo, miembro=miembro,
+        tercero=tercero, entrega=entrega, entregado_por=membresia.user,
+    )
+
+
+@transaction.atomic
+def rendir_anticipo(anticipo, *, fecha, lineas, membresia):
+    """`lineas`: [(concepto o None, descripción, monto)]. Anula el egreso
+    provisional y registra en su lugar los gastos reales. Puede venir vacía:
+    no gastó nada y lo devolvió todo."""
+    from .models import Anticipo
+
+    anticipo = Anticipo.objects.select_for_update().get(pk=anticipo.pk)
+    if anticipo.estado != Anticipo.Estado.PENDIENTE:
+        raise ValidationError("Este anticipo ya no está por rendir.")
+    if fecha < anticipo.fecha:
+        raise ValidationError({"fecha": "La rendición no puede ser anterior a la entrega."})
+    anticipo.entrega.transicionar(
+        Movimiento.Estado.ANULADO, membresia.user, motivo=f"Anticipo rendido el {fecha:%d/%m/%Y}: reemplazado por los gastos reales.")
+    total = CERO
+    for concepto, descripcion, monto in lineas:
+        gasto, _ = registrar_movimiento(Movimiento(
+            organizacion=anticipo.organizacion, tipo=Movimiento.Tipo.EGRESO, fecha=fecha, cuenta=anticipo.cuenta,
+            monto=monto, concepto=concepto, descripcion=descripcion, miembro=anticipo.miembro, tercero=anticipo.tercero,
+            referencia=f"Anticipo #{anticipo.pk}",
+        ), membresia=membresia)
+        anticipo.gastos.add(gasto)
+        total += monto
+    anticipo.estado, anticipo.fecha_rendicion, anticipo.gastado = Anticipo.Estado.RENDIDO, fecha, total
+    anticipo.save(update_fields=["estado", "fecha_rendicion", "gastado"])
+    return anticipo
+
+
+@transaction.atomic
+def anular_anticipo(anticipo, *, usuario, motivo):
+    from .models import Anticipo
+
+    if anticipo.estado != Anticipo.Estado.PENDIENTE:
+        raise ValidationError("Solo se anula un anticipo que sigue por rendir.")
+    anticipo.entrega.transicionar(Movimiento.Estado.ANULADO, usuario, motivo=f"Anticipo anulado: {motivo}")
+    anticipo.estado = Anticipo.Estado.ANULADO
+    anticipo.save(update_fields=["estado"])
+    return anticipo

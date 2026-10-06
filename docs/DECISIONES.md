@@ -164,6 +164,15 @@ desfase con la realidad se corrige con un ajuste por conteo.
 **A-41 — Mínimo solo en consumibles, estado solo en bienes.** El aviso «por reponer» salta cuando la existencia
 total llega al mínimo o baja de él. El responsable es por artículo, no por ubicación.
 
+**A-42 — El arqueo guarda una foto y ofrece el ajuste.** Se guarda el saldo que el sistema tenía a la fecha y
+lo contado; si después cambia el libro, el arqueo no cambia. La diferencia no se lleva sola al libro: se ofrece
+un botón que la registra como ingreso (sobrante) o egreso (faltante), una sola vez.
+
+**A-43 — El anticipo sale al entregar y se reemplaza al rendir.** La entrega es un egreso provisional sin
+concepto («anticipo por rendir»). Al rendir, ese egreso se anula y quedan los gastos reales, cada uno con su
+concepto, con la fecha de la rendición; lo que sobró vuelve a la cuenta porque los gastos suman menos. Si gastó
+de más, la diferencia sale de la cuenta. El egreso provisional no se anula desde el libro, solo desde el anticipo.
+
 ## Heredadas de Edumia que siguen vigentes
 
 - **D-02 (revisado)** — El valor de una tasa se puede corregir; recalcula lo no congelado.

@@ -88,9 +88,15 @@ Pendiente de verificar en tu máquina: las 102 pruebas contra PostgreSQL, y el f
 - [x] Existencia por ubicación y total; aviso de consumibles por reponer; valor de lo que hay en $ y Bs.
 - [x] Permiso «Gestionar inventario» por tipo de miembro; todo queda en la bitácora
 - [x] Reportes de inventario en pantalla, Excel y PDF: valorizado, por ubicación (hoja de conteo), por reponer y movimientos
-- [x] 191 pruebas en total
+- [x] 191 pruebas hasta aquí
 
-Pendiente de verificar en tu máquina: `migrate` y las 191 pruebas contra PostgreSQL.
+## Hecho — Fase 8 (cierre, parte 1)
+
+- [x] Arqueo de cuentas: sistema contra contado, historial y ajuste de la diferencia con un clic
+- [x] Anticipos por rendir: entrega, rendición por concepto, devolución o reposición, anulación
+- [x] 196 pruebas en total
+
+Pendiente de verificar en tu máquina: `migrate` y las 196 pruebas contra PostgreSQL.
 
 ## Lo que NO está todavía
 
@@ -98,7 +104,8 @@ Pendiente de verificar en tu máquina: `migrate` y las 191 pruebas contra Postgr
 - Sin conexión solo funcionan ingreso y egreso de la organización: ni traslados ni la cuenta personal.
 - Asignar dinero a un miembro sin acceso: no se puede, porque no tiene cuenta personal. Se registra como egreso normal a su nombre.
 - Cuotas: no tienen reporte exportable (Excel/PDF) ni aviso de morosidad; es solo la pantalla.
-- Anticipos (dinero entregado que se rinde después) y arqueo de caja.
+- Anticipos: máximo 8 gastos por rendición, todos con la fecha de la rendición y en la moneda de la cuenta; sin aviso en el panel de los que siguen por rendir; el miembro no rinde por su cuenta, lo hace el director.
+- Arqueo: no pide el desglose por billetes ni tiene reporte en PDF.
 - Editar un movimiento de la organización: no existe a propósito (A-18).
 - El aviso de presupuesto no aparece sin conexión, ni cuenta los egresos que esperan aprobación.
 - Presupuesto anual con montos distintos por mes; flujo de «se solicita con antelación».

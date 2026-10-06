@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import views, views_cierre as cierre
 
 app_name = "finanzas"
 
@@ -14,6 +14,15 @@ urlpatterns = [
     path("traslados/", views.TrasladoListView.as_view(), name="traslado_lista"),
     path("traslados/nuevo/", views.traslado_registrar, name="traslado_registrar"),
     path("traslados/<int:pk>/anular/", views.traslado_anular, name="traslado_anular"),
+    path("arqueos/", cierre.arqueos, name="arqueo_lista"),
+    path("arqueos/nuevo/", cierre.arqueo_nuevo, name="arqueo_nuevo"),
+    path("arqueos/<int:pk>/", cierre.arqueo_detalle, name="arqueo_detalle"),
+    path("arqueos/<int:pk>/ajustar/", cierre.arqueo_ajustar, name="arqueo_ajustar"),
+    path("anticipos/", cierre.anticipos, name="anticipo_lista"),
+    path("anticipos/nuevo/", cierre.anticipo_nuevo, name="anticipo_nuevo"),
+    path("anticipos/<int:pk>/", cierre.anticipo_detalle, name="anticipo_detalle"),
+    path("anticipos/<int:pk>/rendir/", cierre.anticipo_rendir, name="anticipo_rendir"),
+    path("anticipos/<int:pk>/anular/", cierre.anticipo_anular, name="anticipo_anular"),
     path("cuotas/", views.cuotas, name="cuota_lista"),
     path("cuotas/nueva/", views.CuotaCreateView.as_view(), name="cuota_crear"),
     path("cuotas/<int:pk>/editar/", views.CuotaUpdateView.as_view(), name="cuota_editar"),

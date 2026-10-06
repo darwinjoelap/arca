@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block titulo %}Entregar anticipo — Arca{% endblock %}
+{% block titulo_topbar %}Anticipos{% endblock %}
+{% block contenido %}
+<a href="{% url 'finanzas:anticipo_lista' %}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> Anticipos</a>
+<h1 class="h3 mt-2 mb-4">Entregar anticipo</h1>
+<div class="card card-arca" style="max-width: 560px;"><div class="card-body p-4">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "organizaciones/_form_campos.html" %}
+    <p class="small text-muted" id="saldo-cuenta"></p>
+    <p class="small text-muted">El dinero sale de la cuenta ahora, como «anticipo por rendir». Cuando la persona rinda, se reemplaza por lo que gastó de verdad.</p>
+    <button type="submit" class="btn btn-arca-primary">Entregar</button>
+    <a href="{% url 'finanzas:anticipo_lista' %}" class="btn btn-outline-secondary">Cancelar</a>
+  </form>
+</div></div>
+{% endblock %}
+{% block extra_scripts %}
+{{ saldos|json_script:"saldos-cuentas" }}
+<script>
+(function () {
+  var cuenta = document.getElementById("id_cuenta"), p = document.getElementById("saldo-cuenta");
+  var miembro = document.getElementById("id_miembro"), tercero = document.getElementById("id_tercero");
+  var saldos = JSON.parse(document.getElementById("saldos-cuentas").textContent);
+  var f = new Intl.NumberFormat("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function pintar() {
+    var s = saldos[cuenta.value];
+    p.textContent = s ? "Saldo de la cuenta: " + (s.moneda === "USD" ? "$ " : "Bs. ") + f.format(s.saldo) + "." : "";
+    if (tercero) tercero.closest(".mb-3").style.display = miembro.value ? "none" : "";
+  }
+  cuenta.addEventListener("change", pintar); miembro.addEventListener("change", pintar); pintar();
+})();
+</script>
+{% endblock %}

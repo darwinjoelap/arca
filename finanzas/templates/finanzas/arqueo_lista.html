@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load arca %}
+{% block titulo %}Arqueos — Arca{% endblock %}
+{% block titulo_topbar %}Arqueos{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div><h1 class="h3 mb-1">Arqueos</h1>
+    <p class="text-muted mb-0">Contar el dinero de una cuenta y compararlo con lo que dice el sistema.</p></div>
+  <a href="{% url 'finanzas:arqueo_nuevo' %}" class="btn btn-arca-primary"><i class="bi bi-calculator"></i> Nuevo arqueo</a>
+</div>
+<div class="card card-arca">
+{% if arqueos %}<div class="table-responsive"><table class="table table-hover align-middle mb-0">
+  <thead><tr><th>Fecha</th><th>Cuenta</th><th class="text-end">Sistema</th><th class="text-end">Contado</th><th class="text-end">Diferencia</th><th>Resultado</th><th></th></tr></thead>
+  <tbody>{% for a in arqueos %}<tr>
+    <td class="text-nowrap">{{ a.fecha|date:"d/m/Y" }}</td>
+    <td>{{ a.cuenta.caja.nombre }} · {{ a.cuenta.nombre }}<div class="small text-muted">{{ a.realizado_por.nombre_para_mostrar }}</div></td>
+    <td class="text-end monto">{{ a.cuenta.moneda|simbolo }} {{ a.saldo_sistema|monto }}</td>
+    <td class="text-end monto">{{ a.cuenta.moneda|simbolo }} {{ a.contado|monto }}</td>
+    <td class="text-end monto fw-semibold {% if a.diferencia < 0 %}monto-egreso{% elif a.diferencia > 0 %}monto-ingreso{% endif %}">{% if a.diferencia > 0 %}+{% endif %}{{ a.diferencia|monto }}</td>
+    <td>{% if a.cuadra %}<span class="badge text-bg-success"><i class="bi bi-check-lg"></i> Cuadra</span>{% elif a.ajuste_id %}<span class="badge text-bg-secondary">Ajustado</span>{% elif a.diferencia > 0 %}<span class="badge text-bg-warning">Sobrante</span>{% else %}<span class="badge text-bg-danger">Faltante</span>{% endif %}</td>
+    <td class="text-end"><a href="{% url 'finanzas:arqueo_detalle' a.pk %}" class="btn btn-sm btn-outline-secondary">Ver</a></td>
+  </tr>{% endfor %}</tbody>
+</table></div>
+{% else %}<div class="empty-state"><i class="bi bi-calculator d-block mb-2"></i>Todavía no hay arqueos. Conviene hacer uno al cierre de cada mes.</div>{% endif %}
+</div>
+{% endblock %}

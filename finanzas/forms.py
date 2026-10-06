@@ -271,3 +271,101 @@ class FiltroMovimientosForm(forms.Form):
                 | Q(miembro__nombre_visible__icontains=q) | Q(referencia__icontains=q)
             )
         return qs
+
+
+# --- Arqueo y anticipos -----------------------------------------------------
+
+LINEAS_RENDICION = 8
+
+
+def _cuentas_activas(organizacion):
+    return Cuenta.objects.filter(organizacion=organizacion, activa=True, caja__activa=True).select_related("caja")
+
+
+class ArqueoForm(_EstiloBootstrapMixin, forms.Form):
+    cuenta = forms.ModelChoiceField(queryset=Cuenta.objects.none(), empty_label="— Elige una cuenta —")
+    fecha = forms.DateField(widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"))
+    contado = forms.DecimalField(
+        label="Lo que contaste", min_value=Decimal("0"), max_digits=18, decimal_places=2,
+        help_text="El efectivo que hay de verdad, o el saldo que muestra el banco, en la moneda de la cuenta.",
+    )
+    nota = forms.CharField(max_length=200, required=False, help_text="Opcional: quién estuvo presente, por qué puede haber diferencia…")
+
+    def __init__(self, *args, organizacion, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["cuenta"].queryset = _cuentas_activas(organizacion)
+        self.fields["cuenta"].label_from_instance = lambda c: f"{c.caja.nombre} · {c.nombre} ({c.moneda})"
+        self.fields["fecha"].initial = timezone.localdate()
+        self.fields["contado"].widget.attrs.update({"step": "0.01", "min": "0", "inputmode": "decimal"})
+        self._aplicar_estilo()
+
+    def clean_fecha(self):
+        fecha = self.cleaned_data["fecha"]
+        if fecha > timezone.localdate():
+            raise forms.ValidationError("No se puede arquear una fecha futura.")
+        return fecha
+
+
+class AnticipoForm(_EstiloBootstrapMixin, forms.Form):
+    cuenta = forms.ModelChoiceField(label="Sale de la cuenta", queryset=Cuenta.objects.none(), empty_label="— Elige una cuenta —")
+    fecha = forms.DateField(widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"))
+    monto = forms.DecimalField(min_value=Decimal("0.01"), max_digits=18, decimal_places=2, help_text="En la moneda de la cuenta.")
+    miembro = forms.ModelChoiceField(label="Se le entrega a", queryset=Membresia.objects.none(), required=False, empty_label="— Otra persona —")
+    tercero = forms.CharField(label="Otra persona", max_length=120, required=False, help_text="Solo si no es un miembro.")
+    motivo = forms.CharField(label="Para qué", max_length=200, help_text="Ej.: compras del mercado, viaje a Caracas.")
+
+    def __init__(self, *args, organizacion, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["cuenta"].queryset = _cuentas_activas(organizacion)
+        self.fields["cuenta"].label_from_instance = lambda c: f"{c.caja.nombre} · {c.nombre} ({c.moneda})"
+        self.fields["miembro"].queryset = Membresia.objects.filter(organizacion=organizacion, activa=True).select_related("user")
+        self.fields["miembro"].label_from_instance = lambda m: m.nombre
+        self.fields["fecha"].initial = timezone.localdate()
+        self.fields["monto"].widget.attrs.update({"step": "0.01", "min": "0.01", "inputmode": "decimal"})
+        self._aplicar_estilo()
+
+    def clean(self):
+        datos = super().clean()
+        datos["tercero"] = (datos.get("tercero") or "").strip()
+        if not datos.get("miembro") and not datos["tercero"]:
+            self.add_error("miembro", "Indica a quién se le entrega: un miembro u otra persona.")
+        if datos.get("miembro"):
+            datos["tercero"] = ""
+        return datos
+
+
+class RendicionForm(_EstiloBootstrapMixin, forms.Form):
+    """Rendición de un anticipo: fecha y hasta LINEAS_RENDICION gastos."""
+
+    fecha = forms.DateField(label="Fecha de la rendición", widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"))
+
+    def __init__(self, *args, organizacion, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["fecha"].initial = timezone.localdate()
+        conceptos = Concepto.objects.filter(organizacion=organizacion, tipo="egreso", activo=True).select_related("padre")
+        for i in range(LINEAS_RENDICION):
+            self.fields[f"concepto_{i}"] = forms.ModelChoiceField(queryset=conceptos, required=False, empty_label="— Otro —")
+            self.fields[f"descripcion_{i}"] = forms.CharField(max_length=200, required=False)
+            self.fields[f"monto_{i}"] = forms.DecimalField(min_value=Decimal("0.01"), max_digits=18, decimal_places=2, required=False)
+            self.fields[f"monto_{i}"].widget.attrs.update({"step": "0.01", "min": "0.01", "inputmode": "decimal", "class": "form-control monto-linea text-end"})
+            self.fields[f"descripcion_{i}"].widget.attrs["placeholder"] = "Detalle (obligatorio si no hay concepto)"
+        self._aplicar_estilo()
+
+    def filas(self):
+        return [(self[f"concepto_{i}"], self[f"descripcion_{i}"], self[f"monto_{i}"]) for i in range(LINEAS_RENDICION)]
+
+    def clean(self):
+        datos = super().clean()
+        lineas = []
+        for i in range(LINEAS_RENDICION):
+            concepto, descripcion, monto = datos.get(f"concepto_{i}"), (datos.get(f"descripcion_{i}") or "").strip(), datos.get(f"monto_{i}")
+            if not (concepto or descripcion or monto):
+                continue
+            if not monto:
+                self.add_error(f"monto_{i}", "Falta el monto.")
+            elif not concepto and not descripcion:
+                self.add_error(f"descripcion_{i}", "Elige un concepto o escribe el detalle.")
+            else:
+                lineas.append((concepto, descripcion, monto))
+        datos["lineas"] = lineas
+        return datos

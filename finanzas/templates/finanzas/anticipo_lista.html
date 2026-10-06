@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load arca %}
+{% block titulo %}Anticipos — Arca{% endblock %}
+{% block titulo_topbar %}Anticipos{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div><h1 class="h3 mb-1">Anticipos</h1>
+    <p class="text-muted mb-0">Dinero entregado a alguien para que gaste y luego rinda cuentas.{% if n_pendientes %} <strong>{{ n_pendientes }} por rendir</strong>{% for moneda, total in por_moneda %}{% if forloop.first %}: {% else %} y {% endif %}{{ moneda|simbolo }} {{ total|monto }}{% endfor %}.{% endif %}</p></div>
+  <a href="{% url 'finanzas:anticipo_nuevo' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Entregar anticipo</a>
+</div>
+<div class="arca-chips mb-3" role="navigation" aria-label="Filtrar por estado">
+  <a class="arca-chip {% if not estado %}active{% endif %}" href="?">Todos</a>
+  <a class="arca-chip {% if estado == 'pendiente' %}active{% endif %}" href="?estado=pendiente">Por rendir</a>
+  <a class="arca-chip {% if estado == 'rendido' %}active{% endif %}" href="?estado=rendido">Rendidos</a>
+  <a class="arca-chip {% if estado == 'anulado' %}active{% endif %}" href="?estado=anulado">Anulados</a>
+</div>
+<div class="card card-arca">
+{% if anticipos %}<div class="table-responsive"><table class="table table-hover align-middle mb-0">
+  <thead><tr><th>Fecha</th><th>A quién</th><th>Para qué</th><th class="text-end">Entregado</th><th class="text-end">Gastado</th><th>Estado</th><th></th></tr></thead>
+  <tbody>{% for a in anticipos %}<tr>
+    <td class="text-nowrap">{{ a.fecha|date:"d/m/Y" }}</td>
+    <td class="fw-semibold">{{ a.responsable }}</td>
+    <td>{{ a.motivo }}<div class="small text-muted">{{ a.cuenta.nombre }}</div></td>
+    <td class="text-end monto">{{ a.moneda|simbolo }} {{ a.monto|monto }}</td>
+    <td class="text-end monto">{% if a.gastado is not None %}{{ a.moneda|simbolo }} {{ a.gastado|monto }}{% else %}—{% endif %}</td>
+    <td>{% if a.estado == 'pendiente' %}<span class="badge text-bg-warning"><i class="bi bi-hourglass-split"></i> Por rendir</span>{% elif a.estado == 'rendido' %}<span class="badge text-bg-success">Rendido</span>{% else %}<span class="badge text-bg-secondary">Anulado</span>{% endif %}</td>
+    <td class="text-end text-nowrap">{% if a.estado == 'pendiente' %}<a href="{% url 'finanzas:anticipo_rendir' a.pk %}" class="btn btn-sm btn-arca-primary">Rendir</a> {% endif %}<a href="{% url 'finanzas:anticipo_detalle' a.pk %}" class="btn btn-sm btn-outline-secondary">Ver</a></td>
+  </tr>{% endfor %}</tbody>
+</table></div>
+{% else %}<div class="empty-state"><i class="bi bi-hourglass-split d-block mb-2"></i>{% if estado %}No hay anticipos en ese estado.{% else %}Todavía no hay anticipos.{% endif %}</div>{% endif %}
+</div>
+{% endblock %}

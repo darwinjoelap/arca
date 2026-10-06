@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load arca %}
+{% block titulo %}Anular anticipo — Arca{% endblock %}
+{% block titulo_topbar %}Anticipos{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-4">Anular anticipo</h1>
+<div class="card card-arca" style="max-width: 520px;"><div class="card-body p-4">
+  <p><strong>{{ a.responsable }}</strong> · {{ a.moneda|simbolo }} {{ a.monto|monto }} · {{ a.motivo }}</p>
+  <p class="text-muted small">Úsalo si el anticipo no llegó a entregarse o se devolvió completo sin gastar nada. El dinero vuelve a figurar en la cuenta.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "organizaciones/_form_campos.html" %}
+    <button type="submit" class="btn btn-danger">Anular</button>
+    <a href="{% url 'finanzas:anticipo_detalle' a.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+  </form>
+</div></div>
+{% endblock %}
