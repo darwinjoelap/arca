@@ -61,20 +61,40 @@ def inicio(request):
         "moneda_inicial": organizacion.moneda_base,
     }
     if ve_saldos:
-        contexto["saldos"] = resumen_saldos(organizacion, tasa)
-        contexto["mes"] = totales_periodo(organizacion, hoy.replace(day=1), hoy)
-        # Con más de una caja, el total general no basta: cada una es un fondo aparte.
-        if len(contexto["saldos"]["cajas"]) > 1:
-            del_mes = totales_por_caja(organizacion, hoy.replace(day=1), hoy)
-            vacio = {"ingreso": {"ves": 0, "usd": 0}, "egreso": {"ves": 0, "usd": 0}}
-            for bloque in contexto["saldos"]["cajas"]:
-                bloque["mes"] = del_mes.get(bloque["caja"].pk, vacio)
-            contexto["por_caja"] = contexto["saldos"]["cajas"]
-        contexto["ultimos"] = (
+        saldos = resumen_saldos(organizacion, tasa)
+        inicio_mes = hoy.replace(day=1)
+        recientes = (
             Movimiento.objects.filter(organizacion=organizacion)
             .exclude(estado=Movimiento.Estado.ANULADO)
-            .select_related("concepto", "concepto__padre", "cuenta", "miembro", "miembro__user")[:8]
+            .select_related("concepto", "concepto__padre", "cuenta", "miembro", "miembro__user")
         )
+        contexto["saldos"] = saldos
+        contexto["mes"] = totales_periodo(organizacion, inicio_mes, hoy)
+        contexto["ultimos"] = recientes[:8]
+        # El panel se arma por «vistas»: el total y, si hay más de una caja,
+        # una por caja (cada caja es un fondo aparte). Se cambia de una a otra
+        # con las pestañas, sin recargar.
+        vistas = [{
+            "clave": "todas", "nombre": "Todas las cajas", "caja": None, "usd": saldos["usd"], "ves": saldos["ves"],
+            "mes": contexto["mes"], "bloques": saldos["cajas"], "ultimos": contexto["ultimos"],
+        }]
+        if len(saldos["cajas"]) > 1:
+            del_mes = totales_por_caja(organizacion, inicio_mes, hoy)
+            vacio = {"ingreso": {"ves": 0, "usd": 0}, "egreso": {"ves": 0, "usd": 0}}
+            total = abs(saldos["usd"]) if saldos["convertible"] else 0
+            for bloque in saldos["cajas"]:
+                bloque["mes"] = del_mes.get(bloque["caja"].pk, vacio)
+                # Qué parte del total es esta caja (solo si se puede sumar y es positivo).
+                bloque["parte"] = (
+                    f"{min(max(float(bloque['usd'] / total * 100), 0), 100):.1f}" if total and bloque["usd"] > 0 else "0"
+                )
+                vistas.append({
+                    "clave": f"caja-{bloque['caja'].pk}", "nombre": bloque["caja"].nombre, "caja": bloque["caja"],
+                    "usd": bloque["usd"], "ves": bloque["ves"], "mes": bloque["mes"], "bloques": [bloque],
+                    "ultimos": recientes.filter(caja=bloque["caja"])[:8],
+                })
+            contexto["por_caja"] = saldos["cajas"]
+        contexto["vistas"] = vistas
         if membresia.puede_administrar:
             contexto["por_aprobar"] = Movimiento.objects.filter(
                 organizacion=organizacion, estado=Movimiento.Estado.REGISTRADO

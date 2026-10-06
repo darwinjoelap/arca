@@ -1,0 +1,98 @@
+{% load arca %}
+{# Una vista del panel: «todas las cajas» o una caja. Recibe `v` (ver core.views.inicio). #}
+<div class="row g-3 mb-3">
+  <div class="col-lg-5">
+    <div class="balance-card h-100">
+      <div class="balance-label">{% if v.caja %}Disponible en {{ v.nombre }}{% else %}Fondos disponibles{% if por_caja %} · todas las cajas{% endif %}{% endif %}</div>
+      {% if saldos.convertible %}
+        <div class="balance-amount monto"><span data-usd="$ {{ v.usd|monto }}" data-ves="Bs. {{ v.ves|monto }}"></span></div>
+        <div class="balance-note">
+          Tasa Bs. {{ tasa.valor|monto }} · {{ tasa.get_fuente_display }} {{ tasa.fecha|date:"d/m/Y" }}{% if not tasa_exacta %} · <strong>no es de hoy</strong>{% endif %}
+        </div>
+      {% else %}
+        <div class="balance-amount monto">$ {{ v.usd|monto }}</div>
+        <div class="balance-amount monto" style="font-size:1.4rem;">Bs. {{ v.ves|monto }}</div>
+        <div class="balance-note">Sin tasa de cambio cargada: no se pueden sumar las dos monedas.</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-6 col-lg">
+    <div class="stat-tile h-100">
+      <div class="stat-icon" style="background: var(--arca-success);"><i class="bi bi-arrow-down"></i></div>
+      <div>
+        <div class="stat-label">Ingresos del mes</div>
+        <div class="stat-value monto monto-ingreso"><span data-usd="$ {{ v.mes.ingreso.usd|monto }}" data-ves="Bs. {{ v.mes.ingreso.ves|monto }}"></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg">
+    <div class="stat-tile h-100">
+      <div class="stat-icon" style="background: var(--arca-danger);"><i class="bi bi-arrow-up"></i></div>
+      <div>
+        <div class="stat-label">Egresos del mes</div>
+        <div class="stat-value monto monto-egreso"><span data-usd="$ {{ v.mes.egreso.usd|monto }}" data-ves="Bs. {{ v.mes.egreso.ves|monto }}"></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include "core/_acciones_rapidas.html" %}
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card card-arca h-100">
+      <div class="card-header bg-transparent fw-bold">{% if v.caja %}Cuentas de {{ v.nombre }}{% elif por_caja %}Cajas y cuentas{% else %}Saldo por cuenta{% endif %}</div>
+      {% if v.bloques %}
+      <div class="lista-cajas">
+        {% for bloque in v.bloques %}
+        {% if not v.caja %}
+        <{% if por_caja %}button type="button" data-ir-vista="caja-{{ bloque.caja.pk }}"{% else %}div{% endif %} class="caja-fila">
+          <span class="caja-fila-nombre"><i class="bi bi-safe2"></i> {{ bloque.caja.nombre }}</span>
+          {% if saldos.convertible %}<span class="monto fw-bold"><span data-usd="$ {{ bloque.usd|monto }}" data-ves="Bs. {{ bloque.ves|monto }}"></span></span>{% endif %}
+          {% if por_caja %}<i class="bi bi-chevron-right caja-fila-flecha"></i>
+          <span class="caja-fila-barra" aria-hidden="true"><span style="width: {{ bloque.parte }}%"></span></span>{% endif %}
+        </{% if por_caja %}button{% else %}div{% endif %}>
+        {% endif %}
+        {% for fila in bloque.cuentas %}
+        <div class="cuenta-fila">
+          <span>{{ fila.cuenta.nombre }} <span class="cuenta-moneda">{{ fila.cuenta.moneda }}</span></span>
+          <span class="monto {% if fila.saldo < 0 %}monto-egreso{% endif %}">{{ fila.cuenta.moneda|simbolo }} {{ fila.saldo|monto }}</span>
+        </div>
+        {% endfor %}
+        {% endfor %}
+      </div>
+      <div class="card-body py-2 small text-muted">Cada cuenta se muestra en su propia moneda; ese saldo es exacto.</div>
+      {% else %}
+      <div class="card-body text-muted small">
+        Todavía no hay cuentas.
+        {% if puede_administrar %}<a href="{% url 'finanzas:caja_lista' %}">Crea una caja y su primera cuenta</a> para empezar.{% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card card-arca h-100">
+      <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+        <span class="fw-bold">Últimos movimientos{% if v.caja %} · {{ v.nombre }}{% endif %}</span>
+        <a href="{% url 'finanzas:movimiento_lista' %}{% if v.caja %}?caja={{ v.caja.pk }}{% endif %}" class="small">Ver todos</a>
+      </div>
+      {% if v.ultimos %}
+      <div class="lista-movimientos">
+        {% for m in v.ultimos %}
+        <a href="{% url 'finanzas:movimiento_detalle' m.pk %}" class="movimiento-fila">
+          <span class="movimiento-icono {% if m.es_ingreso %}ingreso{% else %}egreso{% endif %}" aria-hidden="true"><i class="bi {% if m.es_ingreso %}bi-arrow-down{% else %}bi-arrow-up{% endif %}"></i></span>
+          <span class="movimiento-texto">
+            <span class="fw-semibold">{{ m.titulo }}</span>
+            {% if m.estado == 'registrado' %}<span class="badge text-bg-warning">Por aprobar</span>{% endif %}
+            <span class="d-block small text-muted">{{ m.fecha|date:"d/m/Y" }} · {{ m.cuenta.nombre }}{% if m.nombre_persona %} · {{ m.nombre_persona }}{% endif %}</span>
+          </span>
+          <span class="monto text-nowrap {% if m.es_ingreso %}monto-ingreso{% else %}monto-egreso{% endif %}">{% if m.es_ingreso %}+{% else %}−{% endif %} {{ m.moneda|simbolo }} {{ m.monto|monto }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state"><i class="bi bi-journal-text d-block mb-2"></i>Todavía no hay movimientos{% if v.caja %} en esta caja{% endif %}.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>

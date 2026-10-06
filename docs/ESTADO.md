@@ -77,6 +77,7 @@ Pendiente de verificar en tu máquina: las 102 pruebas contra PostgreSQL, y el f
 - [x] Claves temporales generadas por el sistema y mostradas una sola vez (superadmin y director)
 - [x] Enlace propio por organización (/enlace/) con usuarios propios; la dirección principal es de la plataforma
 - [x] Panel principal con una tarjeta por caja (disponible, ingresos y egresos del mes) y filtro por caja en Movimientos
+- [x] Panel con pestañas por caja (Todas · cada caja), transiciones y estilos de interacción unificados
 - [x] 176 pruebas en total
 
 Pendiente de verificar en tu máquina: `migrate` y las 176 pruebas contra PostgreSQL.

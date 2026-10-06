@@ -692,3 +692,90 @@ h1, h2, h3, .brand-name { font-family: "Manrope", "Inter", system-ui, sans-serif
 
 /* Aviso de partida excedida en el formulario de egreso: texto + icono, no solo color. */
 .aviso-partida-exceso { color: var(--arca-danger); font-weight: 600; }
+
+/* =========================================================================
+   Pulido de interacción (octubre 2026): transiciones cortas y consistentes,
+   pestañas de caja y listas del panel. Todo movimiento se apaga con
+   «reducir movimiento».
+   ========================================================================= */
+:root { --arca-ease: cubic-bezier(0.2, 0.7, 0.2, 1); --arca-rapido: 0.16s; --arca-suave: 0.28s; }
+
+@keyframes arca-aparecer { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.arca-content > * { animation: arca-aparecer var(--arca-suave) var(--arca-ease) both; }
+.arca-content > *:nth-child(2) { animation-delay: 0.03s; }
+.arca-content > *:nth-child(3) { animation-delay: 0.06s; }
+.arca-content > *:nth-child(n+4) { animation-delay: 0.09s; }
+.arca-vista:not([hidden]) { animation: arca-aparecer var(--arca-suave) var(--arca-ease) both; }
+.arca-vista:not([hidden]) > .row:nth-child(2) { animation: arca-aparecer var(--arca-suave) var(--arca-ease) 0.05s both; }
+
+/* Botones, campos y enlaces: misma curva y un foco visible de latón. */
+.btn { transition: background-color var(--arca-rapido) var(--arca-ease), border-color var(--arca-rapido) var(--arca-ease),
+       color var(--arca-rapido) var(--arca-ease), box-shadow var(--arca-rapido) var(--arca-ease), transform var(--arca-rapido) var(--arca-ease); }
+.btn:active { transform: scale(0.98); }
+.form-control, .form-select { transition: border-color var(--arca-rapido) var(--arca-ease), box-shadow var(--arca-rapido) var(--arca-ease); }
+a { transition: color var(--arca-rapido) var(--arca-ease); }
+:focus-visible { outline: 2px solid var(--arca-brass-500); outline-offset: 2px; }
+.form-control:focus-visible, .form-select:focus-visible { outline: none; }
+.table-hover tbody tr { transition: background-color var(--arca-rapido) var(--arca-ease); }
+.card-arca { transition: box-shadow var(--arca-suave) var(--arca-ease); }
+
+/* Pestañas de caja */
+.arca-chips { display: flex; gap: 0.4rem; overflow-x: auto; padding: 0.3rem; background: var(--arca-surface);
+  border: 1px solid var(--arca-border); border-radius: 999px; width: fit-content; max-width: 100%; scrollbar-width: none; }
+.arca-chips::-webkit-scrollbar { display: none; }
+.arca-chip { border: 0; background: transparent; color: var(--arca-ink-700); font-weight: 600; font-size: 0.9rem;
+  padding: 0.45rem 0.95rem; border-radius: 999px; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4rem;
+  transition: background-color var(--arca-rapido) var(--arca-ease), color var(--arca-rapido) var(--arca-ease), box-shadow var(--arca-rapido) var(--arca-ease); }
+.arca-chip:hover { background: var(--arca-bg); color: var(--arca-ink-900); }
+.arca-chip.active { background: var(--arca-ink-900); color: #fff; box-shadow: var(--arca-shadow-sm); }
+.arca-chip.active i { color: var(--arca-brass-500); }
+
+/* Tarjeta de saldo y fichas del mes */
+.balance-card .balance-note { margin-top: 0.6rem; }
+.stat-tile .stat-value { font-size: 1.35rem; }
+[data-usd] { display: inline-block; }
+
+/* Cajas y cuentas */
+.lista-cajas { display: flex; flex-direction: column; }
+.caja-fila { position: relative; display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left;
+  padding: 0.8rem 1.1rem 1rem; border: 0; border-top: 1px solid var(--arca-border); background: var(--arca-bg); color: var(--arca-ink-900);
+  transition: background-color var(--arca-rapido) var(--arca-ease); }
+.caja-fila:first-child { border-top: 0; }
+.caja-fila-nombre { flex: 1; font-weight: 700; font-size: 0.82rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.caja-fila-nombre i { color: var(--arca-brass-700); margin-right: 0.25rem; }
+.caja-fila-flecha { color: var(--arca-ink-500); transition: transform var(--arca-rapido) var(--arca-ease); }
+button.caja-fila { cursor: pointer; }
+button.caja-fila:hover { background: #efe9dc; }
+button.caja-fila:hover .caja-fila-flecha { transform: translateX(3px); color: var(--arca-ink-900); }
+.caja-fila-barra { position: absolute; left: 1.1rem; right: 1.1rem; bottom: 0.4rem; height: 3px; border-radius: 2px; background: var(--arca-border); overflow: hidden; }
+.caja-fila-barra > span { display: block; height: 100%; border-radius: 2px; background: var(--arca-brass-500); transition: width 0.5s var(--arca-ease); }
+.cuenta-fila { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; padding: 0.65rem 1.1rem;
+  border-top: 1px solid var(--arca-border); }
+.lista-cajas > .cuenta-fila:first-child { border-top: 0; }
+.cuenta-moneda { font-size: 0.72rem; font-weight: 700; color: var(--arca-ink-500); border: 1px solid var(--arca-border);
+  border-radius: 4px; padding: 0.05rem 0.3rem; margin-left: 0.25rem; }
+
+/* Últimos movimientos */
+.lista-movimientos { display: flex; flex-direction: column; }
+.movimiento-fila { display: flex; align-items: center; gap: 0.75rem; padding: 0.7rem 1.1rem; color: inherit; text-decoration: none;
+  border-top: 1px solid var(--arca-border); transition: background-color var(--arca-rapido) var(--arca-ease); }
+.movimiento-fila:first-child { border-top: 0; }
+.movimiento-fila:hover { background: rgba(176, 141, 76, 0.07); color: inherit; }
+.movimiento-icono { flex: none; width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center; font-size: 0.9rem; }
+.movimiento-icono.ingreso { background: #e3efe8; color: var(--arca-success); }
+.movimiento-icono.egreso { background: #f6e6e1; color: var(--arca-danger); }
+.movimiento-texto { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movimiento-texto .d-block { overflow: hidden; text-overflow: ellipsis; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Ajustes del panel tras revisarlo en teléfono */
+.balance-card .balance-note { display: block; }
+.stat-tile .stat-value { white-space: nowrap; }
+@media (max-width: 575.98px) {
+  .stat-tile { flex-direction: column; align-items: flex-start; gap: 0.6rem; padding: 0.9rem; }
+  .stat-tile .stat-value { font-size: 1.15rem; }
+  .balance-amount { font-size: 2rem; }
+}

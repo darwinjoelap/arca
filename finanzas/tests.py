@@ -505,6 +505,10 @@ class PanelPorCajaTests(LibroMixin, TestCase):
         self.assertEqual((por_caja["Obra social"]["mes"]["ingreso"]["usd"], por_caja["Obra social"]["mes"]["egreso"]["usd"]), (D("40"), D("15")))
         self.assertEqual(r.context["saldos"]["usd"], sum(b["usd"] for b in por_caja.values()))
         self.assertContains(r, "todas las cajas")
+        self.assertEqual([v["clave"] for v in r.context["vistas"]], ["todas", f"caja-{self.caja.pk}", f"caja-{obra.pk}"])
+        vista_obra = r.context["vistas"][-1]
+        self.assertEqual({m.caja_id for m in vista_obra["ultimos"]}, {obra.pk})
+        self.assertContains(r, "Disponible en Obra social")
         # El enlace de la tarjeta filtra el libro por esa caja.
         lista = self.client.get(reverse("finanzas:movimiento_lista"), {"caja": obra.pk})
         self.assertEqual({m.caja_id for m in lista.context["object_list"]}, {obra.pk})

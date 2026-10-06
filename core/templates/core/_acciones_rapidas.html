@@ -1,0 +1,20 @@
+{% if puede_ingresos or puede_egresos %}
+<div class="row g-3 mb-3">
+  {% if puede_ingresos %}
+  <div class="col-sm-6">
+    <a class="quick-action" href="{% url 'finanzas:ingreso_registrar' %}">
+      <span class="quick-action-icon" style="background: var(--arca-success); color:#fff;"><i class="bi bi-plus-lg"></i></span>
+      <span class="fw-semibold">Registrar ingreso</span>
+    </a>
+  </div>
+  {% endif %}
+  {% if puede_egresos %}
+  <div class="col-sm-6">
+    <a class="quick-action" href="{% url 'finanzas:egreso_registrar' %}">
+      <span class="quick-action-icon" style="background: var(--arca-danger); color:#fff;"><i class="bi bi-dash-lg"></i></span>
+      <span class="fw-semibold">Registrar egreso</span>
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
