@@ -187,6 +187,23 @@ def resumen_saldos(organizacion, tasa=None):
     return {"cajas": cajas, "ves": total_ves, "usd": total_usd, "convertible": tasa is not None}
 
 
+def totales_por_caja(organizacion, desde, hasta):
+    """{caja_id: {"ingreso": {"ves","usd"}, "egreso": {...}}} de lo confirmado entre dos fechas."""
+    resultado = {}
+    filas = (
+        Movimiento.objects.filter(
+            organizacion=organizacion, estado=Movimiento.Estado.CONFIRMADO, fecha__gte=desde, fecha__lte=hasta,
+        )
+        .values("caja_id", "tipo")
+        .annotate(ves=Sum("monto_ves"), usd=Sum("monto_usd"))
+    )
+    for fila in filas:
+        bloque = resultado.setdefault(fila["caja_id"], {
+            "ingreso": {"ves": CERO, "usd": CERO}, "egreso": {"ves": CERO, "usd": CERO}})
+        bloque[fila["tipo"]] = {"ves": fila["ves"] or CERO, "usd": fila["usd"] or CERO}
+    return resultado
+
+
 def totales_periodo(organizacion, desde, hasta):
     """Ingresos y egresos confirmados entre dos fechas, con el equivalente
     congelado de cada movimiento. {"ingreso": {"ves","usd"}, "egreso": {...}}"""

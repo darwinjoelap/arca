@@ -17,6 +17,8 @@ from core.auditoria import registrar
 from core.mixins import ADMINISTRAR, requiere_permiso, tiene_permiso
 from core.models import RegistroAuditoria
 
+from finanzas.models import Concepto
+
 from .forms import PresupuestoForm
 from .models import PartidaPresupuestaria, Presupuesto
 from .services import comparativo, estado_de_partida, conceptos_de_la_caja, meses_del_ejercicio
@@ -102,7 +104,7 @@ def editar(request, pk):
         key=lambda c: (c.tipo != "ingreso", (c.padre.nombre if c.padre_id else c.nombre).lower(), bool(c.padre_id), c.nombre.lower()),
     )
     partidas = {p.concepto_id: p for p in presupuesto.partidas.all()}
-    errores = {}
+    errores, errores_nuevos, nuevos = {}, {}, []
 
     if request.method == "POST":
         cambios = []
@@ -115,9 +117,35 @@ def editar(request, pk):
                 concepto, monto, bool(request.POST.get(f"solicitud_{concepto.pk}")),
                 (request.POST.get(f"nota_{concepto.pk}") or "").strip()[:200],
             ))
-        if not errores:
+        # Conceptos que aún no existen: se escriben aquí y pasan al catálogo.
+        for tipo in ("ingreso", "egreso"):
+            nombre = " ".join((request.POST.get(f"nuevo_{tipo}_nombre") or "").split())[:80]
+            if not nombre:
+                continue
+            monto = _leer_monto(request.POST.get(f"nuevo_{tipo}_monto"))
+            existente = Concepto.objects.filter(organizacion=request.organizacion, tipo=tipo, nombre__iexact=nombre).first()
+            if existente is not None:
+                donde = ("ya está en la lista de arriba" if existente.activo and existente.caja_id in (None, presupuesto.caja_id)
+                         else "está desactivado o pertenece a otra caja; revísalo en Conceptos")
+                errores_nuevos[tipo] = f"«{existente.nombre}» ya existe: {donde}."
+            elif monto is None:
+                errores_nuevos[tipo] = "Escribe un número mayor o igual a cero."
+            else:
+                nuevos.append((tipo, nombre, monto, bool(request.POST.get(f"nuevo_{tipo}_solicitud")),
+                               (request.POST.get(f"nuevo_{tipo}_nota") or "").strip()[:200]))
+        if not errores and not errores_nuevos:
             with transaction.atomic():
-                for concepto, monto, solicitud, nota in cambios:
+                for tipo, nombre, monto, solicitud, nota in nuevos:
+                    # General (sin caja): queda disponible para registrar en cualquier caja.
+                    concepto = Concepto.objects.create(organizacion=request.organizacion, tipo=tipo, nombre=nombre)
+                    registrar(request, Accion.CREAR_CONCEPTO, modelo="Concepto", objeto_id=concepto.pk,
+                              descripcion=f"{concepto.get_tipo_display()}: {concepto.nombre} (desde el presupuesto)")
+                    PartidaPresupuestaria.objects.create(
+                        organizacion=request.organizacion, presupuesto=presupuesto, concepto=concepto,
+                        monto_mensual=monto, requiere_solicitud=solicitud, nota=nota)
+                    cambios.append((concepto, monto, solicitud, nota))
+                    partidas[concepto.pk] = None
+                for concepto, monto, solicitud, nota in cambios[:len(cambios) - len(nuevos)]:
                     partida = partidas.get(concepto.pk)
                     vacia = not monto and not solicitud and not nota
                     if partida is None and vacia:
@@ -133,7 +161,13 @@ def editar(request, pk):
             total = sum((m for c, m, _, _ in cambios if c.tipo == "egreso"), Decimal("0"))
             registrar(request, Accion.EDITAR_PRESUPUESTO, modelo="Presupuesto", objeto_id=presupuesto.pk,
                       descripcion=f"{presupuesto}: egresos mensuales {presupuesto.moneda} {total:.2f}")
-            messages.success(request, "Presupuesto guardado.")
+            if nuevos:
+                messages.success(request, "Presupuesto guardado. Se agregaron a Conceptos: "
+                                 + ", ".join(n for _, n, *_ in nuevos) + ".")
+            else:
+                messages.success(request, "Presupuesto guardado.")
+            if "otro" in request.POST:
+                return redirect("presupuestos:editar", pk=pk)
             return redirect("presupuestos:detalle", pk=pk)
 
     filas = []
@@ -152,7 +186,10 @@ def editar(request, pk):
         "p": presupuesto,
         "ingresos": [f for f in filas if f["concepto"].tipo == "ingreso"],
         "egresos": [f for f in filas if f["concepto"].tipo == "egreso"],
-        "hay_errores": bool(errores),
+        "hay_errores": bool(errores or errores_nuevos),
+        "nuevo": {t: {"nombre": request.POST.get(f"nuevo_{t}_nombre", ""), "monto": request.POST.get(f"nuevo_{t}_monto", ""),
+                      "solicitud": bool(request.POST.get(f"nuevo_{t}_solicitud")), "nota": request.POST.get(f"nuevo_{t}_nota", ""),
+                      "error": errores_nuevos.get(t)} for t in ("ingreso", "egreso")},
     })
 
 

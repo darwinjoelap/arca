@@ -76,9 +76,10 @@ Pendiente de verificar en tu máquina: las 102 pruebas contra PostgreSQL, y el f
 - [x] Panel de plataforma (/plataforma/): alta de organizaciones, plan, vencimiento, límite de usuarios, suspensión
 - [x] Claves temporales generadas por el sistema y mostradas una sola vez (superadmin y director)
 - [x] Enlace propio por organización (/enlace/) con usuarios propios; la dirección principal es de la plataforma
-- [x] 175 pruebas en total
+- [x] Panel principal con una tarjeta por caja (disponible, ingresos y egresos del mes) y filtro por caja en Movimientos
+- [x] 176 pruebas en total
 
-Pendiente de verificar en tu máquina: `migrate` y las 175 pruebas contra PostgreSQL.
+Pendiente de verificar en tu máquina: `migrate` y las 176 pruebas contra PostgreSQL.
 
 ## Lo que NO está todavía
 

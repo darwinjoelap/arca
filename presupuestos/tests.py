@@ -204,3 +204,24 @@ class AvisoDePartidaTests(PresupuestoMixin, TestCase):
         self.client.force_login(self.residente.user)
         r = self.client.get(reverse("presupuestos:partida_disponible"), {"cuenta": self.usd.pk, "concepto": self.c_egreso.pk, "fecha": "2026-03-15"})
         self.assertEqual(r.status_code, 403)
+
+
+class ConceptoNuevoDesdePresupuestoTests(PresupuestoMixin, TestCase):
+    def test_se_crea_el_concepto_y_su_partida(self):
+        self.client.force_login(self.director.user)
+        url = reverse("presupuestos:editar", args=[self.p.pk])
+        r = self.client.post(url, {f"monto_{self.c_egreso.pk}": "100", "nuevo_egreso_nombre": "  Gas  doméstico ", "nuevo_egreso_monto": "15,50"})
+        self.assertRedirects(r, reverse("presupuestos:detalle", args=[self.p.pk]))
+        gas = Concepto.objects.get(organizacion=self.org, nombre="Gas doméstico")
+        self.assertEqual((gas.tipo, gas.caja_id, gas.activo), ("egreso", None, True))
+        self.assertEqual(self.p.partidas.get(concepto=gas).monto_mensual, D("15.50"))
+        self.assertEqual(self.p.partidas.get(concepto=self.c_egreso).monto_mensual, D("100"))
+        self.assertTrue(RegistroAuditoria.objects.filter(accion="crear_concepto", objeto_id=gas.pk).exists())
+        # ya sirve para registrar un egreso
+        self.assertContains(self.client.get(reverse("finanzas:egreso_registrar")), "Gas doméstico")
+
+    def test_si_ya_existe_no_se_duplica(self):
+        self.client.force_login(self.director.user)
+        r = self.client.post(reverse("presupuestos:editar", args=[self.p.pk]), {"nuevo_egreso_nombre": "luz", "nuevo_egreso_monto": "5"})
+        self.assertContains(r, "ya existe")
+        self.assertEqual(Concepto.objects.filter(organizacion=self.org, nombre__iexact="luz").count(), 1)
