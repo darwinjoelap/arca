@@ -86,7 +86,7 @@ def serie_mensual(membresia, meses, moneda):
 def registrar_personal(movimiento):
     """Guarda un MovimientoPersonal nuevo o editado, con la tasa de su fecha."""
     try:
-        movimiento.tasa, _ = tasa_para(movimiento.fecha)
+        movimiento.tasa, _ = tasa_para(movimiento.fecha, movimiento.organizacion)
     except SinTasaError:
         raise ValidationError("No hay ninguna tasa de cambio cargada para esa fecha ni antes.")
     movimiento.full_clean(exclude=["tasa_aplicada", "monto_ves", "monto_usd"])

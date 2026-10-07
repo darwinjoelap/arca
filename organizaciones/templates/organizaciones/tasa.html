@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load arca %}
+{% block titulo %}Tasa de cambio — Arca{% endblock %}
+{% block titulo_topbar %}Tasa de cambio{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-1">Tasa de cambio</h1>
+<p class="text-muted mb-4">La tasa del BCV llega sola varias veces al día. Aquí puedes cargar la de tu organización:
+  por si la automática falla, o si trabajan con otra. Solo vale para {{ organizacion_activa.nombre }}.</p>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card card-arca mb-3"><div class="card-body">
+      <div class="text-muted small text-uppercase mb-1">Se está usando</div>
+      {% if vigente %}
+        <div class="h3 mb-1">Bs. {{ vigente.valor|monto }}</div>
+        <div class="small text-muted">{{ vigente.origen }} · {{ vigente.fecha|date:"d/m/Y" }}{% if not vigente_exacta %} — <strong>no es de hoy</strong>{% endif %}</div>
+      {% else %}
+        <div class="h5 mb-1"><i class="bi bi-exclamation-triangle"></i> Ninguna</div>
+        <div class="small text-muted">Sin tasa no se pueden registrar movimientos. Carga una.</div>
+      {% endif %}
+      {% if global and vigente and global.pk != vigente.pk %}
+        <div class="small text-muted mt-2">BCV: Bs. {{ global.valor|monto }} ({{ global.fecha|date:"d/m/Y" }})</div>
+      {% endif %}
+    </div></div>
+
+    <div class="card card-arca"><div class="card-body">
+      <h2 class="h6">{% if editando %}Corregir la tasa del {{ editando.fecha|date:"d/m/Y" }}{% else %}Cargar una tasa{% endif %}</h2>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% for campo in form %}
+        <div class="mb-3">
+          <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+          {{ campo }}
+          {% for error in campo.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+        </div>
+        {% endfor %}
+        <button class="btn btn-arca-primary">{% if editando %}Guardar{% else %}Cargar tasa{% endif %}</button>
+        {% if editando %}<a href="{% url 'organizaciones:tasa' %}" class="btn btn-outline-secondary">Cancelar</a>{% endif %}
+      </form>
+    </div></div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card card-arca">
+      {% if propias %}
+      <div class="table-responsive"><table class="table mb-0 align-middle">
+        <thead><tr><th>Fecha</th><th class="num">Bs. por USD</th><th>Cargada por</th><th></th></tr></thead>
+        <tbody>
+        {% for t in propias %}
+          <tr>
+            <td>{{ t.fecha|date:"d/m/Y" }}</td>
+            <td class="num fw-semibold">{{ t.valor|monto }}</td>
+            <td class="text-muted small">{{ t.cargada_por|default:"—" }}</td>
+            <td class="text-end text-nowrap">
+              <a href="{% url 'organizaciones:tasa_corregir' t.pk %}" class="btn btn-sm btn-outline-secondary" title="Corregir"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="{% url 'organizaciones:tasa_eliminar' t.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar esta tasa? Volverá a aplicar la del BCV.');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button></form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+      {% else %}
+      <div class="empty-state"><i class="bi bi-currency-exchange d-block mb-2"></i>No has cargado ninguna tasa propia: se usa la del BCV.</div>
+      {% endif %}
+    </div>
+    <ul class="text-muted small mt-3 ps-3 mb-0">
+      <li>Se usa la más reciente entre la tuya y la del BCV; si son del mismo día, gana la tuya.</li>
+      <li>Cada movimiento guarda la tasa de su fecha. Corregir una tasa no cambia lo ya confirmado.</li>
+      <li>Para volver a la del BCV en un día, elimina la tuya de ese día; si ya se usó en movimientos, corrígela al valor del BCV.</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

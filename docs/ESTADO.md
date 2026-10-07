@@ -117,13 +117,14 @@ Pendiente de verificar en tu máquina: `migrate` y las 197 pruebas contra Postgr
 - [x] Fuentes Inter y Manrope en `static/vendor/fuentes/` (ya no se pide nada a Google)
 - [x] Pantalla `/instalar/` con los pasos de iPhone, Android y computadora (menú del usuario)
 - [x] `/sw.js` ya no se pide en cada página
-- [x] 219 pruebas
+- [x] Tasa propia por organización (A-47): Configuración → Tasa de cambio; el director la carga, corrige o elimina
+- [x] 224 pruebas
 
 Pendiente y es tuyo: crear el servicio Cron en Railway (docs/DESPLIEGUE.md, sección 6) y mirar su primer log.
 **La lectura del BCV no se pudo probar contra la página real desde aquí** (sin salida a esa dirección): está
 probada contra una copia del HTML. La primera corrida real es la prueba.
 
-Pendiente de verificar en tu máquina: `pip install -r requirements.txt`, `migrate` y las 219 pruebas en PostgreSQL.
+Pendiente de verificar en tu máquina: `pip install -r requirements.txt`, `migrate` y las 224 pruebas en PostgreSQL.
 
 ## Lo que NO está todavía
 

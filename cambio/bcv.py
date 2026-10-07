@@ -172,14 +172,14 @@ def registrar(valor, fecha=None, usuario=None):
     última tasa BCV: es más probable una lectura mala que una devaluación."""
     fecha = fecha or timezone.localdate()
     anterior = (
-        TasaCambio.objects.filter(fuente=TasaCambio.Fuente.BCV, fecha__lt=fecha).order_by("-fecha").first()
+        TasaCambio.objects.filter(organizacion__isnull=True, fuente=TasaCambio.Fuente.BCV, fecha__lt=fecha).order_by("-fecha").first()
     )
     if anterior and abs(valor - anterior.valor) / anterior.valor > SALTO_MAXIMO:
         raise ErrorBCV(
             f"La tasa leída ({valor}) cambia demasiado respecto a la anterior ({anterior.valor}). "
             "No se guardó: revísala y cárgala a mano si es correcta."
         )
-    tasa = TasaCambio.objects.filter(fuente=TasaCambio.Fuente.BCV, fecha=fecha).first()
+    tasa = TasaCambio.objects.filter(organizacion__isnull=True, fuente=TasaCambio.Fuente.BCV, fecha=fecha).first()
     if tasa is None:
         return TasaCambio.objects.create(
             fecha=fecha, valor=valor, fuente=TasaCambio.Fuente.BCV, cargada_por=usuario

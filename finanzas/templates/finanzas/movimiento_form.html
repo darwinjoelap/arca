@@ -71,10 +71,10 @@
 
       <p class="text-muted small mt-3 mb-3">
         {% if tasa %}
-          <i class="bi bi-currency-exchange"></i> Tasa: Bs. {{ tasa.valor|monto }} ({{ tasa.get_fuente_display }}, {{ tasa.fecha|date:"d/m/Y" }}){% if not tasa_exacta %} — <strong>no es de hoy</strong>{% endif %}.
+          <i class="bi bi-currency-exchange"></i> Tasa: Bs. {{ tasa.valor|monto }} ({{ tasa.origen }}, {{ tasa.fecha|date:"d/m/Y" }}){% if not tasa_exacta %} — <strong>no es de hoy</strong>{% endif %}.
           El movimiento guarda la tasa de su fecha.
         {% else %}
-          <i class="bi bi-exclamation-triangle"></i> No hay ninguna tasa de cambio cargada: no se podrá guardar hasta que el soporte de Arca cargue una.
+          <i class="bi bi-exclamation-triangle"></i> No hay ninguna tasa de cambio cargada: no se podrá guardar hasta que el director cargue una en Configuración → Tasa de cambio.
         {% endif %}
       </p>
 

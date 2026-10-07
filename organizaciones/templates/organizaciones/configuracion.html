@@ -55,6 +55,13 @@
       <span class="text-muted small">Quién hizo qué y cuándo</span></span>
     </a>
   </div>
+  <div class="col-md-6 col-xl-4">
+    <a class="quick-action h-100" href="{% url 'organizaciones:tasa' %}">
+      <span class="quick-action-icon"><i class="bi bi-currency-exchange"></i></span>
+      <span><span class="fw-semibold d-block">Tasa de cambio</span>
+      <span class="text-muted small">La del BCV llega sola; aquí cargas la tuya si hace falta</span></span>
+    </a>
+  </div>
   {% if membresia_activa.es_dueno %}
   <div class="col-md-6 col-xl-4">
     <a class="quick-action h-100" href="{% url 'organizaciones:datos' %}">

@@ -52,7 +52,7 @@ def inicio(request):
         suspendida = propias.select_related("organizacion").first()
         return render(request, "core/sin_organizacion.html", {"suspendida": suspendida.organizacion if suspendida else None})
 
-    tasa, tasa_exacta = tasa_vigente()
+    tasa, tasa_exacta = tasa_vigente(organizacion)
     hoy = timezone.localdate()
     membresia = request.membresia
     ve_saldos = membresia.tiene_permiso("puede_ver_movimientos")  # director y administradores incluidos

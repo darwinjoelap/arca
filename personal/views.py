@@ -135,7 +135,7 @@ def _contexto_cuenta(request, m, solo_lectura):
     desde, hasta = _periodo(request, ejercicio)
     saldo_ves, saldo_usd = services.saldo(m)
     meses = meses_del_ejercicio(ejercicio) if ejercicio else []
-    tasa, _ = tasa_vigente()
+    tasa, _ = tasa_vigente(request.organizacion)
     return {
         "m": m, "solo_lectura": solo_lectura, "moneda": moneda, "simbolo": SIMBOLO[moneda],
         "desde": desde, "hasta": hasta, "ejercicio": ejercicio, "tasa": tasa,

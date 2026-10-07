@@ -14,7 +14,7 @@ from django.db import transaction
 from django.db.models import Max, Sum
 from django.utils import timezone
 
-from cambio.services import SinTasaError, convertir, obtener_tasa
+from cambio.services import SinTasaError, convertir, obtener_tasa, tasa_propia
 from organizaciones.models import Ejercicio
 
 from .models import Caja, Cuenta, CuotaMiembro, Movimiento, Traslado
@@ -29,19 +29,32 @@ def ejercicio_para(organizacion, fecha):
     ).first()
 
 
-def tasa_para(fecha):
-    """(TasaCambio, es_exacta). Prefiere la del BCV; si no hay, cualquier fuente.
+def tasa_para(fecha, organizacion=None):
+    """(TasaCambio, es_exacta) para `fecha`.
+
+    Global: prefiere la del BCV; si no hay, cualquier otra global. Si se pasa
+    la organización y esta cargó una tasa propia, se usa la más reciente de
+    las dos; si son del mismo día, gana la propia (A-47).
     Lanza SinTasaError si no existe ninguna en esa fecha ni antes."""
     try:
-        return obtener_tasa(fecha, fuente="bcv")
+        try:
+            global_ = obtener_tasa(fecha, fuente="bcv")[0]
+        except SinTasaError:
+            global_ = obtener_tasa(fecha)[0]
     except SinTasaError:
-        return obtener_tasa(fecha)
+        global_ = None
+    propia = tasa_propia(organizacion, fecha) if organizacion is not None else None
+    if propia is not None and (global_ is None or propia.fecha >= global_.fecha):
+        return propia, propia.fecha == fecha
+    if global_ is None:
+        raise SinTasaError(f"No hay ninguna tasa de cambio registrada en o antes de {fecha}.")
+    return global_, global_.fecha == fecha
 
 
-def tasa_vigente():
+def tasa_vigente(organizacion=None):
     """La tasa para convertir saldos hoy, o (None, False) si no hay ninguna."""
     try:
-        return tasa_para(timezone.localdate())
+        return tasa_para(timezone.localdate(), organizacion)
     except SinTasaError:
         return None, False
 
@@ -67,10 +80,10 @@ def registrar_movimiento(movimiento, *, membresia):
     if ejercicio is None:
         raise ValidationError({"fecha": "No hay un ejercicio abierto que incluya esa fecha."})
     try:
-        tasa, _ = tasa_para(movimiento.fecha)
+        tasa, _ = tasa_para(movimiento.fecha, organizacion)
     except SinTasaError:
         raise ValidationError(
-            "No hay ninguna tasa de cambio cargada para esa fecha ni antes. Pide al soporte de Arca que la cargue."
+            "No hay ninguna tasa de cambio para esa fecha ni antes. El director puede cargarla en Configuración → Tasa de cambio."
         )
 
     movimiento.ejercicio = ejercicio
@@ -120,7 +133,7 @@ def registrar_traslado(traslado, *, usuario):
         traslado.monto_destino = traslado.monto_origen
     elif not traslado.monto_destino:
         try:
-            tasa, _ = tasa_para(traslado.fecha)
+            tasa, _ = tasa_para(traslado.fecha, organizacion)
         except SinTasaError:
             raise ValidationError({"monto_destino": "No hay tasa de cambio cargada: escribe cuánto se recibió."})
         ves, usd = convertir(traslado.monto_origen, origen.moneda, tasa.valor)

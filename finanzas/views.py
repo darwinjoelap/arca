@@ -157,7 +157,7 @@ def movimiento_registrar(request, tipo):
                 return redirect(request.path)
             return redirect("finanzas:movimiento_detalle", pk=movimiento.pk)
 
-    tasa, tasa_exacta = tasa_vigente()
+    tasa, tasa_exacta = tasa_vigente(request.organizacion)
     contexto = {
         "form": form,
         "tipo": tipo,
@@ -274,7 +274,7 @@ def traslado_registrar(request):
                 messages.info(request, "Ese traslado ya estaba registrado; no se duplicó.")
             return redirect("finanzas:traslado_lista")
 
-    tasa, tasa_exacta = tasa_vigente()
+    tasa, tasa_exacta = tasa_vigente(request.organizacion)
     return render(request, "finanzas/traslado_form.html", {
         "form": form, "tasa": tasa, "tasa_exacta": tasa_exacta,
         "monedas_por_cuenta": form.cuentas_para_js(),

@@ -189,6 +189,13 @@ movimiento lleva una huella de su contenido, así que subir dos veces el mismo a
 entran sin acceso; los tipos de miembro nuevos, sin permisos. Los movimientos entran confirmados, a nombre del
 director, y pasan por las mismas reglas que uno escrito a mano (ejercicio abierto, tasa, vale).
 
+**A-47 — Cada organización puede cargar su propia tasa (como en Ordo).** La tasa del BCV es global y llega
+sola. El director o un administrador puede cargar además una tasa propia, una por día, que solo vale para su
+organización. Se usa la más reciente entre la propia y la global; si son del mismo día, gana la propia. Sirve
+de respaldo si el BCV falla y también para quien trabaja con otra tasa. No se cargan tasas a futuro. Una tasa
+propia ya usada en movimientos no se elimina, solo se corrige, y corregirla no cambia lo confirmado (D-09). La
+plataforma no lista las tasas propias.
+
 ## Heredadas de Edumia que siguen vigentes
 
 - **D-02 (revisado)** — El valor de una tasa se puede corregir; recalcula lo no congelado.

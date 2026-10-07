@@ -20,6 +20,7 @@ class TasaCambioListView(SoloSuperusuarioMixin, ListView):
     """Historial de tasas cargadas, más recientes primero."""
 
     model = TasaCambio
+    queryset = TasaCambio.objects.filter(organizacion__isnull=True)   # las propias las ve cada organización
     template_name = "cambio/tasa_lista.html"
     context_object_name = "tasas"
     paginate_by = 30
@@ -45,7 +46,7 @@ class TasaCambioCreateView(SoloSuperusuarioMixin, CreateView):
 class TasaCambioUpdateView(SoloSuperusuarioMixin, UpdateView):
     """Corregir el `valor` de una tasa ya cargada."""
 
-    model = TasaCambio
+    queryset = TasaCambio.objects.filter(organizacion__isnull=True)
     form_class = TasaCambioForm
     template_name = "cambio/tasa_form.html"
     success_url = reverse_lazy("cambio:tasa_lista")

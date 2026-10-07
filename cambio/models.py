@@ -19,6 +19,12 @@ class TasaCambio(models.Model):
         PARALELO = "paralelo", "Paralelo"
         MANUAL = "manual", "Manual"
 
+    # Vacío = tasa global (BCV o cargada por la plataforma). Con organización
+    # = tasa propia: la cargó su director y solo vale para ella (A-47).
+    organizacion = models.ForeignKey(
+        "organizaciones.Organizacion", null=True, blank=True, on_delete=models.CASCADE,
+        related_name="tasas_propias", verbose_name="organización",
+    )
     fecha = models.DateField()
     valor = models.DecimalField(max_digits=18, decimal_places=4, help_text="Bs. por 1 USD.")
     fuente = models.CharField(max_length=10, choices=Fuente.choices)
@@ -34,7 +40,14 @@ class TasaCambio(models.Model):
         verbose_name = "tasa de cambio"
         verbose_name_plural = "tasas de cambio"
         constraints = [
-            models.UniqueConstraint(fields=["fecha", "fuente"], name="tasa_unica_por_fecha_y_fuente"),
+            models.UniqueConstraint(
+                fields=["fecha", "fuente"], condition=models.Q(organizacion__isnull=True),
+                name="tasa_unica_por_fecha_y_fuente",
+            ),
+            models.UniqueConstraint(
+                fields=["organizacion", "fecha"], condition=models.Q(organizacion__isnull=False),
+                name="tasa_propia_unica_por_dia",
+            ),
             models.CheckConstraint(condition=models.Q(valor__gt=0), name="tasa_valor_positivo"),
         ]
         indexes = [
@@ -47,7 +60,15 @@ class TasaCambio(models.Model):
         self._valor_original = self.valor
 
     def __str__(self):
-        return f"{self.fecha} · {self.get_fuente_display()}: {self.valor}"
+        return f"{self.fecha} · {self.origen}: {self.valor}"
+
+    @property
+    def origen(self):
+        return "Propia" if self.organizacion_id else self.get_fuente_display()
+
+    @property
+    def es_propia(self):
+        return self.organizacion_id is not None
 
     def _transacciones_recalculables(self):
         """Conjuntos de transacciones que se recalculan si `valor` cambia:
@@ -58,8 +79,8 @@ class TasaCambio(models.Model):
         return [self.movimientos.filter(estado=Movimiento.Estado.REGISTRADO)]
 
     def tiene_transacciones(self):
-        """True si algún movimiento quedó registrado con esta tasa."""
-        return self.movimientos.exists()
+        """True si algún movimiento (del libro o personal) quedó con esta tasa."""
+        return self.movimientos.exists() or self.movimientos_personales.exists()
 
     def save(self, *args, **kwargs):
         valor_cambio = self.pk and self.valor != self._valor_original

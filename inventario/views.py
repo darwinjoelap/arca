@@ -37,7 +37,7 @@ def _errores_al_form(form, error):
 @requiere_permiso(GESTIONAR)
 def inicio(request):
     organizacion = request.organizacion
-    tasa, _ = tasa_vigente()
+    tasa, _ = tasa_vigente(request.organizacion)
     filas, totales = services.resumen(organizacion, tasa)
 
     clase, categoria, ubicacion = request.GET.get("clase", ""), request.GET.get("categoria", ""), request.GET.get("ubicacion", "")
@@ -269,7 +269,7 @@ def reportes(request, clave=None):
     if clave not in rep.CATALOGO:
         raise Http404
     organizacion, hoy = request.organizacion, timezone.localdate()
-    tasa, _ = tasa_vigente()
+    tasa, _ = tasa_vigente(request.organizacion)
     g = request.GET
 
     def fecha(nombre, defecto):

@@ -28,3 +28,32 @@ class TasaCambioForm(forms.ModelForm):
         for field in self.fields.values():
             css = "form-select" if field == self.fields["fuente"] else "form-control"
             field.widget.attrs.setdefault("class", css)
+
+
+class TasaPropiaForm(forms.ModelForm):
+    """La tasa que carga el director para SU organización: un valor por día."""
+
+    class Meta:
+        model = TasaCambio
+        fields = ["fecha", "valor"]
+        widgets = {"fecha": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")}
+        labels = {"valor": "Bs. por 1 USD"}
+
+    def __init__(self, *args, organizacion, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.organizacion = organizacion
+        if self.instance.pk:
+            self.fields["fecha"].disabled = True
+        else:
+            self.fields["fecha"].initial = timezone.localdate()
+        for field in self.fields.values():
+            field.widget.attrs.setdefault("class", "form-control")
+
+    def clean_fecha(self):
+        fecha = self.cleaned_data["fecha"]
+        if fecha > timezone.localdate():
+            raise forms.ValidationError("No se carga una tasa con fecha futura.")
+        repetida = TasaCambio.objects.filter(organizacion=self.organizacion, fecha=fecha).exclude(pk=self.instance.pk)
+        if repetida.exists():
+            raise forms.ValidationError("Ya cargaste una tasa para ese día: corrígela en la lista.")
+        return fecha

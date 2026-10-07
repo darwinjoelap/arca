@@ -672,3 +672,80 @@ class AvisosYExportacionTests(LibroMixin, TestCase):
         respuesta = self.client.get(reverse("inicio"))
         self.assertNotContains(respuesta, "por rendir")
         self.assertNotContains(respuesta, "en el mínimo")
+
+
+class TasaPropiaTests(LibroMixin, TestCase):
+    """A-47: el director carga la tasa de SU organización; gana a la del BCV
+    del mismo día y no toca a las demás."""
+
+    def propia(self, valor, fecha=None, org=None):
+        return TasaCambio.objects.create(organizacion=org or self.org, fecha=fecha or self.hoy, valor=D(valor),
+                                         fuente="manual", cargada_por=self.director.user)
+
+    def test_mismo_dia_gana_la_propia_y_solo_en_su_organizacion(self):
+        from .services import tasa_para, tasa_vigente
+        propia = self.propia("120")
+        self.assertEqual(tasa_para(self.hoy, self.org), (propia, True))
+        self.assertEqual(tasa_para(self.hoy, self.org_b)[0], self.tasa)
+        self.assertEqual(tasa_vigente()[0], self.tasa)
+        m = self.mov("ingreso", "10")
+        self.assertEqual((m.tasa, m.monto_ves), (propia, D("1200")))
+        b = self.mov("egreso", "10", org=self.org_b, cuenta=self.cuenta_b, concepto=self.concepto_b,
+                     membresia=Membresia.objects.get(organizacion=self.org_b, es_dueno=True))
+        self.assertEqual(b.monto_ves, D("1000"))
+
+    def test_gana_la_mas_reciente(self):
+        from datetime import timedelta
+        from .services import tasa_para
+        ayer = self.hoy - timedelta(days=1)
+        vieja = self.propia("90", fecha=ayer)
+        self.assertEqual(tasa_para(self.hoy, self.org)[0], self.tasa)       # BCV de hoy > propia de ayer
+        self.assertEqual(tasa_para(ayer, self.org), (vieja, True))          # ayer no había BCV
+        with self.assertRaises(Exception):
+            tasa_para(ayer, self.org_b)                                     # B no tiene nada ayer
+
+    def test_sin_bcv_la_propia_permite_trabajar(self):
+        from .services import tasa_vigente
+        Movimiento.objects.all().delete()
+        TasaCambio.objects.filter(organizacion__isnull=True).delete()
+        self.assertEqual(tasa_vigente(self.org), (None, False))
+        propia = self.propia("130")
+        self.assertEqual(self.mov("ingreso", "1").tasa, propia)
+
+    def test_pantalla_cargar_corregir_y_eliminar(self):
+        url = reverse("organizaciones:tasa")
+        self.entrar("tesorero")
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.entrar("dir_a")
+        self.assertContains(self.client.get(url), "se usa la del BCV")
+        self.assertRedirects(self.client.post(url, {"fecha": self.hoy.isoformat(), "valor": "125.50"}), url)
+        tasa = TasaCambio.objects.get(organizacion=self.org)
+        self.assertEqual((tasa.valor, tasa.fuente, tasa.cargada_por), (D("125.50"), "manual", self.director.user))
+        self.assertTrue(RegistroAuditoria.objects.filter(organizacion=self.org, accion="cargar_tasa").exists())
+        # Una por día; nunca a futuro.
+        self.assertContains(self.client.post(url, {"fecha": self.hoy.isoformat(), "valor": "1"}), "Ya cargaste una tasa")
+        from datetime import timedelta
+        manana = (self.hoy + timedelta(days=1)).isoformat()
+        self.assertContains(self.client.post(url, {"fecha": manana, "valor": "1"}), "fecha futura")
+        # Corregir no cambia lo confirmado.
+        m = self.mov("ingreso", "10")
+        self.client.post(reverse("organizaciones:tasa_corregir", args=[tasa.pk]), {"valor": "200"})
+        tasa.refresh_from_db(); m.refresh_from_db()
+        self.assertEqual((tasa.valor, m.monto_ves), (D("200"), D("1255")))
+        # En uso no se elimina; la de otra organización no existe para mí.
+        self.client.post(reverse("organizaciones:tasa_eliminar", args=[tasa.pk]))
+        self.assertTrue(TasaCambio.objects.filter(pk=tasa.pk).exists())
+        ajena = self.propia("300", org=self.org_b)
+        self.assertEqual(self.client.post(reverse("organizaciones:tasa_eliminar", args=[ajena.pk])).status_code, 404)
+        self.assertEqual(self.client.get(reverse("organizaciones:tasa_corregir", args=[ajena.pk])).status_code, 404)
+        self.assertEqual(self.client.get(reverse("organizaciones:tasa_corregir", args=[self.tasa.pk])).status_code, 404)
+
+    def test_la_plataforma_no_lista_las_propias_y_el_bcv_las_ignora(self):
+        from cambio import bcv
+        self.propia("999")
+        self.client.force_login(self.root)
+        Usuario.objects.filter(pk=self.root.pk).update(debe_cambiar_clave=False)
+        respuesta = self.client.get(reverse("cambio:tasa_lista"))
+        self.assertNotContains(respuesta, "999")
+        _, estado = bcv.registrar(D("101"), self.hoy)        # la propia de 999 no cuenta como «anterior»
+        self.assertEqual(estado, "corregida")

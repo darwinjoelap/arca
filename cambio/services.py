@@ -17,14 +17,14 @@ class SinTasaError(Exception):
 
 
 def obtener_tasa(fecha, fuente=None):
-    """Devuelve (TasaCambio, es_exacta).
+    """Devuelve (TasaCambio, es_exacta), solo entre las tasas GLOBALES.
 
     Si existe una tasa exactamente en `fecha` (y `fuente`, si se indica), la
     devuelve con es_exacta=True. Si no, devuelve la última tasa anterior a
     `fecha` con es_exacta=False. Si no hay ninguna tasa anterior o igual,
     lanza SinTasaError.
     """
-    consulta = TasaCambio.objects.all()
+    consulta = TasaCambio.objects.filter(organizacion__isnull=True)
     if fuente:
         consulta = consulta.filter(fuente=fuente)
 
@@ -38,6 +38,13 @@ def obtener_tasa(fecha, fuente=None):
 
     detalle = f" para la fuente '{fuente}'" if fuente else ""
     raise SinTasaError(f"No hay ninguna tasa de cambio registrada en o antes de {fecha}{detalle}.")
+
+
+def tasa_propia(organizacion, fecha):
+    """La última tasa que la organización cargó para `fecha` o antes, o None."""
+    return (
+        TasaCambio.objects.filter(organizacion=organizacion, fecha__lte=fecha).order_by("-fecha").first()
+    )
 
 
 def convertir(monto, moneda, tasa_valor):

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, views_datos
+from . import views, views_datos, views_tasa
 
 app_name = "organizaciones"
 
@@ -24,6 +24,9 @@ urlpatterns = [
     path("configuracion/ejercicios/<int:pk>/activar/", views.ejercicio_activar, name="ejercicio_activar"),
     path("configuracion/ejercicios/<int:pk>/cerrar/", views.ejercicio_cerrar, name="ejercicio_cerrar"),
     path("configuracion/ejercicios/<int:pk>/eliminar/", views.ejercicio_eliminar, name="ejercicio_eliminar"),
+    path("configuracion/tasa/", views_tasa.inicio, name="tasa"),
+    path("configuracion/tasa/<int:pk>/corregir/", views_tasa.corregir, name="tasa_corregir"),
+    path("configuracion/tasa/<int:pk>/eliminar/", views_tasa.eliminar, name="tasa_eliminar"),
     path("configuracion/datos-excel/", views_datos.inicio, name="datos"),
     path("configuracion/datos-excel/exportar/", views_datos.exportar, name="datos_exportar"),
     path("configuracion/datos-excel/plantilla/", views_datos.plantilla, name="datos_plantilla"),
