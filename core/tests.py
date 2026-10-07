@@ -38,3 +38,35 @@ class BitacoraDeLoginTests(TestCase):
         registro = RegistroAuditoria.objects.get(accion="login_fallido")
         self.assertIsNone(registro.organizacion)
         self.assertIn("nadie", registro.descripcion)
+
+
+class AsegurarSuperadminTests(TestCase):
+    def correr(self, **entorno):
+        from io import StringIO
+        from unittest import mock
+
+        from django.core.management import call_command
+
+        salida = StringIO()
+        with mock.patch.dict("os.environ", entorno, clear=False):
+            call_command("asegurar_superadmin", stdout=salida)
+        return salida.getvalue()
+
+    def test_crea_uno_solo_y_no_toca_al_que_existe(self):
+        import os
+        for nombre in ("ARCA_ADMIN_USUARIO", "ARCA_ADMIN_CLAVE"):
+            os.environ.pop(nombre, None)
+        self.assertIn("faltan", self.correr())
+        self.assertIn("al menos 12", self.correr(ARCA_ADMIN_USUARIO="Soporte", ARCA_ADMIN_CLAVE="corta"))
+        self.assertFalse(Usuario.objects.filter(is_superuser=True).exists())
+        self.correr(ARCA_ADMIN_USUARIO="Soporte", ARCA_ADMIN_CLAVE="Una-clave-larga-1")
+        admin = Usuario.objects.get(is_superuser=True)
+        self.assertEqual((admin.username, admin.organizacion_cuenta, admin.debe_cambiar_clave), ("soporte", None, True))
+        self.assertTrue(admin.check_password("Una-clave-larga-1"))
+        # Segundo arranque, incluso con otra clave en la variable: no cambia nada.
+        self.assertIn("no se hace nada", self.correr(ARCA_ADMIN_USUARIO="otro", ARCA_ADMIN_CLAVE="Otra-clave-larga-2"))
+        self.assertEqual(Usuario.objects.filter(is_superuser=True).count(), 1)
+        self.assertTrue(Usuario.objects.get(is_superuser=True).check_password("Una-clave-larga-1"))
+        # Entra por la dirección principal y debe cambiar la clave.
+        self.client.post(reverse("login"), {"username": "soporte", "password": "Una-clave-larga-1"})
+        self.assertRedirects(self.client.get(reverse("inicio")), reverse("password_change"))

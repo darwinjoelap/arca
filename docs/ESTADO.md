@@ -94,9 +94,19 @@ Pendiente de verificar en tu máquina: las 102 pruebas contra PostgreSQL, y el f
 
 - [x] Arqueo de cuentas: sistema contra contado, historial y ajuste de la diferencia con un clic
 - [x] Anticipos por rendir: entrega, rendición por concepto, devolución o reposición, anulación
-- [x] 196 pruebas en total
+- [x] 196 pruebas hasta aquí
 
-Pendiente de verificar en tu máquina: `migrate` y las 196 pruebas contra PostgreSQL.
+## Hecho — Preparación para producción
+
+- [x] `railway.json`: arranque, health check y reinicio; el dominio de Railway se acepta solo
+- [x] `asegurar_superadmin`: crea la cuenta de plataforma en el primer arranque
+- [x] Respaldo diario cifrado por GitHub Actions (`despliegue/respaldo.yml`, que hay que copiar a `.github/workflows/`), 30 días
+- [x] Guía paso a paso en `docs/DESPLIEGUE.md`, con restauración
+- [x] 197 pruebas en total
+
+Pendiente y es tuyo: crear el proyecto en Railway, cargar variables y secretos, y probar una restauración.
+
+Pendiente de verificar en tu máquina: `migrate` y las 197 pruebas contra PostgreSQL.
 
 ## Lo que NO está todavía
 
@@ -116,7 +126,7 @@ Pendiente de verificar en tu máquina: `migrate` y las 196 pruebas contra Postgr
 - Recuperar la contraseña por correo: ya no se ofrece; la restablece el director (o la plataforma, la del director).
 - La pantalla de entrada lleva el nombre de la organización, pero no su logo ni sus colores.
 - Suscripción: no hay cobro, historial de pagos ni aviso automático de vencimiento; el plan es una etiqueta y lo único que limita es la fecha y el número de usuarios.
-- Respaldo automático de la base y despliegue en Railway.
+- El flujo de respaldo no se ha ejecutado nunca contra una base real: hay que probarlo y restaurar una vez.
 
 ## Siguiente — por decidir
 

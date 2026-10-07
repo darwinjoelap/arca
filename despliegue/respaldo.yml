@@ -1,0 +1,77 @@
+# Respaldo diario de la base de datos de producción.
+#
+# Saca un volcado completo con pg_dump, lo CIFRA con una frase que solo tú
+# conoces y lo guarda 30 días como artefacto del repositorio. Va cifrado
+# siempre: un artefacto se puede descargar con acceso al repositorio, y dentro
+# están los datos de todas las organizaciones.
+#
+# Secretos (Settings > Secrets and variables > Actions):
+#   RESPALDO_DATABASE_URL  URL PÚBLICA de PostgreSQL en Railway (DATABASE_PUBLIC_URL)
+#   RESPALDO_FRASE         frase larga para cifrar; guárdala fuera de GitHub
+#
+# Cómo restaurar: docs/DESPLIEGUE.md.
+
+name: Respaldo de la base
+
+on:
+  schedule:
+    - cron: "17 7 * * *"   # todos los días 07:17 UTC = 03:17 en Caracas
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Debe ser igual o mayor que la versión del servidor de Railway.
+      PG_IMAGEN: postgres:18
+    steps:
+      - name: Comprobar secretos
+        env:
+          URL: ${{ secrets.RESPALDO_DATABASE_URL }}
+          FRASE: ${{ secrets.RESPALDO_FRASE }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$FRASE" ]; then
+            echo "::error::Faltan los secretos RESPALDO_DATABASE_URL o RESPALDO_FRASE."
+            exit 1
+          fi
+          if [ "${#FRASE}" -lt 20 ]; then
+            echo "::error::RESPALDO_FRASE debe tener al menos 20 caracteres."
+            exit 1
+          fi
+
+      - name: Volcar la base
+        env:
+          URL: ${{ secrets.RESPALDO_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          FECHA=$(date -u +%Y%m%d-%H%M)
+          echo "ARCHIVO=arca-$FECHA.dump" >> "$GITHUB_ENV"
+          docker run --rm -e URL "$PG_IMAGEN" sh -c 'pg_dump "$URL" --format=custom --no-owner --no-privileges' > "arca-$FECHA.dump"
+          # Un volcado vacío o truncado no es un respaldo: se comprueba que se puede leer.
+          docker run --rm -i "$PG_IMAGEN" pg_restore --list < "arca-$FECHA.dump" > lista.txt
+          TABLAS=$(grep -c " TABLE DATA " lista.txt || true)
+          echo "Tablas con datos en el volcado: $TABLAS"
+          test "$TABLAS" -ge 20
+          ls -l "arca-$FECHA.dump"
+
+      - name: Cifrar
+        env:
+          FRASE: ${{ secrets.RESPALDO_FRASE }}
+        run: |
+          set -euo pipefail
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$FRASE" --symmetric --cipher-algo AES256 \
+              --output "$ARCHIVO.gpg" "$ARCHIVO"
+          rm -f "$ARCHIVO" lista.txt
+          ls -l "$ARCHIVO.gpg"
+
+      - name: Guardar 30 días
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARCHIVO }}
+          path: ${{ env.ARCHIVO }}.gpg
+          retention-days: 30
+          if-no-files-found: error

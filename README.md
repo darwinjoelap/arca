@@ -38,19 +38,17 @@ python manage.py runserver
 ## Pruebas
 
 ```powershell
-python manage.py test --settings=config.settings.test
+python manage.py test
 ```
 
 ## Quién entra a dónde
 
 | Quién | Dónde | Qué hace |
 |---|---|---|
-| Superadmin (plataforma) | `/admin/` y `/cambio/tasas/` | Da de alta organizaciones, nombra o traspasa al director, decide si el director ve las cuentas personales, carga la tasa de cambio |
-| Director (dueño) y administradores | `/organizacion/configuracion/` | Datos de la organización, tipos de miembro, miembros, ejercicios, bitácora |
-| Miembros | `/` | Lo que su tipo de miembro permita |
+| Superadmin (plataforma) | `/cuentas/login/?plataforma` → `/plataforma/` | Da de alta organizaciones y maneja su suscripción, decide si el director ve las cuentas personales, carga la tasa de cambio |
+| Director (dueño) y administradores | `/<enlace-de-la-organización>/` → Configuración | Datos de la organización, tipos de miembro, miembros, ejercicios, bitácora |
+| Miembros | `/<enlace-de-la-organización>/` | Lo que su tipo de miembro permita |
 
-## Railway
+## Producción
 
-Variables: `DJANGO_SETTINGS_MODULE=config.settings.production`, `SECRET_KEY`, `ALLOWED_HOSTS`,
-`CSRF_TRUSTED_ORIGINS` y `DATABASE_URL` (la entrega el plugin de PostgreSQL). El `Procfile` migra,
-junta los estáticos y arranca gunicorn. Health check: `/salud/`.
+Railway + PostgreSQL, con respaldo diario cifrado desde GitHub Actions. Paso a paso: `docs/DESPLIEGUE.md`.
