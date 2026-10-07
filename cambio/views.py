@@ -1,11 +1,14 @@
 from django.contrib import messages
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
+from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, ListView, UpdateView
 
 from core.auditoria import registrar
 from core.mixins import SoloSuperusuarioMixin
 from core.models import RegistroAuditoria
 
+from . import bcv
 from .forms import TasaCambioForm
 from .models import TasaCambio
 
@@ -60,3 +63,26 @@ class TasaCambioUpdateView(SoloSuperusuarioMixin, UpdateView):
         )
         messages.success(self.request, f"Tasa «{self.object}» actualizada.")
         return respuesta
+
+
+@require_POST
+def consultar_bcv(request):
+    """Botón «Consultar BCV ahora»: lo mismo que hace la tarea programada."""
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied
+    try:
+        tasa, estado = bcv.actualizar(request.user)
+    except Exception as e:  # noqa: BLE001 - red, certificado o página cambiada: se explica y se sigue
+        messages.error(request, f"No se pudo consultar el BCV: {e}")
+        return redirect("cambio:tasa_lista")
+    if estado == "igual":
+        messages.info(request, f"Sin cambios: la tasa «{tasa}» ya estaba cargada.")
+    else:
+        registrar(
+            request,
+            RegistroAuditoria.Accion.CARGAR_TASA if estado == "nueva" else RegistroAuditoria.Accion.EDITAR_TASA,
+            modelo="TasaCambio", objeto_id=tasa.pk, descripcion=f"{tasa} (consulta al BCV)", organizacion=None,
+        )
+        messages.success(request, f"Tasa «{tasa}» {'cargada' if estado == 'nueva' else 'corregida'} desde el BCV.")
+    return redirect("cambio:tasa_lista")

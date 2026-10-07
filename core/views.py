@@ -26,6 +26,11 @@ def sin_conexion(request):
     return render(request, "core/sin_conexion.html")
 
 
+def instalar(request):
+    """Cómo poner Arca en la pantalla de inicio (en iPhone no hay aviso automático)."""
+    return render(request, "core/instalar.html")
+
+
 def salud(request):
     """Health check de la plataforma. Sin base de datos ni sesión a propósito."""
     return HttpResponse("ok", content_type="text/plain")
@@ -99,6 +104,13 @@ def inicio(request):
             contexto["por_aprobar"] = Movimiento.objects.filter(
                 organizacion=organizacion, estado=Movimiento.Estado.REGISTRADO
             ).count()
+            from finanzas.models import Anticipo
+            contexto["anticipos_pendientes"] = Anticipo.objects.filter(
+                organizacion=organizacion, estado=Anticipo.Estado.PENDIENTE
+            ).count()
+    if membresia.tiene_permiso("puede_gestionar_inventario"):
+        from inventario.services import resumen as resumen_inventario
+        contexto["por_reponer"] = resumen_inventario(organizacion)[1]["bajo_minimo"]
     return render(request, "core/dashboard.html", contexto)
 
 

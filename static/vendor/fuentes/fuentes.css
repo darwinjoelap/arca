@@ -1,0 +1,16 @@
+/* Inter y Manrope (variables, subconjunto latino), servidas desde Arca para
+   que carguen sin conexión. Licencia SIL Open Font License 1.1. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("inter-latin-wght-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("manrope-latin-wght-normal.woff2") format("woff2");
+}

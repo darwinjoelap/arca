@@ -55,6 +55,15 @@
       <span class="text-muted small">Quién hizo qué y cuándo</span></span>
     </a>
   </div>
+  {% if membresia_activa.es_dueno %}
+  <div class="col-md-6 col-xl-4">
+    <a class="quick-action h-100" href="{% url 'organizaciones:datos' %}">
+      <span class="quick-action-icon"><i class="bi bi-file-earmark-spreadsheet"></i></span>
+      <span><span class="fw-semibold d-block">Datos en Excel</span>
+      <span class="text-muted small">Descargar todo o cargar datos desde un Excel</span></span>
+    </a>
+  </div>
+  {% endif %}
 </div>
 
 <div class="card card-arca mt-4" style="max-width: 760px;">

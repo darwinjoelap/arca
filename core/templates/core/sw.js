@@ -6,13 +6,16 @@
 
 importScripts("{% static 'js/offline-sync-core.js' %}");
 
-const CACHE_NAME = "arca-shell-v8";
+const CACHE_NAME = "arca-shell-v9";
 const OFFLINE_URL = "{% url 'core:sin_conexion' %}";
 const ARCHIVOS_SHELL = [
   "{% static 'vendor/bootstrap/bootstrap.min.css' %}",
   "{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}",
   "{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}",
   "{% static 'vendor/htmx/htmx.min.js' %}",
+  "{% static 'vendor/fuentes/fuentes.css' %}",
+  "{% static 'vendor/fuentes/inter-latin-wght-normal.woff2' %}",
+  "{% static 'vendor/fuentes/manrope-latin-wght-normal.woff2' %}",
   "{% static 'css/arca.css' %}",
   "{% static 'js/offline-sync-core.js' %}",
   "{% static 'js/offline-status.js' %}",

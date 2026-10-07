@@ -8,7 +8,13 @@
     <h1 class="h3 mb-1">Cuotas de miembros</h1>
     <p class="text-muted mb-0">El aporte mensual que se espera de cada miembro{% if ejercicio %}, y lo que lleva pagado en el ejercicio {{ ejercicio.nombre }}{% endif %}. Cuenta como pago todo ingreso registrado a nombre del miembro con el concepto de su cuota.</p>
   </div>
-  <a href="{% url 'finanzas:cuota_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nueva cuota</a>
+  <div class="d-flex flex-wrap gap-2">
+    {% if filas %}
+    <a href="?formato=xlsx" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-spreadsheet"></i> Excel</a>
+    <a href="?formato=pdf" class="btn btn-outline-secondary" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+    {% endif %}
+    <a href="{% url 'finanzas:cuota_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nueva cuota</a>
+  </div>
 </div>
 <div class="card card-arca">
   {% if filas %}

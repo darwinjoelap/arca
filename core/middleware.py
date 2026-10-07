@@ -20,7 +20,7 @@ CLAVE_SESION = "organizacion_id"
 # /sync/ contesta siempre en JSON y revisa la sesión por su cuenta: una
 # redirección aquí haría creer al teléfono que el envío se guardó.
 _PREFIJOS_LIBRES = (
-    "/admin/", "/cuentas/", "/cambio/", "/plataforma/", "/sync/", "/static/", "/salud/", "/sw.js", "/sin-conexion/", "/favicon.ico",
+    "/admin/", "/cuentas/", "/cambio/", "/plataforma/", "/sync/", "/static/", "/salud/", "/sw.js", "/sin-conexion/", "/instalar/", "/favicon.ico",
 )
 
 

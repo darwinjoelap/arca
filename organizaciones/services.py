@@ -49,7 +49,7 @@ def validar_limite_usuarios(organizacion, excluir=None):
 RESERVADOS = {
     "admin", "api", "cuentas", "cuenta", "organizacion", "organizaciones", "cambio", "libro", "personal",
     "presupuestos", "reportes", "inventario", "sync", "plataforma", "salud", "sin-conexion", "static", "media",
-    "favicon.ico", "manifest.json", "sw.js", "arca", "www", "app", "soporte", "ayuda", "login", "entrar",
+    "favicon.ico", "manifest.json", "sw.js", "arca", "www", "app", "soporte", "ayuda", "login", "entrar", "instalar",
 }
 _PATRON_ENLACE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 

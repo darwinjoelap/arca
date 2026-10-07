@@ -6,11 +6,16 @@
   <div>
     <h1 class="h3 mb-1">Tasa de cambio</h1>
     <p class="text-muted mb-0">
-      La tasa es global: una por día sirve a todas las organizaciones. Si una quedó mal, se puede
-      corregir su valor.
+      La tasa es global: una por día sirve a todas las organizaciones. Se consulta sola al BCV varias
+      veces al día; aquí puedes forzar la consulta, cargar una a mano o corregir un valor.
     </p>
   </div>
-  <a href="{% url 'cambio:tasa_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Cargar tasa</a>
+  <div class="d-flex flex-wrap gap-2">
+    <form method="post" action="{% url 'cambio:consultar_bcv' %}">{% csrf_token %}
+      <button class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i> Consultar BCV ahora</button>
+    </form>
+    <a href="{% url 'cambio:tasa_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Cargar tasa</a>
+  </div>
 </div>
 
 <div class="card card-arca">
@@ -26,7 +31,7 @@
           <td>{{ tasa.fecha }}</td>
           <td>{{ tasa.get_fuente_display }}</td>
           <td>{{ tasa.valor }}</td>
-          <td>{{ tasa.cargada_por }}</td>
+          <td>{{ tasa.cargada_por|default:"Automática" }}</td>
           <td>
             {% if tasa.tiene_transacciones %}
               <span class="badge text-bg-info">En uso</span>

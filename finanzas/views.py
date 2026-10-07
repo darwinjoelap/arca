@@ -469,11 +469,40 @@ def cuotas(request):
         t = totales.setdefault(fila["cuota"].moneda, {"esperado": 0, "pagado": 0, "pendiente": 0})
         for clave in t:
             t[clave] += fila[clave]
+    formato = request.GET.get("formato")
+    if formato and ejercicio:
+        from reportes.views import _archivo
+        return _archivo(request, _reporte_cuotas(filas, totales, ejercicio), formato)
     sin_aplicar = CuotaMiembro.objects.filter(organizacion=request.organizacion).exclude(
         pk__in=[f["cuota"].pk for f in filas]).select_related("membresia", "membresia__user", "concepto")
     return render(request, "finanzas/cuota_lista.html", {
         "filas": filas, "totales": totales, "ejercicio": ejercicio, "sin_aplicar": sin_aplicar,
     })
+
+
+def _reporte_cuotas(filas, totales, ejercicio):
+    """El estado de las cuotas como `Reporte`, para sacarlo en Excel o PDF."""
+    from reportes.estructura import ENTERO, FECHA, MONTO, TEXTO, TOTAL, Columna, Fila, Reporte
+
+    cuerpo = [
+        Fila([f["cuota"].membresia.nombre, f["cuota"].concepto.nombre, f["cuota"].moneda, f["cuota"].monto, f["meses"],
+              f["esperado"], f["pagado"], f["pendiente"], f["ultimo_pago"]],
+             tonos={7: "mal"} if f["pendiente"] > 0 else ({7: "bien"} if f["pendiente"] < 0 else {}))
+        for f in filas
+    ]
+    for moneda, t in totales.items():
+        cuerpo.append(Fila([f"Total en {moneda}", "", moneda, None, None, t["esperado"], t["pagado"], t["pendiente"], None],
+                           clase=TOTAL))
+    return Reporte(
+        clave="cuotas", titulo="Cuotas de miembros",
+        subtitulo=f"Ejercicio {ejercicio.nombre} · al {timezone.localdate():%d/%m/%Y}",
+        columnas=[Columna("Miembro", TEXTO, 2.6), Columna("Concepto", TEXTO, 2), Columna("Moneda", TEXTO, 0.8),
+                  Columna("Cuota mensual", MONTO, 1.2), Columna("Meses", ENTERO, 0.7), Columna("Esperado", MONTO, 1.2),
+                  Columna("Pagado", MONTO, 1.2), Columna("Pendiente", MONTO, 1.2), Columna("Último pago", FECHA, 1.1)],
+        filas=cuerpo, horizontal=True,
+        notas=["Pendiente positivo: lo que falta por pagar hasta este mes. Negativo: pagó por adelantado.",
+               "Cada cuota va en su moneda; un pago hecho en la otra se convierte con la tasa de su día."],
+    )
 
 
 class _CuotaMixin(_CatalogoMixin):

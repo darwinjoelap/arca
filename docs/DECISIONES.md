@@ -173,6 +173,22 @@ concepto («anticipo por rendir»). Al rendir, ese egreso se anula y quedan los 
 concepto, con la fecha de la rendición; lo que sobró vuelve a la cuenta porque los gastos suman menos. Si gastó
 de más, la diferencia sale de la cuenta. El egreso provisional no se anula desde el libro, solo desde el anticipo.
 
+**A-44 — La tasa del BCV se guarda con su «Fecha Valor», no con la fecha de la consulta.** El BCV publica en la
+tarde la tasa del siguiente día hábil. Guardarla con su fecha hace que los movimientos de hoy sigan con la de
+hoy y que el lunes ya tenga la suya desde el viernes. La consulta corre tres veces al día; repetirla no duplica.
+Una tasa que cambia más de 50 % respecto a la anterior se rechaza: es más probable una lectura mala. La tasa
+automática no tiene «cargada por». No se desactiva la verificación TLS del BCV: se completa su cadena por AIA.
+
+**A-45 — Los datos en Excel son del director.** Descargar todo y cargar desde Excel solo lo hace el dueño, no
+los administradores ni la plataforma (que no ve el dinero de la organización). La descarga no incluye las
+cuentas personales de los miembros.
+
+**A-46 — La carga desde Excel es todo o nada y siempre se revisa antes.** Primero se simula y se muestra qué se
+crearía y qué filas fallan; solo sin errores se puede confirmar. Lo que ya existe por nombre se omite. Cada
+movimiento lleva una huella de su contenido, así que subir dos veces el mismo archivo no duplica. Los miembros
+entran sin acceso; los tipos de miembro nuevos, sin permisos. Los movimientos entran confirmados, a nombre del
+director, y pasan por las mismas reglas que uno escrito a mano (ejercicio abierto, tasa, vale).
+
 ## Heredadas de Edumia que siguen vigentes
 
 - **D-02 (revisado)** — El valor de una tasa se puede corregir; recalcula lo no congelado.

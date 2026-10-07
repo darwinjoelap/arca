@@ -108,20 +108,38 @@ Pendiente y es tuyo: crear el proyecto en Railway, cargar variables y secretos, 
 
 Pendiente de verificar en tu máquina: `migrate` y las 197 pruebas contra PostgreSQL.
 
+## Hecho — Fase 2 (tasa e identidad) y datos en Excel
+
+- [x] Tasa BCV automática: `cambio/bcv.py` lee el dólar y la «Fecha Valor» de la página del BCV y guarda la tasa con esa fecha (A-44). Comando `actualizar_tasa_bcv`, envoltorio `tareas_programadas`, `railway.cron.json` para el servicio Cron y botón «Consultar BCV ahora» en `/cambio/tasas/`
+- [x] Datos en Excel, solo el director (Configuración → Datos en Excel): descargar todo en un libro (13 hojas) y cargar desde una plantilla con revisión previa (A-45, A-46)
+- [x] Panel: avisos de anticipos por rendir y de consumibles en el mínimo
+- [x] Cuotas: Excel y PDF desde la misma pantalla
+- [x] Fuentes Inter y Manrope en `static/vendor/fuentes/` (ya no se pide nada a Google)
+- [x] Pantalla `/instalar/` con los pasos de iPhone, Android y computadora (menú del usuario)
+- [x] `/sw.js` ya no se pide en cada página
+- [x] 219 pruebas
+
+Pendiente y es tuyo: crear el servicio Cron en Railway (docs/DESPLIEGUE.md, sección 6) y mirar su primer log.
+**La lectura del BCV no se pudo probar contra la página real desde aquí** (sin salida a esa dirección): está
+probada contra una copia del HTML. La primera corrida real es la prueba.
+
+Pendiente de verificar en tu máquina: `pip install -r requirements.txt`, `migrate` y las 219 pruebas en PostgreSQL.
+
 ## Lo que NO está todavía
 
 - Abrir la app desde cero sin señal: no se puede (A-20).
 - Sin conexión solo funcionan ingreso y egreso de la organización: ni traslados ni la cuenta personal.
 - Asignar dinero a un miembro sin acceso: no se puede, porque no tiene cuenta personal. Se registra como egreso normal a su nombre.
-- Cuotas: no tienen reporte exportable (Excel/PDF) ni aviso de morosidad; es solo la pantalla.
-- Anticipos: máximo 8 gastos por rendición, todos con la fecha de la rendición y en la moneda de la cuenta; sin aviso en el panel de los que siguen por rendir; el miembro no rinde por su cuenta, lo hace el director.
+- Cuotas: sin aviso de morosidad.
+- Anticipos: máximo 8 gastos por rendición, todos con la fecha de la rendición y en la moneda de la cuenta; el miembro no rinde por su cuenta, lo hace el director.
 - Arqueo: no pide el desglose por billetes ni tiene reporte en PDF.
 - Editar un movimiento de la organización: no existe a propósito (A-18).
 - El aviso de presupuesto no aparece sin conexión, ni cuenta los egresos que esperan aprobación.
 - Presupuesto anual con montos distintos por mes; flujo de «se solicita con antelación».
 - Reportes de traslados, diferencia en cambio y saldos a una fecha pasada. Gráficos dentro de los PDF.
 - Inventario: sin registro sin conexión, sin fotos, sin conteo físico guiado y sin enlace con el egreso de la compra. Un artículo por cantidad no distingue unidades individuales (40 sillas son una fila, no 40 fichas).
-- Tasa BCV automática, fuentes locales, pantalla de instalación en iPhone (Fase 2).
+- Carga desde Excel: no trae traslados, presupuesto, cuotas ni anticipos; los movimientos entran confirmados y necesitan una tasa de su fecha o anterior (para historia vieja, la plataforma carga antes esas tasas a mano).
+- Tasa: si el BCV cambia su página, la consulta falla y avisa en el log del Cron; no hay alerta por correo.
 - Traspasar la dirección de una organización: solo desde `/admin/`.
 - Recuperar la contraseña por correo: ya no se ofrece; la restablece el director (o la plataforma, la del director).
 - La pantalla de entrada lleva el nombre de la organización, pero no su logo ni sus colores.
@@ -130,15 +148,4 @@ Pendiente de verificar en tu máquina: `migrate` y las 197 pruebas contra Postgr
 
 ## Siguiente — por decidir
 
-Fase 2 (tasa BCV automática, fuentes locales, iPhone), despliegue en Railway o Fase 8 (arqueo, anticipos, importador).
-
-## Pendiente — Fase 2 (moneda e identidad)
-
-- [ ] Comando `actualizar_tasa_bcv` + cron de Railway; probar la fuente desde Railway antes de comprometerse
-- [ ] Fuentes en `static/`
-- [ ] Pantalla «Añadir a inicio» para iPhone
-- [ ] Decidir: ¿la tasa la ve cualquier miembro en el panel, o solo quien maneja dinero?
-
-## Luego
-
-Fase 8 cierre (arqueo, importador de Excel, alta de organizaciones).
+Repaso visual del resto de pantallas; offline para traslados y cuenta personal; aviso de morosidad de cuotas.

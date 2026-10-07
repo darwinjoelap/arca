@@ -7,8 +7,8 @@ class TasaCambio(models.Model):
     """Tasa de cambio Bs./USD de un día y una fuente.
 
     Es GLOBAL: una sola fila por día y fuente sirve a todas las organizaciones
-    (no hereda de ModeloDeOrganizacion). Por eso solo la carga el superadmin o,
-    desde la Fase 2, el comando que consulta el BCV.
+    (no hereda de ModeloDeOrganizacion). La carga el comando que consulta el
+    BCV (`cambio/bcv.py`) o, a mano, el superadmin.
 
     Regla heredada de Edumia (D-02 revisado): `valor` se puede corregir. Al
     hacerlo, `save()` recalcula las transacciones que usan la tasa y todavía
@@ -23,7 +23,8 @@ class TasaCambio(models.Model):
     valor = models.DecimalField(max_digits=18, decimal_places=4, help_text="Bs. por 1 USD.")
     fuente = models.CharField(max_length=10, choices=Fuente.choices)
     cargada_por = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="tasas_cargadas"
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="tasas_cargadas",
+        null=True, blank=True, help_text="Vacío = la cargó la consulta automática al BCV.",
     )
     creada_en = models.DateTimeField(auto_now_add=True)
 

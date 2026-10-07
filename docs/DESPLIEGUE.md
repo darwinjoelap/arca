@@ -103,10 +103,29 @@ Cada `git push` a `main` despliega solo. Antes de hacerlo:
       (Actions → «Respaldo de la base» → «Run workflow»).
 - [ ] Tras el despliegue, abrir el sitio y entrar a una organización.
 
+## 6. Tasa BCV automática (servicio Cron)
+
+Un segundo servicio en el mismo proyecto de Railway, que arranca, consulta el BCV y se apaga.
+
+- [ ] En el proyecto: **New → GitHub Repo →** el mismo repositorio `arca`. Nómbralo `tareas`.
+- [ ] En ese servicio, **Settings → Config-as-code → Railway Config File**: `railway.cron.json`.
+      (Ese archivo le pone el comando `python manage.py tareas_programadas` y el horario.)
+- [ ] **Variables** del servicio `tareas`: las mismas tres del web — `DATABASE_URL` (referencia a Postgres),
+      `SECRET_KEY` y `DJANGO_SETTINGS_MODULE=config.settings.production`. No necesita dominio.
+- [ ] Desplegar y abrir el log de la primera corrida. Debe decir `Tasa BCV nueva: …` (o `igual`).
+- [ ] Entrar a `/cambio/tasas/` como plataforma y ver la tasa con «Automática» en «Cargada por».
+
+Horario: 11:00, 21:00 y 23:00 UTC (7 a. m., 5 p. m. y 7 p. m. en Venezuela). El BCV publica en la tarde la
+tasa del día hábil siguiente; la corrida de la mañana es por si la tarde falló. Railway no corre un cron más
+de una vez cada 5 minutos ni garantiza el minuto exacto.
+
+Si falla (el BCV caído o cambió su página): el log dice `Tasa BCV no actualizada: …`, Arca sigue usando la
+última tasa y avisa en pantalla que no es la del día. Se puede forzar con el botón **Consultar BCV ahora** o
+cargar la tasa a mano en `/cambio/tasas/`.
+
 ## Lo que este despliegue no cubre
 
 - Correo: no hay SMTP configurado. No hace falta para nada hoy (las claves las genera el sistema).
-- Tasa BCV automática: sigue siendo a mano hasta la Fase 2.
 - Monitoreo y alertas: solo los logs de Railway. Si el respaldo falla, GitHub avisa por correo al dueño del
   repositorio, nada más.
 - Los respaldos viven 30 días en GitHub. Para guardar uno más tiempo (un cierre de año), descárgalo.

@@ -15,11 +15,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Arca">
 {% comment %}
-  Bootstrap, los iconos y htmx se sirven desde static/vendor/ para que carguen sin conexión.
-  Las fuentes siguen viniendo de Google Fonts; pasarlas a static/ queda para la Fase 2.
+  Bootstrap, los iconos, htmx y las fuentes se sirven desde static/vendor/ para que carguen sin conexión.
 {% endcomment %}
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'vendor/fuentes/fuentes.css' %}">
 <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
 <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
 <link rel="stylesheet" href="{% static 'css/arca.css' %}">
@@ -160,6 +158,7 @@
           </button>
           <ul class="dropdown-menu dropdown-menu-dark">
             <li><a class="dropdown-item" href="{% url 'password_change' %}"><i class="bi bi-key-fill me-2"></i>Cambiar contraseña</a></li>
+            <li><a class="dropdown-item" href="{% url 'core:instalar' %}"><i class="bi bi-phone me-2"></i>Instalar en el teléfono</a></li>
             <li><hr class="dropdown-divider"></li>
             <li>
               <form method="post" action="{% url 'logout' %}" class="px-3 py-1">
@@ -256,7 +255,9 @@
 <script src="{% static 'js/offline-status.js' %}"></script>
 {% endif %}
 <script>
-if ("serviceWorker" in navigator) {
+// Solo se registra si todavía no hay uno al mando: así /sw.js no se pide en
+// cada página. Las versiones nuevas las busca el navegador por su cuenta.
+if ("serviceWorker" in navigator && !navigator.serviceWorker.controller) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(() => {});
   });

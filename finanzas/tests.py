@@ -634,3 +634,41 @@ class AnticipoTests(LibroMixin, TestCase):
         ajeno_url = reverse("finanzas:anticipo_detalle", args=[a.pk])
         self.entrar("dir_b")
         self.assertEqual(self.client.get(ajeno_url).status_code, 404)
+
+
+class AvisosYExportacionTests(LibroMixin, TestCase):
+    def test_cuotas_en_excel_y_pdf(self):
+        from .models import CuotaMiembro
+        CuotaMiembro.objects.create(organizacion=self.org, membresia=self.residente, concepto=self.c_ingreso,
+                                    monto=D("10"), moneda="USD", vigente_desde=date(self.hoy.year, 1, 1))
+        self.entrar("dir_a")
+        self.assertContains(self.client.get(reverse("finanzas:cuota_lista")), "?formato=xlsx")
+        excel = self.client.get(reverse("finanzas:cuota_lista"), {"formato": "xlsx"})
+        self.assertEqual(excel.status_code, 200)
+        self.assertIn("spreadsheetml", excel["Content-Type"])
+        pdf = self.client.get(reverse("finanzas:cuota_lista"), {"formato": "pdf"})
+        self.assertEqual(pdf["Content-Type"], "application/pdf")
+
+    def test_el_panel_avisa_anticipos_e_inventario(self):
+        from inventario import services as inv
+        from inventario.models import Articulo, MovimientoInventario, Ubicacion
+        from .services import entregar_anticipo
+        director = Membresia.objects.get(organizacion=self.org, es_dueno=True)
+        self.entrar("dir_a")
+        respuesta = self.client.get(reverse("inicio"))
+        self.assertNotContains(respuesta, "por rendir")
+        self.assertNotContains(respuesta, "en el mínimo")
+        entregar_anticipo(organizacion=self.org, cuenta=self.usd, monto=D("20"), fecha=self.hoy, motivo="Compras",
+                          miembro=self.comprador, tercero="", membresia=director)
+        cloro = Articulo.objects.create(organizacion=self.org, clase="consumible", nombre="Cloro", minimo=D("5"))
+        lugar = Ubicacion.objects.create(organizacion=self.org, nombre="Depósito")
+        inv.registrar(MovimientoInventario(organizacion=self.org, articulo=cloro, tipo="entrada", motivo="inicial",
+                                           cantidad=D("3"), destino=lugar), usuario=director.user)
+        respuesta = self.client.get(reverse("inicio"))
+        self.assertContains(respuesta, "1 anticipo por rendir")
+        self.assertContains(respuesta, "1 consumible en el mínimo")
+        # Quien no administra ni lleva inventario no ve ninguno de los dos.
+        self.entrar("residente")
+        respuesta = self.client.get(reverse("inicio"))
+        self.assertNotContains(respuesta, "por rendir")
+        self.assertNotContains(respuesta, "en el mínimo")

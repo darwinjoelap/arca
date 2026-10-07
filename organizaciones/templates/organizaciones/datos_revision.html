@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block titulo %}Revisión de la carga — Arca{% endblock %}
+{% block titulo_topbar %}Revisión de la carga{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-1">Revisión de la carga</h1>
+<p class="text-muted mb-4">{{ nombre }} · Todavía no se ha guardado nada.</p>
+
+{% if resultado.errores %}
+<div class="alert alert-danger"><i class="bi bi-x-octagon"></i>
+  Hay {{ resultado.errores|length }} fila{{ resultado.errores|length|pluralize }} con error. Corrígela{{ resultado.errores|length|pluralize }} en el Excel y vuelve a subirlo: no se carga nada mientras quede alguna.</div>
+{% elif puede_confirmar %}
+<div class="alert alert-success"><i class="bi bi-check-circle"></i> El archivo está bien. Esto es lo que se cargaría:</div>
+{% endif %}
+{% for aviso in resultado.avisos %}<div class="alert alert-info">{{ aviso }}</div>{% endfor %}
+
+{% if resultado.resumen %}
+<div class="card card-arca mb-3" style="max-width: 560px;">
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>Qué</th><th class="num">Se crean</th><th class="num">Ya existían</th></tr></thead>
+    <tbody>{% for nombre_hoja, creados, omitidos in resultado.resumen %}
+      <tr><td>{{ nombre_hoja }}</td><td class="num fw-semibold">{{ creados }}</td><td class="num text-muted">{{ omitidos }}</td></tr>
+    {% endfor %}</tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if resultado.errores %}
+<div class="card card-arca mb-3">
+  <div class="table-responsive"><table class="table table-sm mb-0 align-middle">
+    <thead><tr><th>Hoja</th><th class="num">Fila</th><th>Qué pasa</th></tr></thead>
+    <tbody>{% for hoja, fila, mensaje in resultado.errores|slice:":200" %}
+      <tr><td>{{ hoja }}</td><td class="num">{{ fila }}</td><td>{{ mensaje }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% if resultado.errores|length > 200 %}<div class="card-body py-2 text-muted small">Se muestran los primeros 200.</div>{% endif %}
+</div>
+{% endif %}
+
+<div class="d-flex flex-wrap gap-2">
+  {% if puede_confirmar %}
+  <form method="post" action="{% url 'organizaciones:datos_cargar' %}">{% csrf_token %}
+    <input type="hidden" name="confirmar" value="1">
+    <button class="btn btn-arca-primary"><i class="bi bi-check-lg"></i> Confirmar y cargar</button>
+  </form>
+  {% endif %}
+  <a href="{% url 'organizaciones:datos' %}" class="btn btn-outline-secondary">{% if puede_confirmar %}Cancelar{% else %}Volver{% endif %}</a>
+</div>
+{% endblock %}

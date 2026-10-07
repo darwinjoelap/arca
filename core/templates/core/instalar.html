@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block titulo %}Instalar Arca{% endblock %}
+{% block titulo_topbar %}Instalar Arca{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-1">Instalar Arca</h1>
+<p class="text-muted mb-4">Arca se instala desde el navegador, sin tiendas de aplicaciones. Queda un ícono en tu pantalla
+  y se abre a pantalla completa.</p>
+
+<div class="alert alert-success d-none" id="ya-instalada"><i class="bi bi-check-circle"></i> Ya estás usando Arca instalada en este equipo.</div>
+
+<div class="row g-3" style="max-width: 1040px;">
+  <div class="col-md-4" data-equipo="ios"><div class="card card-arca h-100"><div class="card-body">
+    <h2 class="h6"><i class="bi bi-apple me-1"></i> iPhone y iPad</h2>
+    <ol class="small ps-3 mb-2">
+      <li>Abre Arca en <strong>Safari</strong> (en otros navegadores no aparece la opción).</li>
+      <li>Toca <i class="bi bi-box-arrow-up"></i> <strong>Compartir</strong>, abajo en la pantalla.</li>
+      <li>Baja y elige <strong>Agregar a inicio</strong>.</li>
+      <li>Toca <strong>Agregar</strong>.</li>
+    </ol>
+    <p class="small text-muted mb-0">El iPhone no muestra un aviso para instalar: hay que hacerlo desde ese menú.</p>
+  </div></div></div>
+  <div class="col-md-4" data-equipo="android"><div class="card card-arca h-100"><div class="card-body">
+    <h2 class="h6"><i class="bi bi-android2 me-1"></i> Android</h2>
+    <ol class="small ps-3 mb-0">
+      <li>Abre Arca en <strong>Chrome</strong>.</li>
+      <li>Toca <strong>Instalar</strong> en el aviso, o el menú <i class="bi bi-three-dots-vertical"></i> y luego <strong>Instalar aplicación</strong>.</li>
+    </ol>
+  </div></div></div>
+  <div class="col-md-4" data-equipo="pc"><div class="card card-arca h-100"><div class="card-body">
+    <h2 class="h6"><i class="bi bi-laptop me-1"></i> Computadora</h2>
+    <ol class="small ps-3 mb-0">
+      <li>Abre Arca en <strong>Chrome</strong> o <strong>Edge</strong>.</li>
+      <li>Haz clic en el ícono de instalar <i class="bi bi-download"></i> de la barra de direcciones y luego en <strong>Instalar</strong>.</li>
+    </ol>
+  </div></div></div>
+</div>
+<p class="small text-muted mt-3 mb-0">Entra siempre por el enlace de tu organización antes de instalar: así el ícono abre directo en ella.
+  Sin conexión puedes registrar ingresos y egresos con Arca ya abierta; se envían solos al volver la señal.</p>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+(function () {
+  var instalada = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  if (instalada) document.getElementById("ya-instalada").classList.remove("d-none");
+  var ua = navigator.userAgent;
+  var equipo = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? "ios"
+    : /Android/.test(ua) ? "android" : "pc";
+  var propia = document.querySelector('[data-equipo="' + equipo + '"]');
+  if (propia) { propia.parentNode.prepend(propia); propia.querySelector(".card").classList.add("border-dark"); }
+})();
+</script>
+{% endblock %}

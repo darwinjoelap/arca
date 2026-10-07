@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block titulo %}Datos en Excel — Arca{% endblock %}
+{% block titulo_topbar %}Datos en Excel{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-1">Datos en Excel</h1>
+<p class="text-muted mb-4">{{ organizacion_activa.nombre }} · Solo el director ve esta pantalla.</p>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card card-arca h-100"><div class="card-body">
+      <h2 class="h5"><i class="bi bi-download"></i> Descargar todo</h2>
+      <p class="text-muted small">Un solo libro de Excel con una hoja por tema: miembros, cuentas con su saldo, conceptos,
+        movimientos, traslados, presupuesto, cuotas, anticipos, arqueos e inventario. Sirve como copia propia de la
+        organización o para trabajar los datos por fuera.</p>
+      <p class="text-muted small">No incluye las cuentas personales de los miembros: son privadas.</p>
+      <a href="{% url 'organizaciones:datos_exportar' %}" class="btn btn-arca-primary"><i class="bi bi-file-earmark-spreadsheet"></i> Descargar Excel</a>
+    </div></div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card card-arca h-100"><div class="card-body">
+      <h2 class="h5"><i class="bi bi-upload"></i> Cargar desde Excel</h2>
+      <p class="text-muted small mb-2">Para traer lo que llevabas en una hoja de cálculo. Tres pasos:</p>
+      <ol class="small text-muted ps-3">
+        <li><a href="{% url 'organizaciones:datos_plantilla' %}">Descarga la plantilla</a> y llena las hojas que necesites (borra las filas de ejemplo).</li>
+        <li>Súbela aquí: Arca la revisa y te muestra qué se cargaría, <strong>sin guardar nada</strong>.</li>
+        <li>Si todo está bien, confirmas. Si hay un solo error, no se carga nada hasta corregirlo.</li>
+      </ol>
+      <form method="post" action="{% url 'organizaciones:datos_cargar' %}" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 align-items-center">
+        {% csrf_token %}
+        <input type="file" name="archivo" accept=".xlsx" class="form-control" style="max-width: 340px;" required aria-label="Archivo de Excel">
+        <button class="btn btn-outline-secondary"><i class="bi bi-search"></i> Revisar archivo</button>
+      </form>
+    </div></div>
+  </div>
+</div>
+
+<div class="card card-arca mt-3"><div class="card-body">
+  <h2 class="h6">Qué lleva cada hoja de la plantilla</h2>
+  <dl class="row small mb-0">
+    {% for titulo, hoja in hojas.items %}
+    <dt class="col-sm-2">{{ titulo }}</dt><dd class="col-sm-10 text-muted">{{ hoja.1 }}</dd>
+    {% endfor %}
+  </dl>
+  <p class="text-muted small mt-2 mb-0">Los movimientos necesitan un ejercicio abierto que incluya su fecha y una tasa
+    de cambio de ese día o anterior. Lo que ya existe con el mismo nombre se omite, y subir dos veces el mismo
+    archivo no duplica los movimientos.</p>
+</div></div>
+{% endblock %}

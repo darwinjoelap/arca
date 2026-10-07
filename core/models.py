@@ -141,6 +141,8 @@ class RegistroAuditoria(models.Model):
         ANULAR_INVENTARIO = "anular_inventario", "Anulación de movimiento de inventario"
         EDITAR_SUSCRIPCION = "editar_suscripcion", "Cambio de suscripción (plataforma)"
         VER_CUENTA_PERSONAL = "ver_cuenta_personal", "Consulta de la cuenta personal de un miembro"
+        EXPORTAR_DATOS = "exportar_datos", "Exportación de los datos a Excel"
+        IMPORTAR_DATOS = "importar_datos", "Carga de datos desde Excel"
 
     organizacion = models.ForeignKey(
         "organizaciones.Organizacion", null=True, blank=True,
