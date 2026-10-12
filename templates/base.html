@@ -8,7 +8,9 @@
 <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32.png' %}">
 <link rel="icon" type="image/png" sizes="16x16" href="{% static 'img/favicon-16.png' %}">
 <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon-180.png' %}">
-<link rel="manifest" href="{% static 'manifest.json' %}">
+{% comment %}Con organización conocida, su propio manifiesto: el ícono instalado abre en su enlace (A-50).{% endcomment %}
+{% if organizacion_activa %}<link rel="manifest" href="{% url 'manifest_organizacion' organizacion_activa.slug %}">
+{% else %}{% block manifest %}<link rel="manifest" href="{% static 'manifest.json' %}">{% endblock %}{% endif %}
 <meta name="theme-color" content="#1c1b1a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">

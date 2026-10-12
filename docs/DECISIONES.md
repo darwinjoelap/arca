@@ -210,6 +210,13 @@ cuentas personales solo si la plataforma activó esa supervisión. No registra, 
 no ve «Datos en Excel» (es del director). La regla está en el servidor, no solo en los botones: las pantallas
 compartidas aceptan GET con este permiso y exigen ser director o administrador para cualquier POST.
 
+**A-50 — Cada organización tiene su manifiesto de instalación.** En iPhone la app instalada no comparte cookies
+con Safari: con el manifiesto general (`start_url: /`) el ícono abría la entrada de la plataforma, donde las
+cuentas de una organización no existen, y el usuario no podía entrar. Ahora toda pantalla con organización
+(su entrada y el sistema) enlaza `/manifest/<enlace>.webmanifest`, con `start_url` en su enlace. Para quien ya
+la instaló, la entrada principal tiene un campo «Escribe su enlace» que lleva a la entrada correcta (la app
+instalada no tiene barra de direcciones).
+
 ## Heredadas de Edumia que siguen vigentes
 
 - **D-02 (revisado)** — El valor de una tasa se puede corregir; recalcula lo no congelado.

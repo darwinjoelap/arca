@@ -3,6 +3,8 @@
 
 {% block titulo %}Iniciar sesión — {% if organizacion_marca %}{{ organizacion_marca.nombre }}{% else %}Arca{% endif %}{% endblock %}
 
+{% block manifest %}{% if organizacion_marca %}<link rel="manifest" href="{% url 'manifest_organizacion' organizacion_marca.slug %}">{% else %}{{ block.super }}{% endif %}{% endblock %}
+
 {% block contenido %}
 <div class="card card-arca p-4">
   <div class="text-center mb-3">
@@ -25,7 +27,16 @@
     <button type="submit" class="btn btn-arca-primary w-100 mt-2">Entrar</button>
   </form>
   {% if login_plataforma %}
-  <p class="mt-3 mb-0 text-center small text-muted">¿Eres de una organización? Entra por <strong>su enlace</strong> (ej. <code>/mi-organizacion/</code>); pídeselo a tu director.</p>
+  <hr class="my-3">
+  <form method="get" action="{% url 'ir_a_organizacion' %}">
+    <label class="form-label small fw-semibold mb-1" for="enlace">¿Eres de una organización? Escribe su enlace</label>
+    <div class="input-group">
+      <span class="input-group-text small">arca…/</span>
+      <input type="text" class="form-control" id="enlace" name="enlace" placeholder="mi-organizacion" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+      <button class="btn btn-outline-secondary" type="submit">Ir</button>
+    </div>
+    <div class="form-text">Tu usuario y contraseña solo sirven en la entrada de tu organización. Pídele el enlace a tu director.</div>
+  </form>
   {% else %}
   <p class="mt-3 mb-0 text-center small text-muted">¿Olvidaste tu contraseña? Pídele al director que te genere una nueva.</p>
   {% endif %}

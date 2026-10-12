@@ -3,7 +3,7 @@ from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 
 from finanzas.models import Movimiento
@@ -185,6 +185,47 @@ class EntradaOrganizacion(auth_views.LoginView):
 
     def get_success_url(self):
         return "/"
+
+
+def manifest_organizacion(request, slug):
+    """Manifiesto de instalación propio de cada organización (A-50).
+
+    En iPhone la app instalada no comparte las cookies de Safari: si abriera en
+    «/», caería en la entrada de la plataforma, donde las cuentas de una
+    organización no existen. Con este manifiesto el ícono abre en /<enlace>/."""
+    import json
+
+    from django.templatetags.static import static
+
+    organizacion = get_object_or_404(Organizacion, slug=slug)
+    iconos = [
+        {"src": static(f"img/{nombre}.png"), "sizes": tam, "type": "image/png", "purpose": uso}
+        for nombre, tam, uso in (("icon-192", "192x192", "any"), ("icon-512", "512x512", "any"),
+                                 ("icon-maskable-192", "192x192", "maskable"), ("icon-maskable-512", "512x512", "maskable"))
+    ]
+    datos = {
+        "id": f"/{slug}/", "name": f"Arca · {organizacion.nombre}", "short_name": "Arca",
+        "description": f"Ingresos, egresos e inventario de {organizacion.nombre}",
+        "start_url": f"/{slug}/", "scope": "/", "display": "standalone",
+        "background_color": "#f6f3ec", "theme_color": "#1c1b1a", "orientation": "portrait-primary",
+        "lang": "es-VE", "icons": iconos,
+    }
+    return HttpResponse(json.dumps(datos, ensure_ascii=False), content_type="application/manifest+json")
+
+
+def ir_a_organizacion(request):
+    """Desde la entrada principal: escribir el enlace de la organización y ir a
+    su entrada. Sirve en la app instalada, que no tiene barra de direcciones."""
+    import re
+
+    texto = (request.GET.get("enlace") or "").strip().lower()
+    texto = re.sub(r"^https?://", "", texto)
+    partes = [p for p in texto.split("/") if p and "." not in p]   # quita el dominio si lo pegaron entero
+    slug = partes[0] if partes else ""
+    if slug and Organizacion.objects.filter(slug=slug).exists():
+        return redirect("entrada_organizacion", slug=slug)
+    messages.error(request, "No existe una organización con ese enlace. Pídeselo a tu director: es lo que va después de arca.up.railway.app/")
+    return redirect(f"{reverse('login')}?plataforma")
 
 
 def entrada_organizacion(request, slug):

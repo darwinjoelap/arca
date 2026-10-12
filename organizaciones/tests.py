@@ -705,3 +705,34 @@ class SupervisionTotalTests(DosOrganizacionesMixin, TestCase):
         self.assertTrue(self.vicario.supervisa)
         self.assertFalse(self.vicario.tiene_permiso("puede_registrar_egresos"))
         self.assertTrue(self.vicario.tiene_permiso("puede_ver_reportes"))
+
+
+class InstalacionPorOrganizacionTests(DosOrganizacionesMixin, TestCase):
+    """A-50: el ícono instalado abre en el enlace de la organización (iPhone no
+    comparte cookies con Safari), y la entrada principal deja ir a ese enlace."""
+
+    def test_manifiesto_propio(self):
+        import json
+        from django.urls import reverse
+        url = reverse("manifest_organizacion", args=[self.org_a.slug])
+        datos = json.loads(self.client.get(url).content)
+        self.assertEqual((datos["start_url"], datos["id"]), (f"/{self.org_a.slug}/", f"/{self.org_a.slug}/"))
+        self.assertIn(self.org_a.nombre, datos["name"])
+        self.assertEqual(self.client.get(reverse("manifest_organizacion", args=["no-existe"])).status_code, 404)
+
+    def test_la_entrada_y_las_pantallas_enlazan_su_manifiesto(self):
+        from django.urls import reverse
+        url = reverse("manifest_organizacion", args=[self.org_a.slug])
+        self.assertContains(self.client.get(f"/{self.org_a.slug}/"), url)
+        self.client.force_login(self.dueno_a.user)
+        self.assertContains(self.client.get(reverse("inicio")), url)
+
+    def test_ir_a_la_organizacion_desde_la_entrada_principal(self):
+        from django.urls import reverse
+        ir = reverse("ir_a_organizacion")
+        destino = f"/{self.org_a.slug}/"
+        for escrito in (self.org_a.slug, f" {self.org_a.slug.upper()} ", f"https://arca.up.railway.app/{self.org_a.slug}/"):
+            self.assertRedirects(self.client.get(ir, {"enlace": escrito}), destino, fetch_redirect_response=False)
+        respuesta = self.client.get(ir, {"enlace": "no-existe"}, follow=True)
+        self.assertContains(respuesta, "No existe una organización con ese enlace")
+        self.assertContains(self.client.get(reverse("login") + "?plataforma"), "Escribe su enlace")

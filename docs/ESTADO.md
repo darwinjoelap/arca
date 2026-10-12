@@ -120,13 +120,14 @@ Pendiente de verificar en tu máquina: `migrate` y las 197 pruebas contra Postgr
 - [x] Tasa propia por organización (A-47): Configuración → Tasa de cambio; el director la carga, corrige o elimina
 - [x] Reportes personales (A-48): Mi cuenta y Mi resumen en Excel/PDF; «Cuentas personales» para el director con supervisión
 - [x] Supervisión total (A-49): permiso de solo lectura de todo, para vicarios
-- [x] 231 pruebas
+- [x] Instalación por organización (A-50): el ícono abre en el enlace de la organización; arregla la entrada en iPhone
+- [x] 234 pruebas
 
 Pendiente y es tuyo: crear el servicio Cron en Railway (docs/DESPLIEGUE.md, sección 6) y mirar su primer log.
 **La lectura del BCV no se pudo probar contra la página real desde aquí** (sin salida a esa dirección): está
 probada contra una copia del HTML. La primera corrida real es la prueba.
 
-Pendiente de verificar en tu máquina: `pip install -r requirements.txt`, `migrate` y las 231 pruebas en PostgreSQL.
+Pendiente de verificar en tu máquina: `pip install -r requirements.txt`, las 234 pruebas en PostgreSQL.
 
 ## Lo que NO está todavía
 

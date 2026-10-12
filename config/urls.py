@@ -13,10 +13,12 @@ urlpatterns = [
     path("sw.js", core_views.service_worker, name="sw_js"),
     # Los navegadores piden /favicon.ico por su cuenta (p. ej. en /admin/).
     path("favicon.ico", RedirectView.as_view(url=lazy(static, str)("img/favicon-32.png"))),
+    path("manifest/<slug:slug>.webmanifest", core_views.manifest_organizacion, name="manifest_organizacion"),
     path("admin/", admin.site.urls),
     # Antes del include de auth: esta vista apaga `debe_cambiar_clave`.
     path("cuentas/password_change/", core_views.CambiarClaveView.as_view(), name="password_change"),
     path("cuentas/login/", core_views.EntrarPrincipal.as_view(), name="login"),
+    path("cuentas/ir/", core_views.ir_a_organizacion, name="ir_a_organizacion"),
     path("cuentas/", include("django.contrib.auth.urls")),
     path("organizacion/", include("organizaciones.urls")),
     path("plataforma/", include("organizaciones.urls_plataforma")),
