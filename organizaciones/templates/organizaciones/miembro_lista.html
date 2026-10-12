@@ -4,7 +4,7 @@
 {% block contenido %}
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
   <h1 class="h3 mb-0">Miembros</h1>
-  <a href="{% url 'organizaciones:miembro_crear' %}" class="btn btn-arca-primary"><i class="bi bi-person-plus"></i> Nuevo miembro</a>
+  {% if puede_administrar %}<a href="{% url 'organizaciones:miembro_crear' %}" class="btn btn-arca-primary"><i class="bi bi-person-plus"></i> Nuevo miembro</a>{% endif %}
 </div>
 
 <form method="get" class="mb-3 d-flex flex-wrap align-items-end gap-2">
@@ -45,7 +45,7 @@
             {% if m.user.debe_cambiar_clave %}<span class="badge text-bg-warning">Clave temporal</span>{% endif %}
           </td>
           <td class="text-end text-nowrap">
-            {% if m.es_dueno %}
+            {% if m.es_dueno or not puede_administrar %}
               <span class="text-muted small">—</span>
             {% elif m.es_administrador and not membresia_activa.es_dueno %}
               <span class="text-muted small">Solo el director</span>

@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from core.auditoria import registrar
-from core.mixins import requiere_permiso, tiene_permiso
+from core.mixins import VER_INVENTARIO, requiere_permiso, tiene_permiso
 from core.models import RegistroAuditoria
 from core.utils import eliminar_protegido
 from finanzas.services import tasa_vigente
@@ -34,7 +34,7 @@ def _errores_al_form(form, error):
         form.add_error(None, error.messages)
 
 
-@requiere_permiso(GESTIONAR)
+@requiere_permiso(GESTIONAR, lectura=VER_INVENTARIO)
 def inicio(request):
     organizacion = request.organizacion
     tasa, _ = tasa_vigente(request.organizacion)
@@ -105,7 +105,7 @@ def articulo_form(request, pk=None):
     })
 
 
-@requiere_permiso(GESTIONAR)
+@requiere_permiso(GESTIONAR, lectura=VER_INVENTARIO)
 def articulo_detalle(request, pk):
     articulo = _articulo(request, pk)
     por_ubicacion = services.existencias(request.organizacion, articulo=articulo)
@@ -183,7 +183,7 @@ def movimiento_anular(request, pk):
     return render(request, "inventario/movimiento_anular.html", {"form": form, "m": movimiento})
 
 
-@requiere_permiso(GESTIONAR)
+@requiere_permiso(GESTIONAR, lectura=VER_INVENTARIO)
 def movimientos(request):
     """Historial general, del más reciente al más antiguo."""
     qs = MovimientoInventario.objects.filter(organizacion=request.organizacion).select_related(
@@ -204,7 +204,7 @@ CATALOGOS = {
 }
 
 
-@requiere_permiso(GESTIONAR)
+@requiere_permiso(GESTIONAR, lectura=VER_INVENTARIO)
 def catalogos(request):
     organizacion = request.organizacion
     cantidades = {}
@@ -259,7 +259,7 @@ def reportes(request, clave=None):
 
     from . import reportes as rep
 
-    if not (tiene_permiso(request, GESTIONAR) or tiene_permiso(request, "puede_ver_reportes")):
+    if not (tiene_permiso(request, VER_INVENTARIO) or tiene_permiso(request, "puede_ver_reportes")):
         raise PermissionDenied("No tienes permiso para ver los reportes del inventario.")
     if clave is None:
         return render(request, "inventario/reportes.html", {

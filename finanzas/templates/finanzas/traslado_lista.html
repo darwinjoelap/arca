@@ -8,7 +8,7 @@
     <h1 class="h3 mb-1">Traslados entre cuentas</h1>
     <p class="text-muted mb-0">Dinero que cambia de cuenta o de caja. No cuenta como ingreso ni como egreso.</p>
   </div>
-  <a href="{% url 'finanzas:traslado_registrar' %}" class="btn btn-arca-primary"><i class="bi bi-arrow-left-right"></i> Nuevo traslado</a>
+  {% if puede_administrar %}<a href="{% url 'finanzas:traslado_registrar' %}" class="btn btn-arca-primary"><i class="bi bi-arrow-left-right"></i> Nuevo traslado</a>{% endif %}
 </div>
 
 <div class="card card-arca">
@@ -30,7 +30,7 @@
             {% if t.estado == 'anulado' %}<div class="text-decoration-none">Anulado: {{ t.motivo_anulacion }}</div>{% endif %}
           </td>
           <td class="text-end">
-            {% if t.estado != 'anulado' %}<a href="{% url 'finanzas:traslado_anular' t.pk %}" class="btn btn-sm btn-outline-danger">Anular</a>
+            {% if t.estado != 'anulado' %}{% if puede_administrar %}<a href="{% url 'finanzas:traslado_anular' t.pk %}" class="btn btn-sm btn-outline-danger">Anular</a>{% endif %}
             {% else %}<span class="badge text-bg-secondary">Anulado</span>{% endif %}
           </td>
         </tr>

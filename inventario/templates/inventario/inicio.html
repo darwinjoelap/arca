@@ -8,16 +8,16 @@
     <h1 class="h3 mb-1">Inventario</h1>
     <p class="text-muted mb-0">Lo que la organización tiene: bienes que se conservan y consumibles que se gastan.</p>
   </div>
-  <div class="d-flex flex-wrap gap-2">
+  {% if gestiona_inventario %}  <div class="d-flex flex-wrap gap-2">
     <a href="{% url 'inventario:entrada' %}" class="btn btn-arca-primary"><i class="bi bi-box-arrow-in-down"></i> Entrada</a>
     <a href="{% url 'inventario:salida' %}" class="btn btn-arca-primary"><i class="bi bi-box-arrow-up"></i> Salida</a>
     <a href="{% url 'inventario:traslado' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left-right"></i> Mover</a>
     <a href="{% url 'inventario:articulo_crear' %}" class="btn btn-outline-secondary"><i class="bi bi-plus-lg"></i> Artículo</a>
-  </div>
+  </div>{% endif %}
 </div>
 {% include "inventario/_submenu.html" with seccion="articulos" %}
 
-{% if not hay_ubicaciones %}
+{% if not hay_ubicaciones and gestiona_inventario %}
 <div class="alert alert-warning">Antes de cargar existencias hace falta al menos una ubicación (depósito, cocina, salón…). <a href="{% url 'inventario:catalogo_crear' 'ubicacion' %}">Crear la primera</a>.</div>
 {% endif %}
 

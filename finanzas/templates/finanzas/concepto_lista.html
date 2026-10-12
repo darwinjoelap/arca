@@ -7,7 +7,7 @@
     <h1 class="h3 mb-1">Conceptos</h1>
     <p class="text-muted mb-0">La lista de la que se elige al registrar. Quien registra también puede escribir uno libre en la descripción.</p>
   </div>
-  <a href="{% url 'finanzas:concepto_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nuevo concepto</a>
+  {% if puede_administrar %}<a href="{% url 'finanzas:concepto_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nuevo concepto</a>{% endif %}
 </div>
 
 <div class="row g-3">
@@ -16,7 +16,7 @@
     <div class="card card-arca h-100">
       <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
         <span class="fw-bold">{{ titulo }}</span>
-        <a href="{% url 'finanzas:concepto_crear' %}?tipo={{ tipo }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-lg"></i></a>
+        {% if puede_administrar %}<a href="{% url 'finanzas:concepto_crear' %}?tipo={{ tipo }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-lg"></i></a>{% endif %}
       </div>
       {% if lista %}
       <ul class="list-group list-group-flush">

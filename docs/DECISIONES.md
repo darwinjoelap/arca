@@ -196,6 +196,20 @@ de respaldo si el BCV falla y también para quien trabaja con otra tasa. No se c
 propia ya usada en movimientos no se elimina, solo se corrige, y corregirla no cambia lo confirmado (D-09). La
 plataforma no lista las tasas propias.
 
+**A-48 — Reportes de la cuenta personal.** Cada miembro saca en Excel o PDF sus dos pantallas: «Mi cuenta»
+(estado de cuenta con saldo corrido) y «Mi resumen» (lo que aportó y recibió en el libro de la organización).
+El director y los administradores tienen además el reporte «Cuentas personales» (asignado, entradas, gastos y
+saldo de cada miembro), y pueden sacar el estado de cuenta de un miembro, pero ambos SOLO con la supervisión
+activada por la plataforma; cada consulta en pantalla queda en la bitácora como consulta de cuenta personal y
+cada archivo como emisión de reporte. Los montos van en una moneda, con la tasa del día de cada movimiento.
+
+**A-49 — Supervisión total: ver todo, no cambiar nada.** Es un permiso más del tipo de miembro («Supervisión
+total»), pensado para un vicario o un consejo. Quien lo tiene ve lo mismo que el director: libro, traslados,
+reportes, presupuesto, cuotas, anticipos, arqueos, inventario, asignaciones, configuración y bitácora; y las
+cuentas personales solo si la plataforma activó esa supervisión. No registra, no aprueba, no anula, no edita, y
+no ve «Datos en Excel» (es del director). La regla está en el servidor, no solo en los botones: las pantallas
+compartidas aceptan GET con este permiso y exigen ser director o administrador para cualquier POST.
+
 ## Heredadas de Edumia que siguen vigentes
 
 - **D-02 (revisado)** — El valor de una tasa se puede corregir; recalcula lo no congelado.

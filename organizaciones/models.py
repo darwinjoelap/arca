@@ -22,7 +22,12 @@ PERMISOS = [
     ("puede_gestionar_inventario", "Gestionar inventario", "Altas, bajas y traslados de bienes."),
     ("puede_ver_reportes", "Ver reportes", "Reportes y análisis de la organización, con Excel y PDF."),
     ("tiene_cuenta_personal", "Cuenta personal", "Recibir asignaciones y llevar su propio control."),
+    ("puede_supervisar", "Supervisión total",
+     "Ver todo lo que ve el director, en solo lectura: libro, reportes, inventario, cuotas, anticipos, arqueos, "
+     "configuración y bitácora. No registra ni cambia nada."),
 ]
+# Lo que la supervisión total da por sí sola (A-49).
+PERMISOS_DE_LECTURA = {"puede_ver_presupuesto", "puede_ver_movimientos", "puede_ver_reportes"}
 NOMBRES_PERMISOS = [nombre for nombre, _, _ in PERMISOS]
 
 
@@ -140,6 +145,7 @@ class TipoMiembro(ModeloDeOrganizacion):
     puede_gestionar_inventario = models.BooleanField("gestionar inventario", default=False)
     puede_ver_reportes = models.BooleanField("ver reportes", default=False)
     tiene_cuenta_personal = models.BooleanField("cuenta personal", default=True)
+    puede_supervisar = models.BooleanField("supervisión total (solo lectura)", default=False)
     activo = models.BooleanField(default=True)
 
     class Meta:
@@ -235,12 +241,22 @@ class Membresia(ModeloDeOrganizacion):
             return "Administrador"
         return self.tipo.nombre if self.tipo_id else "—"
 
+    @property
+    def supervisa(self):
+        """Ve todo como el director, sin poder cambiar nada (A-49)."""
+        return bool(self.activa and not self.puede_administrar and self.tipo_id and self.tipo.activo
+                    and self.tipo.puede_supervisar)
+
     def tiene_permiso(self, permiso):
-        """`permiso` es "administrar" o uno de NOMBRES_PERMISOS."""
+        """`permiso` es "administrar", "supervisar", "ver_inventario" o uno de NOMBRES_PERMISOS."""
         if not self.activa:
             return False
         if self.puede_administrar:
             return True
+        if permiso == "supervisar" or (permiso in PERMISOS_DE_LECTURA and self.supervisa):
+            return self.supervisa
+        if permiso == "ver_inventario":
+            return self.supervisa or self.tiene_permiso("puede_gestionar_inventario")
         if permiso not in NOMBRES_PERMISOS or not self.tipo_id or not self.tipo.activo:
             return False
         return bool(getattr(self.tipo, permiso))

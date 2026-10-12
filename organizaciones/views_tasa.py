@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from cambio.forms import TasaPropiaForm
 from cambio.models import TasaCambio
 from core.auditoria import registrar
-from core.mixins import requiere_permiso
+from core.mixins import SUPERVISAR, requiere_permiso
 from core.models import RegistroAuditoria
 from finanzas.services import tasa_vigente
 
@@ -26,7 +26,7 @@ def _contexto(request, form, editando=None):
     }
 
 
-@requiere_permiso()
+@requiere_permiso(lectura=SUPERVISAR)
 def inicio(request):
     organizacion = request.organizacion
     form = TasaPropiaForm(request.POST or None, organizacion=organizacion)

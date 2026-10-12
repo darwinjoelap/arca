@@ -25,6 +25,18 @@
 </div>
 {% endfor %}
 
+{% if supervisa and organizacion_activa.director_ve_cuentas_personales %}
+<h2 class="h6 text-uppercase text-muted fw-bold mb-2">Miembros</h2>
+<div class="row g-3 mb-4">
+  <div class="col-md-6 col-xl-4">
+    <a class="quick-action h-100" href="{% url 'personal:reporte_cuentas' %}">
+      <span class="quick-action-icon"><i class="bi bi-wallet2"></i></span>
+      <span><span class="fw-semibold d-block">Cuentas personales</span><span class="text-muted small">Asignado, entradas, gastos y saldo de la cuenta personal de cada miembro</span></span>
+    </a>
+  </div>
+</div>
+{% endif %}
+
 <h2 class="h6 text-uppercase text-muted fw-bold mb-2">Inventario</h2>
 <div class="row g-3 mb-4">
   <div class="col-md-6 col-xl-4">

@@ -13,7 +13,7 @@
     <a href="?formato=xlsx" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-spreadsheet"></i> Excel</a>
     <a href="?formato=pdf" class="btn btn-outline-secondary" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
     {% endif %}
-    <a href="{% url 'finanzas:cuota_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nueva cuota</a>
+    {% if puede_administrar %}<a href="{% url 'finanzas:cuota_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nueva cuota</a>{% endif %}
   </div>
 </div>
 <div class="card card-arca">
@@ -32,8 +32,8 @@
         <td class="num {% if f.pendiente > 0 %}tono-mal{% elif f.pendiente < 0 %}tono-bien{% endif %}">{{ f.pendiente|monto }}{% if f.pendiente > 0 %}<span class="visually-hidden"> (debe)</span>{% elif f.pendiente < 0 %}<span class="visually-hidden"> (a favor)</span>{% endif %}</td>
         <td>{{ f.ultimo_pago|date:"d/m/Y"|default:"—" }}</td>
         <td class="text-end text-nowrap">
-          <a href="{% url 'finanzas:cuota_editar' f.cuota.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
-          <form method="post" action="{% url 'finanzas:cuota_eliminar' f.cuota.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar esta cuota? Los pagos ya registrados no se tocan.');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button></form>
+          {% if puede_administrar %}<a href="{% url 'finanzas:cuota_editar' f.cuota.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+          <form method="post" action="{% url 'finanzas:cuota_eliminar' f.cuota.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar esta cuota? Los pagos ya registrados no se tocan.');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button></form>{% endif %}
         </td>
       </tr>
     {% endfor %}

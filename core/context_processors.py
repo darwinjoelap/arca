@@ -19,4 +19,7 @@ def organizacion(request):
         "tiene_cuenta_personal": puede("tiene_cuenta_personal"),
         "puede_ver_presupuesto": puede("puede_ver_presupuesto"),
         "gestiona_inventario": puede("puede_gestionar_inventario"),
+        "ve_inventario": puede("ver_inventario"),
+        "supervisa": puede("supervisar"),       # director, administradores y supervisión total
+        "solo_supervisa": bool(membresia and membresia.supervisa),
     }

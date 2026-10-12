@@ -8,7 +8,7 @@
     <h1 class="h3 mb-1">Cajas y cuentas</h1>
     <p class="text-muted mb-0">Una caja es una bolsa de dinero con su propio presupuesto. Sus cuentas dicen dónde está ese dinero: efectivo o banco, en una sola moneda cada una.</p>
   </div>
-  <a href="{% url 'finanzas:caja_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nueva caja</a>
+  {% if puede_administrar %}<a href="{% url 'finanzas:caja_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nueva caja</a>{% endif %}
 </div>
 
 {% for caja in cajas %}
@@ -20,11 +20,11 @@
       {% if caja.descripcion %}<div class="small text-muted fw-normal">{{ caja.descripcion }}</div>{% endif %}
     </div>
     <div class="text-nowrap">
-      <a href="{% url 'finanzas:cuenta_crear' %}?caja={{ caja.pk }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-lg"></i> Cuenta</a>
+      {% if puede_administrar %}<a href="{% url 'finanzas:cuenta_crear' %}?caja={{ caja.pk }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-lg"></i> Cuenta</a>
       <a href="{% url 'finanzas:caja_editar' caja.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar caja"><i class="bi bi-pencil"></i></a>
       <form method="post" action="{% url 'finanzas:caja_eliminar' caja.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar la caja «{{ caja.nombre|escapejs }}»?');">
         {% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar caja"><i class="bi bi-trash"></i></button>
-      </form>
+      </form>{% endif %}
     </div>
   </div>
   {% if caja.cuentas_con_saldo %}
@@ -39,10 +39,10 @@
           <td class="text-end monto">{{ cuenta.moneda|simbolo }} {{ cuenta.saldo_inicial|monto }}</td>
           <td class="text-end monto fw-semibold">{{ cuenta.moneda|simbolo }} {{ saldo|monto }}</td>
           <td class="text-end text-nowrap">
-            <a href="{% url 'finanzas:cuenta_editar' cuenta.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+            {% if puede_administrar %}<a href="{% url 'finanzas:cuenta_editar' cuenta.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
             <form method="post" action="{% url 'finanzas:cuenta_eliminar' cuenta.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar la cuenta «{{ cuenta.nombre|escapejs }}»?');">
               {% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
-            </form>
+            </form>{% endif %}
           </td>
         </tr>
       {% endfor %}

@@ -9,13 +9,13 @@
     <h1 class="h3 mb-1">{{ a.nombre }} {% if not a.activo %}<span class="badge text-bg-secondary">Inactivo</span>{% endif %}</h1>
     <p class="text-muted mb-0">{{ a.get_clase_display }} · {{ a.categoria.nombre|default:"Sin categoría" }}{% if a.codigo %} · Código {{ a.codigo }}{% endif %}</p>
   </div>
-  <div class="d-flex flex-wrap gap-2">
+  {% if gestiona_inventario %}  <div class="d-flex flex-wrap gap-2">
     <a href="{% url 'inventario:entrada' %}?articulo={{ a.pk }}" class="btn btn-arca-primary"><i class="bi bi-box-arrow-in-down"></i> Entrada</a>
     <a href="{% url 'inventario:salida' %}?articulo={{ a.pk }}" class="btn btn-arca-primary"><i class="bi bi-box-arrow-up"></i> Salida</a>
     <a href="{% url 'inventario:traslado' %}?articulo={{ a.pk }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left-right"></i> Mover</a>
     <a href="{% url 'inventario:articulo_editar' a.pk %}" class="btn btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
     <form method="post" action="{% url 'inventario:articulo_eliminar' a.pk %}" onsubmit="return confirm('¿Eliminar «{{ a.nombre|escapejs }}»? Solo se puede si no tiene movimientos.');">{% csrf_token %}<button class="btn btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button></form>
-  </div>
+  </div>{% endif %}
 </div>
 
 <div class="row g-3 mb-3">

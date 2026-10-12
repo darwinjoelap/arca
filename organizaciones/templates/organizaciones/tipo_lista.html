@@ -7,7 +7,7 @@
     <h1 class="h3 mb-1">Tipos de miembro</h1>
     <p class="text-muted mb-0">Ponles el nombre que use tu organización y enciende lo que cada tipo puede hacer.</p>
   </div>
-  <a href="{% url 'organizaciones:tipo_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nuevo tipo</a>
+  {% if puede_administrar %}<a href="{% url 'organizaciones:tipo_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nuevo tipo</a>{% endif %}
 </div>
 
 <div class="card card-arca">
@@ -36,14 +36,15 @@
           <td class="text-center">{% if tipo.puede_gestionar_inventario %}<i class="bi bi-check-circle-fill permiso-si" aria-label="Sí"></i>{% else %}<i class="bi bi-dash permiso-no" aria-label="No"></i>{% endif %}</td>
           <td class="text-center">{% if tipo.puede_ver_reportes %}<i class="bi bi-check-circle-fill permiso-si" aria-label="Sí"></i>{% else %}<i class="bi bi-dash permiso-no" aria-label="No"></i>{% endif %}</td>
           <td class="text-center">{% if tipo.tiene_cuenta_personal %}<i class="bi bi-check-circle-fill permiso-si" aria-label="Sí"></i>{% else %}<i class="bi bi-dash permiso-no" aria-label="No"></i>{% endif %}</td>
+          <td class="text-center">{% if tipo.puede_supervisar %}<i class="bi bi-check-circle-fill permiso-si" aria-label="Sí"></i>{% else %}<i class="bi bi-dash permiso-no" aria-label="No"></i>{% endif %}</td>
           <td class="text-center">{{ tipo.total_miembros }}</td>
           <td class="text-end text-nowrap">
-            <a href="{% url 'organizaciones:tipo_editar' tipo.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+            {% if puede_administrar %}<a href="{% url 'organizaciones:tipo_editar' tipo.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
             <form method="post" action="{% url 'organizaciones:tipo_eliminar' tipo.pk %}" class="d-inline"
                   onsubmit="return confirm('¿Eliminar el tipo «{{ tipo.nombre|escapejs }}»?');">
               {% csrf_token %}
               <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
-            </form>
+            </form>{% endif %}
           </td>
         </tr>
       {% endfor %}

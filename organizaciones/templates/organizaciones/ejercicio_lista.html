@@ -7,7 +7,7 @@
     <h1 class="h3 mb-1">Ejercicios</h1>
     <p class="text-muted mb-0">El período contable de la organización, normalmente un año. Solo uno está activo a la vez.</p>
   </div>
-  <a href="{% url 'organizaciones:ejercicio_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nuevo ejercicio</a>
+  {% if puede_administrar %}<a href="{% url 'organizaciones:ejercicio_crear' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Nuevo ejercicio</a>{% endif %}
 </div>
 
 <div class="card card-arca">
@@ -27,7 +27,9 @@
             {% else %}<span class="badge text-bg-light border">Sin activar</span>{% endif %}
           </td>
           <td class="text-end text-nowrap">
-            {% if not e.cerrado %}
+            {% if not e.cerrado and not puede_administrar %}
+              <span class="text-muted small">{% if e.activo %}Activo{% else %}Abierto{% endif %}</span>
+            {% elif not e.cerrado %}
               {% if not e.activo %}
               <form method="post" action="{% url 'organizaciones:ejercicio_activar' e.pk %}" class="d-inline">
                 {% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-success">Activar</button>

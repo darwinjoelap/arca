@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from core.auditoria import registrar
-from core.mixins import requiere_permiso
+from core.mixins import SUPERVISAR, requiere_permiso
 from core.models import RegistroAuditoria
 
 from . import services
@@ -35,7 +35,7 @@ def _saldos(organizacion):
 # --- Arqueos ----------------------------------------------------------------
 
 
-@requiere_permiso()
+@requiere_permiso(lectura=SUPERVISAR)
 def arqueos(request):
     lista = Arqueo.objects.filter(organizacion=request.organizacion).select_related("cuenta", "cuenta__caja", "realizado_por", "ajuste")
     return render(request, "finanzas/arqueo_lista.html", {"arqueos": lista[:100]})
@@ -58,7 +58,7 @@ def arqueo_nuevo(request):
     return render(request, "finanzas/arqueo_form.html", {"form": form, "saldos": _saldos(organizacion)})
 
 
-@requiere_permiso()
+@requiere_permiso(lectura=SUPERVISAR)
 def arqueo_detalle(request, pk):
     arqueo = get_object_or_404(
         Arqueo.objects.select_related("cuenta", "cuenta__caja", "realizado_por", "ajuste"), pk=pk, organizacion=request.organizacion)
@@ -85,7 +85,7 @@ def arqueo_ajustar(request, pk):
 # --- Anticipos --------------------------------------------------------------
 
 
-@requiere_permiso()
+@requiere_permiso(lectura=SUPERVISAR)
 def anticipos(request):
     lista = Anticipo.objects.filter(organizacion=request.organizacion).select_related("cuenta", "miembro", "miembro__user")
     estado = request.GET.get("estado", "")
@@ -127,7 +127,7 @@ def _anticipo(request, pk):
         pk=pk, organizacion=request.organizacion)
 
 
-@requiere_permiso()
+@requiere_permiso(lectura=SUPERVISAR)
 def anticipo_detalle(request, pk):
     anticipo = _anticipo(request, pk)
     return render(request, "finanzas/anticipo_detalle.html", {

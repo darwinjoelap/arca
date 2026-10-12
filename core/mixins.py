@@ -18,6 +18,16 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import PermissionDenied
 
 ADMINISTRAR = "administrar"
+SUPERVISAR = "supervisar"          # el director, los administradores y la supervisión total (A-49)
+VER_INVENTARIO = "ver_inventario"  # quien gestiona el inventario o lo supervisa
+_LECTURA = ("GET", "HEAD", "OPTIONS")
+
+
+def _permitido(request, permiso, lectura):
+    """`lectura`: permiso que basta para mirar (GET). Escribir (POST) siempre exige `permiso`."""
+    if tiene_permiso(request, permiso):
+        return True
+    return bool(lectura) and request.method in _LECTURA and tiene_permiso(request, lectura)
 
 _MENSAJE = "No tienes permiso para acceder a esta página."
 
@@ -33,9 +43,10 @@ class PermisoRequeridoMixin(LoginRequiredMixin, UserPassesTestMixin):
     """CBV mixin: exige una membresía activa con `permiso_requerido`."""
 
     permiso_requerido = ADMINISTRAR
+    permiso_lectura = None   # p. ej. SUPERVISAR: deja ver la pantalla, nunca enviarla
 
     def test_func(self):
-        return tiene_permiso(self.request, self.permiso_requerido)
+        return _permitido(self.request, self.permiso_requerido, self.permiso_lectura)
 
     def handle_no_permission(self):
         if not self.request.user.is_authenticated:
@@ -65,14 +76,15 @@ class DeLaOrganizacionMixin:
         return kwargs
 
 
-def requiere_permiso(permiso=ADMINISTRAR):
-    """Decorador para vistas basadas en función."""
+def requiere_permiso(permiso=ADMINISTRAR, lectura=None):
+    """Decorador para vistas basadas en función. Con `lectura`, quien tiene ese
+    permiso puede ver la pantalla (GET) pero no enviarla (POST)."""
 
     def decorador(vista):
         @login_required
         @wraps(vista)
         def envoltura(request, *args, **kwargs):
-            if not tiene_permiso(request, permiso):
+            if not _permitido(request, permiso, lectura):
                 raise PermissionDenied(_MENSAJE)
             return vista(request, *args, **kwargs)
 

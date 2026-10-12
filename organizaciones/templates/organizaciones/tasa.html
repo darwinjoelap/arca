@@ -23,6 +23,7 @@
       {% endif %}
     </div></div>
 
+    {% if puede_administrar %}
     <div class="card card-arca"><div class="card-body">
       <h2 class="h6">{% if editando %}Corregir la tasa del {{ editando.fecha|date:"d/m/Y" }}{% else %}Cargar una tasa{% endif %}</h2>
       <form method="post" novalidate>
@@ -38,6 +39,7 @@
         {% if editando %}<a href="{% url 'organizaciones:tasa' %}" class="btn btn-outline-secondary">Cancelar</a>{% endif %}
       </form>
     </div></div>
+    {% endif %}
   </div>
 
   <div class="col-lg-7">
@@ -52,8 +54,8 @@
             <td class="num fw-semibold">{{ t.valor|monto }}</td>
             <td class="text-muted small">{{ t.cargada_por|default:"—" }}</td>
             <td class="text-end text-nowrap">
-              <a href="{% url 'organizaciones:tasa_corregir' t.pk %}" class="btn btn-sm btn-outline-secondary" title="Corregir"><i class="bi bi-pencil"></i></a>
-              <form method="post" action="{% url 'organizaciones:tasa_eliminar' t.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar esta tasa? Volverá a aplicar la del BCV.');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button></form>
+              {% if puede_administrar %}<a href="{% url 'organizaciones:tasa_corregir' t.pk %}" class="btn btn-sm btn-outline-secondary" title="Corregir"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="{% url 'organizaciones:tasa_eliminar' t.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar esta tasa? Volverá a aplicar la del BCV.');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button></form>{% endif %}
             </td>
           </tr>
         {% endfor %}

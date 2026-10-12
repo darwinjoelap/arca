@@ -104,11 +104,12 @@ def inicio(request):
             contexto["por_aprobar"] = Movimiento.objects.filter(
                 organizacion=organizacion, estado=Movimiento.Estado.REGISTRADO
             ).count()
+        if membresia.tiene_permiso("supervisar"):
             from finanzas.models import Anticipo
             contexto["anticipos_pendientes"] = Anticipo.objects.filter(
                 organizacion=organizacion, estado=Anticipo.Estado.PENDIENTE
             ).count()
-    if membresia.tiene_permiso("puede_gestionar_inventario"):
+    if membresia.tiene_permiso("ver_inventario"):
         from inventario.services import resumen as resumen_inventario
         contexto["por_reponer"] = resumen_inventario(organizacion)[1]["bajo_minimo"]
     return render(request, "core/dashboard.html", contexto)

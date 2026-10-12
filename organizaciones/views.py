@@ -18,7 +18,7 @@ from django.views.generic import CreateView, ListView, UpdateView
 
 from core.auditoria import registrar
 from core.middleware import CLAVE_SESION
-from core.mixins import DeLaOrganizacionMixin, PermisoRequeridoMixin, requiere_permiso
+from core.mixins import SUPERVISAR, DeLaOrganizacionMixin, PermisoRequeridoMixin, requiere_permiso
 from core.models import RegistroAuditoria
 from core.utils import eliminar_protegido
 
@@ -62,7 +62,7 @@ def seleccionar(request):
 # --- Configuración ---------------------------------------------------------
 
 
-@requiere_permiso()
+@requiere_permiso(lectura=SUPERVISAR)
 def configuracion(request):
     organizacion = request.organizacion
     contexto = {
@@ -92,6 +92,7 @@ def organizacion_editar(request):
 
 
 class TipoListView(PermisoRequeridoMixin, DeLaOrganizacionMixin, ListView):
+    permiso_lectura = SUPERVISAR
     model = TipoMiembro
     template_name = "organizaciones/tipo_lista.html"
     context_object_name = "tipos"
@@ -153,6 +154,7 @@ def tipo_eliminar(request, pk):
 
 
 class MiembroListView(PermisoRequeridoMixin, DeLaOrganizacionMixin, ListView):
+    permiso_lectura = SUPERVISAR
     model = Membresia
     template_name = "organizaciones/miembro_lista.html"
     context_object_name = "miembros"
@@ -302,6 +304,7 @@ def miembro_toggle_activa(request, pk):
 
 
 class EjercicioListView(PermisoRequeridoMixin, DeLaOrganizacionMixin, ListView):
+    permiso_lectura = SUPERVISAR
     model = Ejercicio
     template_name = "organizaciones/ejercicio_lista.html"
     context_object_name = "ejercicios"
@@ -375,6 +378,8 @@ def ejercicio_eliminar(request, pk):
 class BitacoraListView(PermisoRequeridoMixin, ListView):
     """Solo los eventos de esta organización. Los de plataforma (organizacion
     vacía) y los de otras organizaciones no aparecen."""
+
+    permiso_lectura = SUPERVISAR
 
     template_name = "organizaciones/bitacora_lista.html"
     context_object_name = "registros"

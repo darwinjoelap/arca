@@ -277,3 +277,50 @@ class CuotasYResumenTests(PersonalMixin, TestCase):
         from reportes import services as reportes
         nombres = [f.celdas[0] for f in reportes.por_miembro(self.org, date(2026, 1, 1), date(2026, 12, 31), None, "USD").filas]
         self.assertIn("Doña Rosa", nombres)
+
+
+class ReportesPersonalesTests(PersonalMixin, TestCase):
+    """A-48: cada miembro saca sus reportes; el director, el de todas las
+    cuentas solo con la supervisión activada."""
+
+    def setUp(self):
+        self.org.refresh_from_db()
+        self.asignar(monto="100")
+        self.gasto_personal(monto="30", descripcion="Libros")
+        self.gasto_personal(membresia=self.residente, monto="5", tipo="ingreso", descripcion="Regalo", fecha=date(2026, 3, 6))
+
+    def test_mi_cuenta_en_excel_y_pdf_con_saldo_corrido(self):
+        from io import BytesIO
+        from openpyxl import load_workbook
+        self.entrar("residente")
+        url = reverse("personal:cuenta") + "?desde=2026-03-01&hasta=2026-03-31&moneda=USD"
+        self.assertContains(self.client.get(url), "formato=pdf")
+        excel = self.client.get(url + "&formato=xlsx")
+        self.assertEqual(excel.status_code, 200)
+        celdas = [c for fila in load_workbook(BytesIO(excel.content)).active.iter_rows(values_only=True) for c in fila]
+        self.assertIn("Libros", celdas)
+        self.assertIn(75, celdas)   # 100 - 30 + 5
+        self.assertEqual(self.client.get(url + "&formato=pdf")["Content-Type"], "application/pdf")
+        self.assertTrue(RegistroAuditoria.objects.filter(organizacion=self.org, accion="emitir_reporte").exists())
+
+    def test_mi_resumen_en_excel(self):
+        self.entrar("residente")
+        respuesta = self.client.get(reverse("personal:resumen") + "?desde=2026-03-01&hasta=2026-03-31&formato=xlsx")
+        self.assertIn("spreadsheetml", respuesta["Content-Type"])
+
+    def test_reporte_de_cuentas_solo_con_supervision(self):
+        from organizaciones.models import Organizacion
+        url = reverse("personal:reporte_cuentas")
+        self.entrar("dir_a")
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.assertNotContains(self.client.get(reverse("reportes:inicio")), "Cuentas personales")
+        Organizacion.objects.filter(pk=self.org.pk).update(director_ve_cuentas_personales=True)
+        self.assertContains(self.client.get(reverse("reportes:inicio")), "Cuentas personales")
+        respuesta = self.client.get(url + "?desde=2026-03-01&hasta=2026-03-31&moneda=USD")
+        self.assertContains(respuesta, "Cuentas personales de los miembros")
+        self.assertContains(respuesta, self.residente.nombre)
+        self.assertTrue(RegistroAuditoria.objects.filter(organizacion=self.org, accion="ver_cuenta_personal").exists())
+        self.assertEqual(self.client.get(url + "?formato=pdf")["Content-Type"], "application/pdf")
+        # Un miembro común no lo ve aunque la supervisión esté activa.
+        self.entrar("residente")
+        self.assertEqual(self.client.get(url).status_code, 403)

@@ -6,7 +6,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
   <div><h1 class="h3 mb-1">Anticipos</h1>
     <p class="text-muted mb-0">Dinero entregado a alguien para que gaste y luego rinda cuentas.{% if n_pendientes %} <strong>{{ n_pendientes }} por rendir</strong>{% for moneda, total in por_moneda %}{% if forloop.first %}: {% else %} y {% endif %}{{ moneda|simbolo }} {{ total|monto }}{% endfor %}.{% endif %}</p></div>
-  <a href="{% url 'finanzas:anticipo_nuevo' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Entregar anticipo</a>
+  {% if puede_administrar %}<a href="{% url 'finanzas:anticipo_nuevo' %}" class="btn btn-arca-primary"><i class="bi bi-plus-lg"></i> Entregar anticipo</a>{% endif %}
 </div>
 <div class="arca-chips mb-3" role="navigation" aria-label="Filtrar por estado">
   <a class="arca-chip {% if not estado %}active{% endif %}" href="?">Todos</a>
@@ -24,7 +24,7 @@
     <td class="text-end monto">{{ a.moneda|simbolo }} {{ a.monto|monto }}</td>
     <td class="text-end monto">{% if a.gastado is not None %}{{ a.moneda|simbolo }} {{ a.gastado|monto }}{% else %}—{% endif %}</td>
     <td>{% if a.estado == 'pendiente' %}<span class="badge text-bg-warning"><i class="bi bi-hourglass-split"></i> Por rendir</span>{% elif a.estado == 'rendido' %}<span class="badge text-bg-success">Rendido</span>{% else %}<span class="badge text-bg-secondary">Anulado</span>{% endif %}</td>
-    <td class="text-end text-nowrap">{% if a.estado == 'pendiente' %}<a href="{% url 'finanzas:anticipo_rendir' a.pk %}" class="btn btn-sm btn-arca-primary">Rendir</a> {% endif %}<a href="{% url 'finanzas:anticipo_detalle' a.pk %}" class="btn btn-sm btn-outline-secondary">Ver</a></td>
+    <td class="text-end text-nowrap">{% if a.estado == 'pendiente' and puede_administrar %}<a href="{% url 'finanzas:anticipo_rendir' a.pk %}" class="btn btn-sm btn-arca-primary">Rendir</a> {% endif %}<a href="{% url 'finanzas:anticipo_detalle' a.pk %}" class="btn btn-sm btn-outline-secondary">Ver</a></td>
   </tr>{% endfor %}</tbody>
 </table></div>
 {% else %}<div class="empty-state"><i class="bi bi-hourglass-split d-block mb-2"></i>{% if estado %}No hay anticipos en ese estado.{% else %}Todavía no hay anticipos.{% endif %}</div>{% endif %}

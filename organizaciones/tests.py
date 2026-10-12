@@ -650,3 +650,58 @@ class EntradaTests(DosOrganizacionesMixin, TestCase):
     def test_login_fallido_se_anota_en_la_organizacion_del_enlace(self):
         self.entrar_por(self.org_a, "ana", "mala")
         self.assertEqual(RegistroAuditoria.objects.get(accion="login_fallido").organizacion, self.org_a)
+
+
+class SupervisionTotalTests(DosOrganizacionesMixin, TestCase):
+    """A-49: un tipo con «Supervisión total» ve todo lo del director, sin poder cambiar nada."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        from django.contrib.auth import get_user_model
+        tipo = TipoMiembro.objects.create(organizacion=cls.org_a, nombre="Vicario general", puede_supervisar=True,
+                                          tiene_cuenta_personal=False)
+        cls.vicario = Membresia.objects.create(
+            organizacion=cls.org_a, tipo=tipo, nombre_visible="Vicario",
+            user=get_user_model().objects.create_user("vicario", password="x", debe_cambiar_clave=False))
+
+    def setUp(self):
+        self.client.force_login(self.vicario.user)
+
+    def test_ve_todas_las_pantallas(self):
+        from django.urls import reverse
+        for nombre in ["organizaciones:configuracion", "organizaciones:tipo_lista", "organizaciones:miembro_lista",
+                       "organizaciones:ejercicio_lista", "organizaciones:bitacora_lista", "organizaciones:tasa",
+                       "finanzas:movimiento_lista", "finanzas:traslado_lista", "finanzas:caja_lista",
+                       "finanzas:concepto_lista", "finanzas:cuota_lista", "finanzas:arqueo_lista",
+                       "finanzas:anticipo_lista", "personal:asignaciones", "reportes:inicio", "presupuestos:lista",
+                       "inventario:inicio", "inventario:movimientos", "inventario:catalogos", "inventario:reportes"]:
+            respuesta = self.client.get(reverse(nombre))
+            self.assertEqual(respuesta.status_code, 200, nombre)
+            for accion in ("Nuevo tipo", "Nuevo miembro", "Nuevo traslado", "Nueva caja", "Nueva cuota",
+                           "Nuevo arqueo", "Entregar anticipo", "Nueva asignación", "Cargar tasa", "Nuevo ejercicio"):
+                self.assertNotContains(respuesta, accion, msg_prefix=nombre)
+
+    def test_no_puede_cambiar_nada(self):
+        from django.urls import reverse
+        for nombre in ["organizaciones:miembro_crear", "organizaciones:tipo_crear", "organizaciones:organizacion_editar",
+                       "finanzas:traslado_registrar", "finanzas:arqueo_nuevo", "finanzas:anticipo_nuevo",
+                       "finanzas:cuota_crear", "personal:asignacion_nueva", "presupuestos:crear",
+                       "inventario:articulo_crear", "finanzas:ingreso_registrar", "finanzas:egreso_registrar",
+                       "organizaciones:datos"]:
+            self.assertEqual(self.client.get(reverse(nombre)).status_code, 403, nombre)
+        # Las pantallas que puede ver no aceptan envíos.
+        self.assertEqual(self.client.post(reverse("organizaciones:tasa"), {"fecha": "2026-01-01", "valor": "1"}).status_code, 403)
+        self.assertEqual(self.client.post(reverse("organizaciones:configuracion")).status_code, 403)
+
+    def test_cuentas_personales_solo_con_la_supervision_de_la_plataforma(self):
+        from django.urls import reverse
+        self.assertEqual(self.client.get(reverse("personal:reporte_cuentas")).status_code, 403)
+        Organizacion.objects.filter(pk=self.org_a.pk).update(director_ve_cuentas_personales=True)
+        self.assertEqual(self.client.get(reverse("personal:reporte_cuentas")).status_code, 200)
+
+    def test_otra_organizacion_sigue_cerrada(self):
+        self.assertFalse(Membresia.objects.filter(organizacion=self.org_b, user=self.vicario.user).exists())
+        self.assertTrue(self.vicario.supervisa)
+        self.assertFalse(self.vicario.tiene_permiso("puede_registrar_egresos"))
+        self.assertTrue(self.vicario.tiene_permiso("puede_ver_reportes"))

@@ -12,7 +12,7 @@
         {% if m.nota or m.anulado %}<div class="small text-muted">{% if m.anulado %}Anulado: {{ m.motivo_anulacion }}{% else %}{{ m.nota }}{% endif %}</div>{% endif %}</td>
       <td class="text-end monto {% if m.anulado %}text-decoration-line-through{% endif %}">{% if m.tipo == 'entrada' %}+{% elif m.tipo == 'salida' %}−{% endif %}{{ m.cantidad|cantidad }}</td>
       <td class="small">{% if m.tipo == 'traslado' %}{{ m.origen }} → {{ m.destino }}{% else %}{{ m.origen|default:m.destino }}{% endif %}<div class="text-muted">{{ m.registrado_por.nombre_para_mostrar }}</div></td>
-      <td class="text-end">{% if not m.anulado %}<a href="{% url 'inventario:movimiento_anular' m.pk %}" class="btn btn-sm btn-outline-danger" title="Anular" aria-label="Anular movimiento"><i class="bi bi-x-lg"></i></a>{% endif %}</td>
+      <td class="text-end">{% if not m.anulado and gestiona_inventario %}<a href="{% url 'inventario:movimiento_anular' m.pk %}" class="btn btn-sm btn-outline-danger" title="Anular" aria-label="Anular movimiento"><i class="bi bi-x-lg"></i></a>{% endif %}</td>
     </tr>
   {% endfor %}
   </tbody>

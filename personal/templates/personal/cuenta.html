@@ -13,8 +13,14 @@
     <a href="{% url 'personal:ingreso' %}" class="btn btn-arca-primary"><i class="bi bi-arrow-down-circle"></i> Ingreso</a>
     <a href="{% url 'personal:egreso' %}" class="btn btn-arca-primary"><i class="bi bi-arrow-up-circle"></i> Gasto</a>
     <a href="{% url 'personal:conceptos' %}" class="btn btn-outline-secondary"><i class="bi bi-tags"></i> Mis conceptos</a>
+    <a href="?{{ consulta }}{% if consulta %}&{% endif %}formato=xlsx" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-spreadsheet"></i> Excel</a>
+    <a href="?{{ consulta }}{% if consulta %}&{% endif %}formato=pdf" target="_blank" rel="noopener" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
   </div>
-  {% else %}<a href="{% url 'personal:asignaciones' %}" class="btn btn-sm btn-outline-secondary no-imprimir"><i class="bi bi-arrow-left"></i> Asignaciones</a>{% endif %}
+  {% else %}<div class="d-flex flex-wrap gap-2 no-imprimir">
+    <a href="{% url 'personal:asignaciones' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Asignaciones</a>
+    <a href="?{{ consulta }}{% if consulta %}&{% endif %}formato=xlsx" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-spreadsheet"></i> Excel</a>
+    <a href="?{{ consulta }}{% if consulta %}&{% endif %}formato=pdf" target="_blank" rel="noopener" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+  </div>{% endif %}
 </div>
 
 {% if solo_lectura %}

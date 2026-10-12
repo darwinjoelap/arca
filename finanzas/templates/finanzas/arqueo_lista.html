@@ -6,7 +6,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
   <div><h1 class="h3 mb-1">Arqueos</h1>
     <p class="text-muted mb-0">Contar el dinero de una cuenta y compararlo con lo que dice el sistema.</p></div>
-  <a href="{% url 'finanzas:arqueo_nuevo' %}" class="btn btn-arca-primary"><i class="bi bi-calculator"></i> Nuevo arqueo</a>
+  {% if puede_administrar %}<a href="{% url 'finanzas:arqueo_nuevo' %}" class="btn btn-arca-primary"><i class="bi bi-calculator"></i> Nuevo arqueo</a>{% endif %}
 </div>
 <div class="card card-arca">
 {% if arqueos %}<div class="table-responsive"><table class="table table-hover align-middle mb-0">

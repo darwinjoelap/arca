@@ -19,7 +19,7 @@ from django.views.generic import CreateView, ListView, UpdateView
 
 from cambio.services import formatear
 from core.auditoria import registrar
-from core.mixins import ADMINISTRAR, DeLaOrganizacionMixin, PermisoRequeridoMixin, requiere_permiso, tiene_permiso
+from core.mixins import ADMINISTRAR, SUPERVISAR, DeLaOrganizacionMixin, PermisoRequeridoMixin, requiere_permiso, tiene_permiso
 from core.models import RegistroAuditoria
 from core.utils import eliminar_protegido
 
@@ -234,6 +234,7 @@ def movimiento_anular(request, pk):
 
 
 class TrasladoListView(PermisoRequeridoMixin, DeLaOrganizacionMixin, ListView):
+    permiso_lectura = SUPERVISAR
     model = Traslado
     template_name = "finanzas/traslado_lista.html"
     context_object_name = "traslados"
@@ -303,7 +304,7 @@ def traslado_anular(request, pk):
 # --- Cajas y cuentas -------------------------------------------------------
 
 
-@requiere_permiso()
+@requiere_permiso(lectura=SUPERVISAR)
 def cajas(request):
     organizacion = request.organizacion
     sumas = _sumas_por_cuenta(organizacion)
@@ -399,6 +400,7 @@ def cuenta_eliminar(request, pk):
 
 
 class ConceptoListView(PermisoRequeridoMixin, DeLaOrganizacionMixin, ListView):
+    permiso_lectura = SUPERVISAR
     model = Concepto
     template_name = "finanzas/concepto_lista.html"
     context_object_name = "conceptos"
@@ -459,7 +461,7 @@ def _ejercicio_actual(organizacion):
     return qs.filter(activo=True).first() or qs.filter(fecha_inicio__lte=hoy, fecha_fin__gte=hoy).first() or qs.first()
 
 
-@requiere_permiso()
+@requiere_permiso(lectura=SUPERVISAR)
 def cuotas(request):
     """Lo que se espera de cada miembro y cuánto lleva pagado en el ejercicio."""
     ejercicio = _ejercicio_actual(request.organizacion)

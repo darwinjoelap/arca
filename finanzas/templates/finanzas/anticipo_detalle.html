@@ -8,7 +8,7 @@
   <div><h1 class="h3 mb-1">Anticipo a {{ a.responsable }}
     {% if a.estado == 'pendiente' %}<span class="badge text-bg-warning">Por rendir</span>{% elif a.estado == 'rendido' %}<span class="badge text-bg-success">Rendido</span>{% else %}<span class="badge text-bg-secondary">Anulado</span>{% endif %}</h1>
     <p class="text-muted mb-0">{{ a.motivo }} · {{ a.cuenta.caja.nombre }} · {{ a.cuenta.nombre }} · entregado el {{ a.fecha|date:"d/m/Y" }} por {{ a.entregado_por.nombre_para_mostrar }}</p></div>
-  {% if a.estado == 'pendiente' %}<div class="d-flex gap-2">
+  {% if a.estado == 'pendiente' and puede_administrar %}<div class="d-flex gap-2">
     <a href="{% url 'finanzas:anticipo_rendir' a.pk %}" class="btn btn-arca-primary"><i class="bi bi-check2-square"></i> Rendir</a>
     <a href="{% url 'finanzas:anticipo_anular' a.pk %}" class="btn btn-outline-danger">Anular</a></div>{% endif %}
 </div>

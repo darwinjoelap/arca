@@ -21,10 +21,10 @@
   {% else %}
     <p>{% if a.diferencia > 0 %}Sobran {{ a.cuenta.moneda|simbolo }} {{ a.diferencia|monto }}: se puede registrar como <strong>ingreso</strong>.{% else %}Faltan {{ a.cuenta.moneda|simbolo }} {{ a.diferencia|monto|cut:"-" }}: se puede registrar como <strong>egreso</strong>.{% endif %}
       Con eso el saldo de la cuenta queda igual a lo contado. Antes de ajustar, revisa si falta registrar algún movimiento: ese es el motivo más común.</p>
-    <form method="post" action="{% url 'finanzas:arqueo_ajustar' a.pk %}" onsubmit="return confirm('Se registra un movimiento por la diferencia. ¿Continuar?');">{% csrf_token %}
+    {% if puede_administrar %}<form method="post" action="{% url 'finanzas:arqueo_ajustar' a.pk %}" onsubmit="return confirm('Se registra un movimiento por la diferencia. ¿Continuar?');">{% csrf_token %}
       <button class="btn btn-arca-primary"><i class="bi bi-arrow-repeat"></i> Registrar el ajuste</button>
       <a href="{% url 'finanzas:movimiento_lista' %}?cuenta={{ a.cuenta_id }}" class="btn btn-outline-secondary">Revisar movimientos de la cuenta</a>
-    </form>
+    </form>{% else %}<p class="text-muted small mb-0">El ajuste lo decide el director o un administrador.</p>{% endif %}
   {% endif %}
 </div></div>
 {% endblock %}

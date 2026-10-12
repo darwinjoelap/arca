@@ -25,7 +25,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from core.auditoria import registrar
-from core.mixins import requiere_permiso
+from core.mixins import SUPERVISAR, requiere_permiso
 from core.models import RegistroAuditoria
 from finanzas.models import Movimiento
 from finanzas.services import estado_cuotas, tasa_vigente
@@ -34,7 +34,7 @@ from presupuestos.services import meses_del_ejercicio
 from reportes.services import SIMBOLO
 from reportes.views import _grafico_mensual
 
-from . import services
+from . import reportes, services
 from .forms import AsignacionForm, ConceptoPersonalForm, MovimientoPersonalForm
 from .models import ConceptoPersonal, MovimientoPersonal
 
@@ -78,6 +78,17 @@ def _periodo(request, ejercicio):
 # --- Mi resumen: mi relación con la organización ----------------------------
 
 
+def _archivo_personal(request, reporte):
+    from reportes.views import _archivo
+    return _archivo(request, reporte, request.GET["formato"])
+
+
+def _consulta(request):
+    consulta = request.GET.copy()
+    consulta.pop("formato", None)
+    return consulta.urlencode()
+
+
 @login_required
 def resumen(request):
     m = _membresia(request)
@@ -86,6 +97,8 @@ def resumen(request):
     moneda = _moneda(request)
     campo = "monto_usd" if moneda == "USD" else "monto_ves"
     desde, hasta = _periodo(request, ejercicio)
+    if request.GET.get("formato"):
+        return _archivo_personal(request, reportes.mi_relacion(m, desde, hasta, moneda))
 
     mios = Movimiento.objects.filter(organizacion=organizacion, miembro=m, estado=Movimiento.Estado.CONFIRMADO)
     periodo = mios.filter(fecha__gte=desde, fecha__lte=hasta)
@@ -115,6 +128,7 @@ def resumen(request):
         "grafico": _grafico_mensual(serie), "etiquetas": ("Aporté", "Recibí"),
         "cuotas": estado_cuotas(organizacion, ejercicio, membresia=m) if ejercicio else [],
         "movimientos": mios.select_related("concepto", "concepto__padre", "cuenta").order_by("-fecha", "-id")[:15],
+        "consulta": _consulta(request),
     })
 
 
@@ -145,12 +159,16 @@ def _contexto_cuenta(request, m, solo_lectura):
         "movimientos": services.vigentes(m).select_related("concepto", "origen")[:40],
         "etiquetas": ("Entró", "Gasté"),
         "director_ve": organizacion.director_ve_cuentas_personales,
+        "consulta": _consulta(request),
     }
 
 
 @login_required
 def cuenta(request):
     m = _con_cuenta(request)
+    if request.GET.get("formato"):
+        desde, hasta = _periodo(request, _ejercicio(m.organizacion))
+        return _archivo_personal(request, reportes.estado_de_cuenta(m, desde, hasta, _moneda(request)))
     return render(request, "personal/cuenta.html", _contexto_cuenta(request, m, solo_lectura=False))
 
 
@@ -214,7 +232,7 @@ def concepto_eliminar(request, pk):
 # --- Del director: asignaciones y cuentas de los miembros -------------------
 
 
-@requiere_permiso()
+@requiere_permiso(lectura=SUPERVISAR)
 def asignaciones(request):
     organizacion = request.organizacion
     asignado = services.total_asignado(organizacion)
@@ -260,7 +278,7 @@ def asignacion_nueva(request):
     return render(request, "personal/asignacion_form.html", {"form": form})
 
 
-@requiere_permiso()
+@requiere_permiso(lectura=SUPERVISAR)
 def cuenta_de_miembro(request, pk):
     """La cuenta personal de otro miembro, en solo lectura. Solo si el
     superadmin lo permitió para esta organización."""
@@ -271,4 +289,30 @@ def cuenta_de_miembro(request, pk):
     if not organizacion.director_ve_cuentas_personales:
         raise PermissionDenied("Las cuentas personales de los miembros son privadas en esta organización.")
     registrar(request, Accion.VER_CUENTA_PERSONAL, modelo="Membresia", objeto_id=m.pk, descripcion=m.nombre)
+    if request.GET.get("formato"):
+        desde, hasta = _periodo(request, _ejercicio(organizacion))
+        return _archivo_personal(request, reportes.estado_de_cuenta(m, desde, hasta, _moneda(request)))
     return render(request, "personal/cuenta.html", _contexto_cuenta(request, m, solo_lectura=True))
+
+
+@requiere_permiso(lectura=SUPERVISAR)
+def reporte_cuentas(request):
+    """Saldo de la cuenta personal de cada miembro (A-48). Solo con la
+    supervisión activada; cada consulta queda en la bitácora."""
+    organizacion = request.organizacion
+    if not organizacion.director_ve_cuentas_personales:
+        raise PermissionDenied("Las cuentas personales de los miembros son privadas en esta organización.")
+    from reportes.forms import FiltroReporteForm
+    from reportes.views import _archivo
+
+    filtro = FiltroReporteForm(request.GET, organizacion=organizacion)
+    v = filtro.valores()
+    resultado = reportes.cuentas_personales(organizacion, v["desde"], v["hasta"], v["moneda"])
+    if request.GET.get("formato"):
+        return _archivo(request, resultado, request.GET["formato"])
+    registrar(request, Accion.VER_CUENTA_PERSONAL, modelo="Reporte", objeto_id="cuentas-personales",
+              descripcion=f"Reporte de cuentas personales · {resultado.subtitulo}")
+    return render(request, "reportes/reporte.html", {
+        "reporte": resultado, "filtro": filtro, "usa": ("periodo", "moneda"), "v": v, "clave": "cuentas-personales",
+        "consulta": _consulta(request), "simbolo": SIMBOLO[v["moneda"]],
+    })
