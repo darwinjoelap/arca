@@ -132,7 +132,9 @@ Pendiente de verificar en tu máquina: `pip install -r requirements.txt`, las 23
 ## Hecho — Railway sin «Config as Code» (A-51)
 
 - [x] docs/DESPLIEGUE.md con los ajustes del panel (servicios `web` y `tareas`)
-- [ ] Tuyo: copiar los ajustes al panel, borrar `railway.json` y `railway.cron.json`, y desplegar antes del 2026-12-01
+- [x] Ajustes copiados al panel, `railway.json` y `railway.cron.json` borrados (commit 9f17bf0)
+- [x] Despliegue de `web` en verde con la configuración del panel
+- [ ] Confirmar en el log de `tareas` que la siguiente corrida siga diciendo `Tasa BCV …`
 
 ## Lo que NO está todavía
 
