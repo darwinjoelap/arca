@@ -129,6 +129,11 @@ probada contra una copia del HTML. La primera corrida real es la prueba.
 
 Pendiente de verificar en tu máquina: `pip install -r requirements.txt`, las 234 pruebas en PostgreSQL.
 
+## Hecho — Railway sin «Config as Code» (A-51)
+
+- [x] docs/DESPLIEGUE.md con los ajustes del panel (servicios `web` y `tareas`)
+- [ ] Tuyo: copiar los ajustes al panel, borrar `railway.json` y `railway.cron.json`, y desplegar antes del 2026-12-01
+
 ## Lo que NO está todavía
 
 - Abrir la app desde cero sin señal: no se puede (A-20).

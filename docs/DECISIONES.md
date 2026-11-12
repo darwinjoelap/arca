@@ -217,6 +217,13 @@ cuentas de una organización no existen, y el usuario no podía entrar. Ahora to
 la instaló, la entrada principal tiene un campo «Escribe su enlace» que lleva a la entrada correcta (la app
 instalada no tiene barra de direcciones).
 
+**A-51 — La configuración de Railway vive en el panel, no en el repositorio.** Railway dejó de leer
+`railway.json` / `railway.toml` («Config as Code») el 2026-12-01. Se evaluó su reemplazo, el archivo
+`.railway/railway.ts` («Infrastructure as Code»), pero exige Node y la CLI de Railway en un proyecto Python
+para cuatro ajustes. Se eligió el panel: comando de arranque, health check `/salud/` y reinicio del servicio
+`web`, y comando y horario del servicio `tareas`. Están escritos en docs/DESPLIEGUE.md para rehacerlos.
+Se borraron `railway.json` y `railway.cron.json`; `Procfile` queda como respaldo.
+
 ## Heredadas de Edumia que siguen vigentes
 
 - **D-02 (revisado)** — El valor de una tasa se puede corregir; recalcula lo no congelado.

@@ -38,8 +38,18 @@ propio hay que escribirlo en `ALLOWED_HOSTS` y en `CSRF_TRUSTED_ORIGINS`.
 
 ## 3. Primer arranque
 
-`railway.json` ya dice cómo arrancar: migra, crea el superadmin si no existe ninguno, junta los estáticos y
-levanta gunicorn. El health check es `/salud/`.
+La configuración del servicio vive en el **panel de Railway**, no en el repositorio (A-51: Railway dejó de
+leer `railway.json` el 1 de diciembre de 2026). En el servicio `web` → **Settings**:
+
+| Ajuste | Valor |
+|---|---|
+| Custom Start Command | `python manage.py migrate --noinput && python manage.py asegurar_superadmin && python manage.py collectstatic --noinput && gunicorn config.wsgi --bind 0.0.0.0:$PORT --workers 2 --timeout 60 --access-logfile -` |
+| Healthcheck Path | `/salud/` |
+| Healthcheck Timeout | `120` |
+| Restart Policy | On Failure, 5 reintentos |
+
+El comando migra, crea el superadmin si no existe ninguno, junta los estáticos y levanta gunicorn.
+`Procfile` repite el mismo comando como respaldo, pero lo que manda es el panel.
 
 - [ ] Esperar a que el despliegue quede en verde. Si falla, mirar los logs del servicio.
 - [ ] Abrir `https://<dominio>/cuentas/login/?plataforma` y entrar con `ARCA_ADMIN_USUARIO` y `ARCA_ADMIN_CLAVE`.
@@ -102,14 +112,18 @@ Cada `git push` a `main` despliega solo. Antes de hacerlo:
 - [ ] Si hay migraciones, leerlas: una que borre o cambie datos merece un respaldo manual antes
       (Actions → «Respaldo de la base» → «Run workflow»).
 - [ ] Tras el despliegue, abrir el sitio y entrar a una organización.
+- [ ] Si cambias cómo arranca el sistema o el horario del cron, cámbialo en el panel de Railway: el repositorio
+      ya no lleva esa configuración.
 
 ## 6. Tasa BCV automática (servicio Cron)
 
 Un segundo servicio en el mismo proyecto de Railway, que arranca, consulta el BCV y se apaga.
 
 - [ ] En el proyecto: **New → GitHub Repo →** el mismo repositorio `arca`. Nómbralo `tareas`.
-- [ ] En ese servicio, **Settings → Config-as-code → Railway Config File**: `railway.cron.json`.
-      (Ese archivo le pone el comando `python manage.py tareas_programadas` y el horario.)
+- [ ] En ese servicio → **Settings**, a mano (A-51):
+  - **Custom Start Command:** `python manage.py tareas_programadas`
+  - **Cron Schedule:** `0 11,21,23 * * *` (en «Customize»)
+  - **Restart Policy:** Never (con horario de cron Railway no reinicia)
 - [ ] **Variables** del servicio `tareas`: las mismas tres del web — `DATABASE_URL` (referencia a Postgres),
       `SECRET_KEY` y `DJANGO_SETTINGS_MODULE=config.settings.production`. No necesita dominio.
 - [ ] Desplegar y abrir el log de la primera corrida. Debe decir `Tasa BCV nueva: …` (o `igual`).

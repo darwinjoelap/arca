@@ -1,8 +1,0 @@
-{
-  "$schema": "https://railway.com/railway.schema.json",
-  "deploy": {
-    "startCommand": "python manage.py tareas_programadas",
-    "cronSchedule": "0 11,21,23 * * *",
-    "restartPolicyType": "NEVER"
-  }
-}
